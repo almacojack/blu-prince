@@ -1,36 +1,74 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Save, Play, Settings, Plus, Box, Zap, Type, 
   ChevronRight, ChevronDown, Download, Share2, 
   Undo, Redo, ZoomIn, ZoomOut, MousePointer2,
-  ArrowRight
+  ArrowRight, FileJson
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-
-// Mock Data for the Graph
-const initialNodes = [
-  { id: 1, type: "start", label: "START", x: 100, y: 100, color: "bg-green-500" },
-  { id: 2, type: "state", label: "IDLE_STATE", x: 300, y: 150, color: "bg-primary" },
-  { id: 3, type: "state", label: "PROCESSING", x: 550, y: 100, color: "bg-secondary" },
-  { id: 4, type: "end", label: "COMPLETE", x: 800, y: 200, color: "bg-muted-foreground" },
-];
-
-const initialEdges = [
-  { from: 1, to: 2 },
-  { from: 2, to: 3 },
-  { from: 3, to: 4 },
-  { from: 3, to: 2, curve: "bottom" },
-];
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { TossCartridge, createEmptyCartridge, TossState } from "@/lib/toss";
 
 export default function BluPrince() {
-  const [nodes, setNodes] = useState(initialNodes);
-  const [selectedNode, setSelectedNode] = useState<number | null>(null);
+  // We now use the standardized TOSS schema for state
+  const [cartridge, setCartridge] = useState<TossCartridge>(createEmptyCartridge());
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [showJson, setShowJson] = useState(false);
+
+  // Helper to get nodes from the standardized schema or fallback to editor defaults
+  const nodes = cartridge.editor?.nodes || [];
+
+  const handleAddNode = (type: TossState['type']) => {
+    const newId = `state_${Date.now()}`;
+    const newNode = {
+      id: newId,
+      x: 300 + (nodes.length * 20), 
+      y: 200 + (nodes.length * 20),
+      color: type === 'initial' ? 'bg-green-500' : type === 'final' ? 'bg-muted-foreground' : 'bg-primary'
+    };
+
+    setCartridge(prev => ({
+      ...prev,
+      fsm: {
+        ...prev.fsm,
+        states: {
+          ...prev.fsm.states,
+          [newId]: {
+            id: newId,
+            label: type.toUpperCase(),
+            type: type,
+            transitions: []
+          }
+        }
+      },
+      editor: {
+        ...prev.editor!,
+        nodes: [...prev.editor!.nodes, newNode]
+      }
+    }));
+  };
+
+  const getTransitions = () => {
+    const edges: Array<{from: string, to: string}> = [];
+    Object.values(cartridge.fsm.states).forEach(state => {
+      state.transitions.forEach(trans => {
+        edges.push({ from: state.id, to: trans.target });
+      });
+    });
+    // Add dummy edge for demo if none exist
+    if (edges.length === 0 && nodes.length > 1) {
+       return [{ from: nodes[0].id, to: nodes[1]?.id }];
+    }
+    return edges;
+  };
+
+  const activeNode = selectedNodeId ? cartridge.fsm.states[selectedNodeId] : null;
 
   return (
     <div className="flex flex-col h-screen bg-[#09090b] text-foreground overflow-hidden font-sans">
@@ -47,24 +85,40 @@ export default function BluPrince() {
           </Link>
           <Separator orientation="vertical" className="h-6" />
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span className="text-white font-medium">Untitled_Cart_01</span>
-            <Badge variant="outline" className="text-[10px] h-5 px-1 border-yellow-500/50 text-yellow-500">UNSAVED</Badge>
+            <span className="text-white font-medium">{cartridge.manifest.title}</span>
+            <Badge variant="outline" className="text-[10px] h-5 px-1 border-yellow-500/50 text-yellow-500">v{cartridge.manifest.version}</Badge>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-white">
-            <Undo className="w-4 h-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-white">
-            <Redo className="w-4 h-4" />
-          </Button>
+          <Dialog open={showJson} onOpenChange={setShowJson}>
+            <DialogTrigger asChild>
+              <Button size="sm" variant="ghost" className="gap-2">
+                <FileJson className="w-4 h-4" /> <span className="hidden sm:inline">View TOSS JSON</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-3xl max-h-[80vh] bg-[#111] border-white/20">
+              <DialogHeader>
+                <DialogTitle>TOSS Payload Preview</DialogTitle>
+                <DialogDescription>
+                  This is the standardized JSON that will be sent to the TingOs Runtime.
+                </DialogDescription>
+              </DialogHeader>
+              <ScrollArea className="h-[500px] w-full rounded border border-white/10 bg-black/50 p-4">
+                <pre className="text-xs font-mono text-green-400">
+                  {JSON.stringify(cartridge, null, 2)}
+                </pre>
+              </ScrollArea>
+            </DialogContent>
+          </Dialog>
+
           <Separator orientation="vertical" className="h-6 mx-2" />
+          
           <Button size="sm" variant="ghost" className="gap-2">
             <Save className="w-4 h-4" /> <span className="hidden sm:inline">Save</span>
           </Button>
           <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white gap-2">
-            <Play className="w-4 h-4 fill-current" /> Run Simulation
+            <Play className="w-4 h-4 fill-current" /> Test Run
           </Button>
         </div>
       </header>
@@ -95,10 +149,14 @@ export default function BluPrince() {
                   <Plus className="w-3 h-3 opacity-0 group-hover:opacity-100" />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  {["Start", "State", "Condition", "End", "Action", "Timer"].map((item) => (
-                    <div key={item} className="p-2 rounded bg-white/5 hover:bg-white/10 border border-white/5 cursor-move flex flex-col items-center gap-1 transition-colors">
-                      <div className="w-6 h-6 rounded bg-primary/20" />
-                      <span className="text-[10px] text-muted-foreground">{item}</span>
+                  {["initial", "state", "compound", "final"].map((item) => (
+                    <div 
+                      key={item} 
+                      onClick={() => handleAddNode(item as any)}
+                      className="p-2 rounded bg-white/5 hover:bg-white/10 border border-white/5 cursor-pointer flex flex-col items-center gap-1 transition-colors active:scale-95"
+                    >
+                      <div className={`w-6 h-6 rounded ${item === 'initial' ? 'bg-green-500/20' : 'bg-primary/20'}`} />
+                      <span className="text-[10px] text-muted-foreground capitalize">{item}</span>
                     </div>
                   ))}
                 </div>
@@ -134,21 +192,19 @@ export default function BluPrince() {
                   <polygon points="0 0, 10 3.5, 0 7" fill="#666" />
                 </marker>
               </defs>
-              {initialEdges.map((edge, i) => {
+              {getTransitions().map((edge, i) => {
                 const fromNode = nodes.find(n => n.id === edge.from);
                 const toNode = nodes.find(n => n.id === edge.to);
                 if (!fromNode || !toNode) return null;
 
-                // Simple straight line logic for demo
-                // Ideally this would use a curve calculation
                 return (
                   <motion.line 
                     key={i}
                     initial={{ pathLength: 0, opacity: 0 }}
                     animate={{ pathLength: 1, opacity: 1 }}
                     transition={{ duration: 1, delay: 0.5 + (i * 0.2) }}
-                    x1={fromNode.x + 80} // Approx center width
-                    y1={fromNode.y + 24} // Approx center height
+                    x1={fromNode.x + 80}
+                    y1={fromNode.y + 24} 
                     x2={toNode.x}
                     y2={toNode.y + 24}
                     stroke="#444" 
@@ -161,35 +217,40 @@ export default function BluPrince() {
           </div>
 
           <div className="relative w-full h-full p-10">
-            {nodes.map((node) => (
-              <motion.div
-                key={node.id}
-                drag
-                dragMomentum={false}
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                whileHover={{ scale: 1.05 }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                style={{ left: node.x, top: node.y }}
-                className={`absolute w-40 p-0 rounded-lg border border-white/10 bg-[#1a1b23] shadow-xl cursor-pointer overflow-hidden ${selectedNode === node.id ? 'ring-2 ring-primary' : ''}`}
-                onClick={() => setSelectedNode(node.id)}
-              >
-                <div className={`h-1 ${node.color}`} />
-                <div className="p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold font-mono text-white">{node.label}</span>
-                    <Settings className="w-3 h-3 text-muted-foreground hover:text-white" />
+            {nodes.map((node) => {
+              const stateData = cartridge.fsm.states[node.id];
+              return (
+                <motion.div
+                  key={node.id}
+                  drag
+                  dragMomentum={false}
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  style={{ left: node.x, top: node.y }}
+                  className={`absolute w-40 p-0 rounded-lg border border-white/10 bg-[#1a1b23] shadow-xl cursor-pointer overflow-hidden ${selectedNodeId === node.id ? 'ring-2 ring-primary' : ''}`}
+                  onClick={() => setSelectedNodeId(node.id)}
+                >
+                  <div className={`h-1 ${node.color || 'bg-primary'}`} />
+                  <div className="p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold font-mono text-white truncate max-w-[100px]">
+                        {stateData?.label || 'UNKNOWN'}
+                      </span>
+                      <Settings className="w-3 h-3 text-muted-foreground hover:text-white" />
+                    </div>
+                    <div className="text-[10px] text-muted-foreground font-mono">
+                      TYPE: {stateData?.type.toUpperCase()}
+                    </div>
                   </div>
-                  <div className="text-[10px] text-muted-foreground font-mono">
-                    TYPE: {node.type.toUpperCase()}
-                  </div>
-                </div>
-                
-                {/* Ports */}
-                <div className="absolute left-0 top-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-white/20 border border-black hover:bg-primary transition-colors" />
-                <div className="absolute right-0 top-1/2 translate-x-1/2 w-2 h-2 rounded-full bg-white/20 border border-black hover:bg-primary transition-colors" />
-              </motion.div>
-            ))}
+                  
+                  {/* Ports */}
+                  <div className="absolute left-0 top-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-white/20 border border-black hover:bg-primary transition-colors" />
+                  <div className="absolute right-0 top-1/2 translate-x-1/2 w-2 h-2 rounded-full bg-white/20 border border-black hover:bg-primary transition-colors" />
+                </motion.div>
+              );
+            })}
           </div>
         </div>
 
@@ -200,23 +261,51 @@ export default function BluPrince() {
           </div>
           
           <div className="flex-1 p-4">
-            {selectedNode ? (
+            {activeNode ? (
               <div className="space-y-6">
                 <div>
                   <label className="text-[10px] uppercase text-muted-foreground font-bold mb-2 block">Node Label</label>
                   <input 
                     type="text" 
-                    value={nodes.find(n => n.id === selectedNode)?.label} 
+                    value={activeNode.label} 
+                    onChange={(e) => {
+                      setCartridge(prev => ({
+                        ...prev,
+                        fsm: {
+                          ...prev.fsm,
+                          states: {
+                            ...prev.fsm.states,
+                            [activeNode.id]: { ...activeNode, label: e.target.value }
+                          }
+                        }
+                      }));
+                    }}
                     className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm font-mono focus:border-primary focus:outline-none text-white"
                   />
                 </div>
                 
                 <div>
                   <label className="text-[10px] uppercase text-muted-foreground font-bold mb-2 block">State Type</label>
-                  <select className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-white focus:border-primary focus:outline-none appearance-none">
-                    <option>Standard State</option>
-                    <option>Initial State</option>
-                    <option>Terminal State</option>
+                  <select 
+                    value={activeNode.type}
+                    onChange={(e) => {
+                      setCartridge(prev => ({
+                        ...prev,
+                        fsm: {
+                          ...prev.fsm,
+                          states: {
+                            ...prev.fsm.states,
+                            [activeNode.id]: { ...activeNode, type: e.target.value as any }
+                          }
+                        }
+                      }));
+                    }}
+                    className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-white focus:border-primary focus:outline-none appearance-none"
+                  >
+                    <option value="state">Standard State</option>
+                    <option value="initial">Initial State</option>
+                    <option value="final">Terminal State</option>
+                    <option value="compound">Compound State</option>
                   </select>
                 </div>
 
@@ -224,12 +313,17 @@ export default function BluPrince() {
 
                 <div>
                    <label className="text-[10px] uppercase text-muted-foreground font-bold mb-2 block">Transitions</label>
+                   {activeNode.transitions.length === 0 && (
+                     <div className="text-xs text-muted-foreground italic mb-2">No transitions defined.</div>
+                   )}
                    <div className="space-y-2">
-                     <div className="flex items-center justify-between p-2 rounded bg-white/5 text-xs">
-                       <span className="font-mono text-primary">ON_CLICK</span>
-                       <ArrowRight className="w-3 h-3 text-muted-foreground" />
-                       <span className="font-mono">PROCESSING</span>
-                     </div>
+                     {activeNode.transitions.map((t, idx) => (
+                       <div key={idx} className="flex items-center justify-between p-2 rounded bg-white/5 text-xs">
+                         <span className="font-mono text-primary">{t.event}</span>
+                         <ArrowRight className="w-3 h-3 text-muted-foreground" />
+                         <span className="font-mono">{t.target}</span>
+                       </div>
+                     ))}
                    </div>
                    <Button variant="outline" size="sm" className="w-full mt-2 border-dashed border-white/20 hover:border-white/40 text-xs">
                      <Plus className="w-3 h-3 mr-1" /> Add Transition
