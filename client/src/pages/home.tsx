@@ -83,7 +83,7 @@ export default function Home() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative z-10 container mx-auto px-6 pt-20 pb-32">
+      <section className="relative z-10 container mx-auto px-6 pt-20 pb-12">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <motion.div 
             initial={{ opacity: 0, x: -20 }}
@@ -166,7 +166,7 @@ export default function Home() {
       </section>
 
       {/* Core Pillars */}
-      <section className="relative z-10 py-24 container mx-auto px-6">
+      <section className="relative z-10 py-12 container mx-auto px-6">
         <div className="grid md:grid-cols-3 gap-8">
           <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
             <Gamepad2 className="w-8 h-8 text-primary mb-4" />
