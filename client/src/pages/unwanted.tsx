@@ -1,46 +1,52 @@
 import { Link } from "wouter";
-import { ArrowLeft, Filter, Search, ShoppingBag, Tag, Clock } from "lucide-react";
+import { ArrowLeft, Filter, Search, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import misfitToyImage from "@assets/generated_images/cyberpunk_robot_toy.png";
 
-const MOCK_ITEMS = [
+// Minimal Cartridge Data (The View Model)
+interface CartridgeListing {
+  id: string;
+  cartridge_name: string;
+  current_state: string; // e.g., "BIDDING_OPEN", "SOLD", "PENDING"
+  price_ctx: number; // Value from context
+  image_url: string | null;
+  tags: string[];
+}
+
+const MOCK_CARTRIDGES: CartridgeListing[] = [
   {
-    id: 1,
-    title: "Glitch Robot 9000",
-    price: "45.00",
-    bids: 12,
-    timeLeft: "2h 45m",
-    image: misfitToyImage,
+    id: "1",
+    cartridge_name: "Glitch Robot 9000",
+    current_state: "2h 45m LEFT",
+    price_ctx: 45.00,
+    image_url: misfitToyImage,
     tags: ["Toy", "Vintage", "Broken"]
   },
   {
-    id: 2,
-    title: "Unfinished Novel Manuscript",
-    price: "15.00",
-    bids: 3,
-    timeLeft: "5h 20m",
-    image: null,
+    id: "2",
+    cartridge_name: "Unfinished Novel",
+    current_state: "5h 20m LEFT",
+    price_ctx: 15.00,
+    image_url: null,
     tags: ["Document", "Mystery"]
   },
   {
-    id: 3,
-    title: "Cursed Lava Lamp",
-    price: "88.00",
-    bids: 24,
-    timeLeft: "12m",
-    image: null,
+    id: "3",
+    cartridge_name: "Cursed Lava Lamp",
+    current_state: "12m LEFT",
+    price_ctx: 88.00,
+    image_url: null,
     tags: ["Decor", "Haunted"]
   },
   {
-    id: 4,
-    title: "Leftover Cable Box",
-    price: "5.00",
-    bids: 0,
-    timeLeft: "1d 4h",
-    image: null,
+    id: "4",
+    cartridge_name: "Leftover Cable Box",
+    current_state: "1d 4h LEFT",
+    price_ctx: 5.00,
+    image_url: null,
     tags: ["Tech", "Junk"]
   }
 ];
@@ -62,67 +68,54 @@ export default function Unwanted() {
               <span className="font-pixel text-lg text-white tracking-tighter">unwanted.ad</span>
             </div>
           </div>
-
+          
+          {/* This input just filters the list locally. No complex logic. */}
           <div className="hidden md:flex items-center gap-4 w-96">
             <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input 
-                placeholder="Search for misfits..." 
-                className="pl-9 bg-white/5 border-white/10 focus-visible:ring-secondary"
+                placeholder="Filter cartridges..." 
+                className="pl-9 bg-white/5 border-white/10 focus-visible:ring-secondary font-mono text-xs"
               />
             </div>
           </div>
 
-          <Button className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-mono text-xs">
-            POST ITEM
-          </Button>
+          <div className="text-xs font-mono text-muted-foreground">
+            VIEWING MODE: CLIENT_ONLY
+          </div>
         </div>
       </nav>
 
       <main className="container mx-auto px-6 py-12">
         <div className="flex flex-col md:flex-row gap-12">
-          {/* Sidebar Filters */}
+          {/* Sidebar - Just visual filters, no logic implied */}
           <div className="w-full md:w-64 space-y-8">
             <div>
               <h3 className="text-sm font-mono font-bold text-white mb-4 flex items-center gap-2">
-                <Filter className="w-4 h-4" /> FILTERS
+                <Filter className="w-4 h-4" /> CARTRIDGE TYPES
               </h3>
               <div className="space-y-2">
                 {["Toys", "Electronics", "Oddities", "Broken", "Haunted"].map((category) => (
-                  <div key={category} className="flex items-center gap-2">
-                    <div className="w-4 h-4 border border-white/20 rounded cursor-pointer hover:border-secondary" />
-                    <span className="text-sm text-muted-foreground hover:text-white cursor-pointer">{category}</span>
+                  <div key={category} className="flex items-center gap-2 group cursor-pointer">
+                    <div className="w-4 h-4 border border-white/20 rounded group-hover:border-secondary transition-colors" />
+                    <span className="text-sm text-muted-foreground group-hover:text-white transition-colors">{category}</span>
                   </div>
                 ))}
               </div>
             </div>
-            
-            <div className="p-4 rounded-lg bg-secondary/5 border border-secondary/20">
-              <h4 className="text-xs font-bold text-secondary mb-2">PRO TIP</h4>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                All transactions are verified via TOSS cartridges. Ensure your wallet is connected before bidding.
-              </p>
-            </div>
           </div>
 
-          {/* Grid */}
+          {/* Grid of Cartridges */}
           <div className="flex-1">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-white">Live Auctions</h2>
-              <div className="text-xs text-muted-foreground font-mono">
-                SHOWING {MOCK_ITEMS.length} RESULTS
-              </div>
-            </div>
-
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {MOCK_ITEMS.map((item) => (
+              {MOCK_CARTRIDGES.map((item) => (
                 <Card key={item.id} className="bg-white/[0.02] border-white/10 overflow-hidden hover:border-secondary/50 transition-colors group cursor-pointer">
                   <div className="aspect-[4/3] bg-black relative overflow-hidden">
-                    {item.image ? (
+                    {item.image_url ? (
                       <img 
-                        src={item.image} 
-                        alt={item.title} 
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        src={item.image_url} 
+                        alt={item.cartridge_name} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80 group-hover:opacity-100"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-white/5">
@@ -130,15 +123,13 @@ export default function Unwanted() {
                       </div>
                     )}
                     <Badge className="absolute top-3 right-3 bg-black/80 backdrop-blur text-white border-white/10 font-mono">
-                      {item.timeLeft}
+                      {item.current_state}
                     </Badge>
                   </div>
                   
                   <CardHeader className="p-4 pb-2">
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-bold text-white truncate pr-4">{item.title}</h3>
-                    </div>
-                    <div className="flex gap-2 flex-wrap">
+                    <h3 className="font-bold text-white truncate font-mono text-sm">{item.cartridge_name}</h3>
+                    <div className="flex gap-2 flex-wrap mt-2">
                       {item.tags.map(tag => (
                         <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-muted-foreground border border-white/5">
                           #{tag}
@@ -150,18 +141,15 @@ export default function Unwanted() {
                   <CardContent className="p-4 pt-2">
                     <div className="flex justify-between items-end mt-2">
                       <div>
-                        <span className="text-[10px] text-muted-foreground block uppercase">Current Bid</span>
-                        <span className="text-lg font-mono text-secondary">${item.price}</span>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-[10px] text-muted-foreground block uppercase">{item.bids} Bids</span>
+                        <span className="text-[10px] text-muted-foreground block uppercase">CTX.PRICE</span>
+                        <span className="text-lg font-mono text-secondary">${item.price_ctx}</span>
                       </div>
                     </div>
                   </CardContent>
 
                   <CardFooter className="p-4 pt-0">
-                    <Button className="w-full bg-white/5 hover:bg-white/10 text-white font-mono text-xs border border-white/10">
-                      PLACE BID
+                    <Button className="w-full bg-white/5 hover:bg-white/10 text-white font-mono text-xs border border-white/10 group-hover:bg-secondary group-hover:text-black transition-colors">
+                      LOAD CARTRIDGE
                     </Button>
                   </CardFooter>
                 </Card>
@@ -173,3 +161,4 @@ export default function Unwanted() {
     </div>
   );
 }
+
