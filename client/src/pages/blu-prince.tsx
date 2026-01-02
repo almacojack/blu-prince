@@ -11,15 +11,49 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
 import { TossFile, createNewTossFile, TossState } from "@/lib/toss";
+import { saveCartridge } from "@/lib/api";
 
 export default function BluPrince() {
   const [file, setFile] = useState<TossFile>(createNewTossFile());
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [showJson, setShowJson] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const { toast } = useToast();
 
   // Helper to access nodes from the editor metadata
   const nodes = file._editor?.nodes || [];
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await saveCartridge(file);
+      toast({
+        title: "Cartridge Saved",
+        description: `${file.manifest.meta.title} (${file.manifest.tngli_id}) saved successfully.`,
+      });
+    } catch (error) {
+      console.error("Save failed:", error);
+      toast({
+        title: "Save Failed",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleExport = () => {
+    const blob = new Blob([JSON.stringify(file, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${file.manifest.tngli_id}.toss.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const handleAddNode = (type: TossState['type']) => {
     const newId = `state_${Date.now()}`;
@@ -110,10 +144,21 @@ export default function BluPrince() {
 
           <Separator orientation="vertical" className="h-6 mx-2" />
           
-          <Button size="sm" variant="ghost" className="gap-2">
-            <Upload className="w-4 h-4" /> <span className="hidden sm:inline">Import</span>
+          <Button 
+            size="sm" 
+            variant="ghost" 
+            className="gap-2" 
+            onClick={handleSave}
+            disabled={isSaving}
+          >
+            <Save className="w-4 h-4" /> 
+            <span className="hidden sm:inline">{isSaving ? "Saving..." : "Save"}</span>
           </Button>
-          <Button size="sm" className="bg-primary/20 hover:bg-primary/30 text-primary border border-primary/50 gap-2">
+          <Button 
+            size="sm" 
+            className="bg-primary/20 hover:bg-primary/30 text-primary border border-primary/50 gap-2"
+            onClick={handleExport}
+          >
             <Download className="w-4 h-4" /> Export .TOSS
           </Button>
         </div>
