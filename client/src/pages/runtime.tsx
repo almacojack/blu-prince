@@ -4,7 +4,9 @@ import { RoundedBox, Text, Html, Float, PerspectiveCamera, Environment, ContactS
 import * as THREE from "three";
 import { TossFile } from "@/lib/toss";
 import { TingOsEngine, RuntimeState } from "@/lib/engine";
+import { getAllCartridges } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Play, RefreshCw, Zap } from "lucide-react";
 import { Link } from "wouter";
 
@@ -125,9 +127,38 @@ const ScreenContent = ({ engineState }: { engineState: RuntimeState | null }) =>
 export default function RuntimeSimulator() {
   const [engine, setEngine] = useState<TingOsEngine | null>(null);
   const [engineState, setEngineState] = useState<RuntimeState | null>(null);
+  const [cartridges, setCartridges] = useState<any[]>([]);
+  const [selectedCartridgeId, setSelectedCartridgeId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load available cartridges
+  useEffect(() => {
+    async function loadCartridges() {
+      try {
+        const data = await getAllCartridges();
+        setCartridges(data);
+        if (data.length > 0) {
+          setSelectedCartridgeId(data[0].tngli_id);
+        }
+      } catch (error) {
+        console.error("Failed to load cartridges:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadCartridges();
+  }, []);
 
   useEffect(() => {
-    // 1. Create a Mock Cartridge
+    if (!selectedCartridgeId) return;
+
+    const selectedCartridge = cartridges.find(c => c.tngli_id === selectedCartridgeId);
+    if (!selectedCartridge) return;
+
+    // 1. Load the selected cartridge's TOSS file
+    const tossFile: TossFile = selectedCartridge.toss_file;
+
+    // Fallback mock if no cartridges exist
     const mockFile: TossFile = {
       manifest: {
         id: "demo",
@@ -160,8 +191,10 @@ export default function RuntimeSimulator() {
       assets: {}
     };
 
+    const fileToRun = selectedCartridge ? tossFile : mockFile;
+
     // 2. Initialize Engine
-    const newEngine = new TingOsEngine(mockFile);
+    const newEngine = new TingOsEngine(fileToRun);
     setEngine(newEngine);
 
     // 3. Subscribe
@@ -173,7 +206,7 @@ export default function RuntimeSimulator() {
     newEngine.start();
 
     return () => { unsub(); };
-  }, []);
+  }, [selectedCartridgeId, cartridges]);
 
   const handleButtonPress = (btn: string) => {
     if (engine) {
@@ -183,12 +216,27 @@ export default function RuntimeSimulator() {
 
   return (
     <div className="w-full h-screen bg-[#050505] relative overflow-hidden">
-      <div className="absolute top-4 left-4 z-50">
+      <div className="absolute top-4 left-4 z-50 flex gap-4 items-center">
         <Link href="/">
           <Button variant="ghost" className="text-white gap-2">
             <ArrowLeft className="w-4 h-4" /> Exit Simulator
           </Button>
         </Link>
+        
+        {!isLoading && cartridges.length > 0 && (
+          <Select value={selectedCartridgeId || undefined} onValueChange={setSelectedCartridgeId}>
+            <SelectTrigger className="w-[250px] bg-black/50 border-white/20 text-white">
+              <SelectValue placeholder="Select Cartridge" />
+            </SelectTrigger>
+            <SelectContent>
+              {cartridges.map((cart) => (
+                <SelectItem key={cart.tngli_id} value={cart.tngli_id}>
+                  {cart.title} v{cart.version}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       <Canvas shadows camera={{ position: [0, 0, 10], fov: 45 }}>
