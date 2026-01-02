@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { ArrowRight, Cpu, Layers, ShoppingBag, Palette, TrendingUp, Terminal, Code, Zap } from "lucide-react";
+import { ArrowRight, Gamepad2, Users, Briefcase, Terminal, Layers, Hexagon, Code, Cpu } from "lucide-react";
 import heroImage from "@assets/generated_images/retro_futuristic_data_cartridge.png";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,8 +55,6 @@ const EcosystemCard = ({ title, description, icon: Icon, colorKey, domain, statu
 };
 
 export default function Home() {
-  const [hoveredCart, setHoveredCart] = useState<string | null>(null);
-
   return (
     <div className="relative min-h-screen overflow-hidden">
       {/* Background Gradients */}
@@ -67,17 +65,17 @@ export default function Home() {
       <nav className="relative z-10 container mx-auto px-6 py-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-primary/20 rounded border border-primary/50 flex items-center justify-center">
-            <Cpu className="text-primary" />
+            <Gamepad2 className="text-primary" />
           </div>
           <div>
             <h1 className="font-pixel text-lg tracking-tight text-white">TingOs</h1>
-            <p className="text-[10px] font-mono text-muted-foreground tracking-widest uppercase">Platform v1.0.0</p>
+            <p className="text-[10px] font-mono text-muted-foreground tracking-widest uppercase">The Universal Engine</p>
           </div>
         </div>
         <div className="hidden md:flex gap-8 font-mono text-sm text-muted-foreground">
-          <a href="#" className="hover:text-primary transition-colors">DOCS</a>
-          <a href="#" className="hover:text-primary transition-colors">RUNTIME</a>
-          <a href="#" className="hover:text-primary transition-colors">MARKET</a>
+          <a href="#" className="hover:text-primary transition-colors">GAME ENGINE</a>
+          <a href="#" className="hover:text-primary transition-colors">MULTIPLAYER</a>
+          <a href="#" className="hover:text-primary transition-colors">BPM</a>
         </div>
         <Button variant="outline" className="font-mono text-xs border-primary/50 text-primary hover:bg-primary/10">
           CONNECT WALLET
@@ -94,30 +92,29 @@ export default function Home() {
           >
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 mb-8 backdrop-blur-sm">
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-xs font-mono text-muted-foreground">SYSTEM ONLINE</span>
+              <span className="text-xs font-mono text-muted-foreground">ENGINE ONLINE • v1.0.0</span>
             </div>
             
             <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6 leading-none">
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-white/50">Universal</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-white/50">Write Once.</span>
               <br />
-              <span className="font-pixel text-4xl md:text-5xl text-primary mt-4 block text-glow">STATE MACHINE</span>
+              <span className="font-pixel text-4xl md:text-5xl text-primary mt-4 block text-glow">PLAY ANYWHERE</span>
             </h1>
             
             <p className="text-lg text-muted-foreground max-w-xl leading-relaxed mb-8 font-light">
-              The operating system for business logic. Deploy interoperable 
-              <span className="text-secondary font-mono mx-1">TOSS cartridges</span> 
-              across any device, from microcontrollers to the web.
+              A high-performance gaming engine, pub/sub collaboration layer, and BPM framework wrapped in one.
+              Deploy <span className="text-secondary font-mono mx-1">TOSS cartridges</span> to browsers, microcontrollers, or CLI.
             </p>
 
             <div className="flex flex-wrap gap-4">
               <Link href="/blu-prince">
                 <Button size="lg" className="bg-primary hover:bg-primary/90 text-white font-mono h-12 cursor-pointer">
                   <Terminal className="mr-2 h-4 w-4" />
-                  LAUNCH DESIGNER
+                  DESIGN BLUEPRINT
                 </Button>
               </Link>
               <Button size="lg" variant="outline" className="border-white/20 hover:bg-white/5 font-mono h-12">
-                READ WHITE PAPER
+                READ DOCS
               </Button>
             </div>
           </motion.div>
@@ -146,21 +143,49 @@ export default function Home() {
                 className="absolute -right-4 top-20 p-4 rounded-lg bg-black/80 backdrop-blur border border-primary/30 max-w-[200px]"
               >
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="w-2 h-2 bg-primary rounded-full" />
-                  <span className="text-[10px] font-mono text-primary">CART_DETECTED</span>
+                  <Gamepad2 className="w-3 h-3 text-primary" />
+                  <span className="text-[10px] font-mono text-primary">INPUT_DETECTED</span>
                 </div>
                 <div className="space-y-1">
-                  <div className="h-1 w-full bg-white/10 rounded-full overflow-hidden">
-                    <div className="h-full bg-primary w-[70%]" />
+                   <div className="flex justify-between text-[10px] font-mono text-muted-foreground">
+                    <span>DEVICE</span>
+                    <span className="text-white">PICO_W</span>
                   </div>
                   <div className="flex justify-between text-[10px] font-mono text-muted-foreground">
-                    <span>LOADING</span>
-                    <span>70%</span>
+                    <span>LATENCY</span>
+                    <span className="text-green-500">12ms</span>
                   </div>
                 </div>
               </motion.div>
             </div>
           </motion.div>
+        </div>
+      </section>
+
+      {/* Core Pillars */}
+      <section className="relative z-10 py-24 container mx-auto px-6">
+        <div className="grid md:grid-cols-3 gap-8">
+          <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
+            <Gamepad2 className="w-8 h-8 text-primary mb-4" />
+            <h3 className="text-xl font-bold mb-2">Gaming First</h3>
+            <p className="text-sm text-muted-foreground">
+              Built for loops, input handling, and rendering. Whether it's ThreeJS, Canvas, or an ASCII TUI.
+            </p>
+          </div>
+          <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
+            <Users className="w-8 h-8 text-secondary mb-4" />
+            <h3 className="text-xl font-bold mb-2">Multi-User Sync</h3>
+            <p className="text-sm text-muted-foreground">
+              Real-time Pub/Sub layer baked in. Collaboration is just a shared state away.
+            </p>
+          </div>
+          <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
+            <Briefcase className="w-8 h-8 text-accent mb-4" />
+            <h3 className="text-xl font-bold mb-2">Business Logic</h3>
+            <p className="text-sm text-muted-foreground">
+              Deterministic state machines make it perfect for complex BPM workflows when the fun is over.
+            </p>
+          </div>
         </div>
       </section>
 
@@ -171,8 +196,7 @@ export default function Home() {
             <div>
               <h2 className="text-3xl font-bold mb-4 font-pixel text-white/90">Ecosystem</h2>
               <p className="text-muted-foreground max-w-lg">
-                A suite of tools and marketplaces built on the TingOs protocol.
-                Design, trade, and deploy cartridges seamlessly.
+                Tools built on the TingOs Engine. From architecture to marketplaces.
               </p>
             </div>
             <Button variant="link" className="text-primary font-mono group">
@@ -184,8 +208,8 @@ export default function Home() {
             <EcosystemCard 
               title="Blu-Prince"
               domain="blu-prince.com"
-              description="No-code FSM design environment. Build robust TOSS cartridges with buttery smooth visual tools."
-              icon={Layers}
+              description="The Architect's IDE. XCode-grade visual tools for designing TOSS cartridges."
+              icon={Hexagon}
               colorKey="primary" 
               status="BETA"
               link="/blu-prince"
@@ -193,8 +217,8 @@ export default function Home() {
             <EcosystemCard 
               title="Unwanted"
               domain="unwanted.ad"
-              description="Auction protocol for misfit toys and unique items. One cartridge per listing."
-              icon={ShoppingBag}
+              description="A marketplace powered by TingOs cartridges. Auction your misfit toys."
+              icon={Layers}
               colorKey="secondary"
               status="LIVE"
               link="/unwanted"
@@ -202,8 +226,8 @@ export default function Home() {
             <EcosystemCard 
               title="Artsy"
               domain="artsy.sale"
-              description="Curated marketplace for digital and physical art, powered by verifiable TOSS provenance."
-              icon={Palette}
+              description="Premium digital provenance. High-fidelity rendering of art assets."
+              icon={Cpu}
               colorKey="accent" 
               status="COMING SOON"
               link="/artsy"
@@ -211,8 +235,8 @@ export default function Home() {
             <EcosystemCard 
               title="Coins.rip"
               domain="coins.rip"
-              description="Crypto swing trade visualizer. Track your favorite coins with custom tabular displays."
-              icon={TrendingUp}
+              description="Real-time data visualization. A pure view layer over TingOs streams."
+              icon={Code}
               colorKey="chart-3"
               status="DEV"
               link="/coins"
@@ -221,37 +245,10 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Features/Tech Section */}
-      <section className="relative z-10 py-24 container mx-auto px-6">
-        <div className="grid md:grid-cols-3 gap-8">
-          <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
-            <Zap className="w-8 h-8 text-yellow-400 mb-4" />
-            <h3 className="text-xl font-bold mb-2">Deterministic Execution</h3>
-            <p className="text-sm text-muted-foreground">
-              Guaranteed behavior across all runtime environments, from 320x240 embedded screens to web browsers.
-            </p>
-          </div>
-          <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
-            <Code className="w-8 h-8 text-blue-400 mb-4" />
-            <h3 className="text-xl font-bold mb-2">Portable Payload</h3>
-            <p className="text-sm text-muted-foreground">
-              TOSS files are self-contained archives defining state, logic, and assets in a compact format.
-            </p>
-          </div>
-          <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
-            <Cpu className="w-8 h-8 text-green-400 mb-4" />
-            <h3 className="text-xl font-bold mb-2">Universal Runtime</h3>
-            <p className="text-sm text-muted-foreground">
-              Run anywhere: Micropython, LILYGO T-Decks, CLI TUI, or secure REST/WS API access.
-            </p>
-          </div>
-        </div>
-      </section>
-
       <footer className="relative z-10 border-t border-white/10 py-12 bg-black/60">
         <div className="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="text-xs font-mono text-muted-foreground">
-            © 2026 TINGOS PLATFORM. ALL RIGHTS RESERVED.
+            © 2026 TINGOS PLATFORM. POWERED BY SVELTE FLOW & THREEJS.
           </div>
           <div className="flex gap-6">
             <a href="#" className="text-muted-foreground hover:text-white transition-colors"><span className="sr-only">GitHub</span>GitHub</a>
