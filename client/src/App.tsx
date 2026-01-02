@@ -8,6 +8,7 @@ import BluPrince from "@/pages/blu-prince";
 import Unwanted from "@/pages/unwanted";
 import Artsy from "@/pages/artsy";
 import Coins from "@/pages/coins";
+import RuntimeSimulator from "@/pages/runtime";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -18,6 +19,7 @@ function Router() {
       <Route path="/unwanted" component={Unwanted} />
       <Route path="/artsy" component={Artsy} />
       <Route path="/coins" component={Coins} />
+      <Route path="/runtime" component={RuntimeSimulator} />
       <Route component={NotFound} />
     </Switch>
   );
