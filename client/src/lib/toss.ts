@@ -1,117 +1,117 @@
 /**
- * TOSS (ThingOs State Schema)
- * The standardized protocol for all cartridges in the TingOs ecosystem.
- * This schema acts as the contract between the Blu-Prince designer, 
- * the TingOs runtime, and the Marketplace apps.
+ * TOSS (ThingOs State Schema) - FILE FORMAT SPECIFICATION
+ * 
+ * CRITICAL ARCHITECTURE NOTE:
+ * TOSS files are self-contained, portable, execution-ready payloads.
+ * They are NOT database records. They are "Cartridges".
+ * 
+ * The Database (if any) only stores the BLOB of this JSON.
+ * The Database does NOT know about States, Transitions, or Context variables.
+ * Only the TingOs Runtime (and this Schema) understands the internals.
  */
 
-// 1. Manifest: The metadata "Jacket" for the cartridge
+// 1. The Canonical "Outer Shell" (The minimal contract to be a TOSS file)
 export interface TossManifest {
-  id: string;              // UUID
-  tngli_id: string;        // Short ID for QR codes (e.g. "tng.li/xyz")
-  title: string;
-  description: string;
-  version: string;         // SemVer (e.g. "1.0.0")
-  author: string;
-  license: string;         // e.g. "MIT", "CC-BY"
-  domain: 'game' | 'business' | 'art' | 'iot';
-  tags: string[];
-  created_at: string;      // ISO Date
-  updated_at: string;      // ISO Date
+  // The minimal standard metadata every system can read
+  id: string;              // Unique Cartridge ID
+  tngli_id: string;        // The "Label" (e.g. tng.li/pokemon-red)
+  spec_version: string;    // TOSS Spec Version (e.g. "1.0")
+  
+  meta: {
+    title: string;
+    description: string;
+    author: string;
+    version: string;       // Cartridge Version
+    icon_asset_key?: string; // Reference to an asset key
+  };
 }
 
-// 2. State Machine: The "Brain" (Harel Statecharts inspired)
+// 2. The "Brain" (Encapsulated Logic - Opaque to the DB)
+export interface TossFSM {
+  initial: string;
+  states: Record<string, TossState>;
+}
+
 export interface TossState {
   id: string;
-  label: string;
-  type: 'initial' | 'state' | 'compound' | 'final' | 'history';
-  on_entry?: TossAction[];
-  on_exit?: TossAction[];
-  transitions: TossTransition[];
-  children?: TossState[];  // For nested state machines
-  meta?: Record<string, any>; // Flexible metadata for UI coordinates (x,y)
-}
-
-export interface TossTransition {
-  event: string;           // The trigger (e.g., "BUTTON_A", "PAYMENT_RECEIVED")
-  target: string;          // Target State ID
-  guard?: string;          // Condition expression (e.g. "ctx.coins > 10")
-  action?: TossAction[];   // Side effects
-}
-
-export interface TossAction {
-  type: string;            // e.g. "UPDATE_CONTEXT", "PLAY_SOUND", "HTTP_POST"
-  payload: Record<string, any>;
-}
-
-// 3. Assets: The "Media" (External references only, no binaries)
-export interface TossAsset {
-  key: string;             // Reference key (e.g. "hero_sprite")
-  type: 'image' | 'sound' | 'video' | 'model_3d' | 'font';
-  url: string;             // MUST be external URL or IPFS hash
-  fallback_color?: string; // For low-res displays
-}
-
-// 4. Context: The "Memory"
-export interface TossContextSchema {
-  variables: Record<string, {
-    type: 'string' | 'number' | 'boolean' | 'json';
-    default: any;
+  type: 'initial' | 'state' | 'compound' | 'final';
+  
+  // Logic hooks (Strings to be interpreted by Runtime)
+  on_entry?: string[]; 
+  on_exit?: string[];
+  
+  transitions: Array<{
+    event: string;
+    target: string;
+    guard?: string;
+    action?: string[];
   }>;
 }
 
-// THE CARTRIDGE: The complete standardized payload
-export interface TossCartridge {
-  manifest: TossManifest;
-  fsm: {
-    initial: string;
-    states: Record<string, TossState>;
+// 3. The "Memory" (Initial State Schema)
+export interface TossContext {
+  // Schema definition for the machine's memory
+  schema: Record<string, {
+    type: 'string' | 'number' | 'boolean' | 'object';
+    default_value: any;
+  }>;
+}
+
+// 4. The "Resources" (External Links - No binaries in the payload)
+export interface TossAssetRegistry {
+  [key: string]: {
+    type: 'image' | 'audio' | 'video' | 'model';
+    uri: string; // Must be a portable URL (ipfs://, https://, asset://)
   };
-  context_schema: TossContextSchema;
-  assets: Record<string, TossAsset>;
+}
+
+// THE FILE (The Portable Payload)
+export interface TossFile {
+  manifest: TossManifest;
+  logic: TossFSM;
+  memory: TossContext;
+  assets: TossAssetRegistry;
   
-  // Blu-Prince specific data (not needed for runtime, but needed for editing)
-  editor?: {
+  // Editor-only metadata (Stripped before 'Burning' the cartridge if desired, 
+  // but often kept for "Open Source" cartridges that can be remixed)
+  _editor?: {
     nodes: Array<{ id: string; x: number; y: number; color?: string }>;
-    zoom: number;
-    pan: { x: number; y: number };
+    viewport: { x: number; y: number; zoom: number };
   };
 }
 
 /**
- * MOCK DATA GENERATOR
- * Helps visualize valid TOSS files
+ * FACTORY: Creates a valid, empty TOSS File
  */
-export const createEmptyCartridge = (): TossCartridge => ({
+export const createNewTossFile = (): TossFile => ({
   manifest: {
     id: crypto.randomUUID(),
     tngli_id: "",
-    title: "Untitled Cartridge",
-    description: "New TOSS project",
-    version: "0.0.1",
-    author: "Anonymous",
-    license: "UNLICENSED",
-    domain: "game",
-    tags: [],
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    spec_version: "1.0",
+    meta: {
+      title: "Untitled Cartridge",
+      description: "A new state machine adventure",
+      author: "Anonymous",
+      version: "0.0.1"
+    }
   },
-  fsm: {
+  logic: {
     initial: "init",
     states: {
       "init": {
         id: "init",
-        label: "Initialize",
         type: "initial",
         transitions: []
       }
     }
   },
-  context_schema: { variables: {} },
+  memory: {
+    schema: {}
+  },
   assets: {},
-  editor: {
+  _editor: {
     nodes: [{ id: "init", x: 100, y: 100, color: "bg-green-500" }],
-    zoom: 1,
-    pan: { x: 0, y: 0 }
+    viewport: { x: 0, y: 0, zoom: 1 }
   }
 });
+

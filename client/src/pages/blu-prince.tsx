@@ -1,28 +1,25 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link } from "wouter";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { 
   Save, Play, Settings, Plus, Box, Zap, Type, 
-  ChevronRight, ChevronDown, Download, Share2, 
-  Undo, Redo, ZoomIn, ZoomOut, MousePointer2,
-  ArrowRight, FileJson
+  ChevronDown, ZoomIn, ZoomOut, MousePointer2,
+  ArrowRight, FileJson, Download, Upload
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { TossCartridge, createEmptyCartridge, TossState } from "@/lib/toss";
+import { TossFile, createNewTossFile, TossState } from "@/lib/toss";
 
 export default function BluPrince() {
-  // We now use the standardized TOSS schema for state
-  const [cartridge, setCartridge] = useState<TossCartridge>(createEmptyCartridge());
+  const [file, setFile] = useState<TossFile>(createNewTossFile());
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [showJson, setShowJson] = useState(false);
 
-  // Helper to get nodes from the standardized schema or fallback to editor defaults
-  const nodes = cartridge.editor?.nodes || [];
+  // Helper to access nodes from the editor metadata
+  const nodes = file._editor?.nodes || [];
 
   const handleAddNode = (type: TossState['type']) => {
     const newId = `state_${Date.now()}`;
@@ -33,42 +30,41 @@ export default function BluPrince() {
       color: type === 'initial' ? 'bg-green-500' : type === 'final' ? 'bg-muted-foreground' : 'bg-primary'
     };
 
-    setCartridge(prev => ({
+    setFile(prev => ({
       ...prev,
-      fsm: {
-        ...prev.fsm,
+      logic: {
+        ...prev.logic,
         states: {
-          ...prev.fsm.states,
+          ...prev.logic.states,
           [newId]: {
             id: newId,
-            label: type.toUpperCase(),
             type: type,
             transitions: []
           }
         }
       },
-      editor: {
-        ...prev.editor!,
-        nodes: [...prev.editor!.nodes, newNode]
+      _editor: {
+        ...prev._editor!,
+        nodes: [...prev._editor!.nodes, newNode]
       }
     }));
   };
 
   const getTransitions = () => {
     const edges: Array<{from: string, to: string}> = [];
-    Object.values(cartridge.fsm.states).forEach(state => {
+    Object.values(file.logic.states).forEach(state => {
       state.transitions.forEach(trans => {
         edges.push({ from: state.id, to: trans.target });
       });
     });
-    // Add dummy edge for demo if none exist
+    // Dummy edge for visual demo if needed
     if (edges.length === 0 && nodes.length > 1) {
        return [{ from: nodes[0].id, to: nodes[1]?.id }];
     }
     return edges;
   };
 
-  const activeNode = selectedNodeId ? cartridge.fsm.states[selectedNodeId] : null;
+  const activeNode = selectedNodeId ? file.logic.states[selectedNodeId] : null;
 
   return (
     <div className="flex flex-col h-screen bg-[#09090b] text-foreground overflow-hidden font-sans">
@@ -85,8 +81,8 @@ export default function BluPrince() {
           </Link>
           <Separator orientation="vertical" className="h-6" />
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span className="text-white font-medium">{cartridge.manifest.title}</span>
-            <Badge variant="outline" className="text-[10px] h-5 px-1 border-yellow-500/50 text-yellow-500">v{cartridge.manifest.version}</Badge>
+            <span className="text-white font-medium">{file.manifest.meta.title}</span>
+            <Badge variant="outline" className="text-[10px] h-5 px-1 border-yellow-500/50 text-yellow-500">v{file.manifest.meta.version}</Badge>
           </div>
         </div>
 
@@ -94,19 +90,19 @@ export default function BluPrince() {
           <Dialog open={showJson} onOpenChange={setShowJson}>
             <DialogTrigger asChild>
               <Button size="sm" variant="ghost" className="gap-2">
-                <FileJson className="w-4 h-4" /> <span className="hidden sm:inline">View TOSS JSON</span>
+                <FileJson className="w-4 h-4" /> <span className="hidden sm:inline">Inspect Source</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-3xl max-h-[80vh] bg-[#111] border-white/20">
               <DialogHeader>
-                <DialogTitle>TOSS Payload Preview</DialogTitle>
+                <DialogTitle>TOSS File Source</DialogTitle>
                 <DialogDescription>
-                  This is the standardized JSON that will be sent to the TingOs Runtime.
+                  This JSON payload is the portable cartridge. It contains the Manifest, Logic, Memory Schema, and Asset Registry.
                 </DialogDescription>
               </DialogHeader>
               <ScrollArea className="h-[500px] w-full rounded border border-white/10 bg-black/50 p-4">
                 <pre className="text-xs font-mono text-green-400">
-                  {JSON.stringify(cartridge, null, 2)}
+                  {JSON.stringify(file, null, 2)}
                 </pre>
               </ScrollArea>
             </DialogContent>
@@ -115,10 +111,10 @@ export default function BluPrince() {
           <Separator orientation="vertical" className="h-6 mx-2" />
           
           <Button size="sm" variant="ghost" className="gap-2">
-            <Save className="w-4 h-4" /> <span className="hidden sm:inline">Save</span>
+            <Upload className="w-4 h-4" /> <span className="hidden sm:inline">Import</span>
           </Button>
-          <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white gap-2">
-            <Play className="w-4 h-4 fill-current" /> Test Run
+          <Button size="sm" className="bg-primary/20 hover:bg-primary/30 text-primary border border-primary/50 gap-2">
+            <Download className="w-4 h-4" /> Export .TOSS
           </Button>
         </div>
       </header>
@@ -127,26 +123,12 @@ export default function BluPrince() {
         {/* Left Sidebar - Asset Library */}
         <div className="w-64 border-r border-white/10 bg-black/20 flex flex-col">
           <div className="p-4 border-b border-white/5">
-            <h3 className="text-xs font-mono uppercase text-muted-foreground mb-4">Library</h3>
-            <div className="space-y-1">
-              <Button variant="ghost" size="sm" className="w-full justify-start text-sm font-normal">
-                <Box className="w-4 h-4 mr-2 text-primary" /> States
-              </Button>
-              <Button variant="ghost" size="sm" className="w-full justify-start text-sm font-normal">
-                <Zap className="w-4 h-4 mr-2 text-yellow-400" /> Events
-              </Button>
-              <Button variant="ghost" size="sm" className="w-full justify-start text-sm font-normal">
-                <Type className="w-4 h-4 mr-2 text-blue-400" /> Variables
-              </Button>
-            </div>
-          </div>
-          
-          <ScrollArea className="flex-1 p-4">
+            <h3 className="text-xs font-mono uppercase text-muted-foreground mb-4">Logic Primitives</h3>
+            
             <div className="space-y-4">
               <div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground mb-2 group cursor-pointer hover:text-white">
-                  <span className="flex items-center"><ChevronDown className="w-3 h-3 mr-1" /> CORE NODES</span>
-                  <Plus className="w-3 h-3 opacity-0 group-hover:opacity-100" />
+                <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+                  <span className="flex items-center"><ChevronDown className="w-3 h-3 mr-1" /> STATES</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   {["initial", "state", "compound", "final"].map((item) => (
@@ -161,8 +143,17 @@ export default function BluPrince() {
                   ))}
                 </div>
               </div>
+
+              <div className="pt-4 border-t border-white/5">
+                 <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+                  <span className="flex items-center"><Zap className="w-3 h-3 mr-1" /> EVENTS</span>
+                </div>
+                <Button variant="outline" size="sm" className="w-full text-xs justify-start border-dashed border-white/20">
+                  <Plus className="w-3 h-3 mr-2" /> Define Trigger
+                </Button>
+              </div>
             </div>
-          </ScrollArea>
+          </div>
         </div>
 
         {/* Main Canvas */}
@@ -218,7 +209,7 @@ export default function BluPrince() {
 
           <div className="relative w-full h-full p-10">
             {nodes.map((node) => {
-              const stateData = cartridge.fsm.states[node.id];
+              const stateData = file.logic.states[node.id];
               return (
                 <motion.div
                   key={node.id}
@@ -236,7 +227,7 @@ export default function BluPrince() {
                   <div className="p-3">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs font-bold font-mono text-white truncate max-w-[100px]">
-                        {stateData?.label || 'UNKNOWN'}
+                        {stateData?.id.toUpperCase()}
                       </span>
                       <Settings className="w-3 h-3 text-muted-foreground hover:text-white" />
                     </div>
@@ -264,37 +255,23 @@ export default function BluPrince() {
             {activeNode ? (
               <div className="space-y-6">
                 <div>
-                  <label className="text-[10px] uppercase text-muted-foreground font-bold mb-2 block">Node Label</label>
-                  <input 
-                    type="text" 
-                    value={activeNode.label} 
-                    onChange={(e) => {
-                      setCartridge(prev => ({
-                        ...prev,
-                        fsm: {
-                          ...prev.fsm,
-                          states: {
-                            ...prev.fsm.states,
-                            [activeNode.id]: { ...activeNode, label: e.target.value }
-                          }
-                        }
-                      }));
-                    }}
-                    className="w-full bg-black/40 border border-white/10 rounded px-3 py-2 text-sm font-mono focus:border-primary focus:outline-none text-white"
-                  />
+                  <label className="text-[10px] uppercase text-muted-foreground font-bold mb-2 block">State ID</label>
+                  <div className="text-xs font-mono text-white p-2 bg-black/40 rounded border border-white/10 select-all">
+                    {activeNode.id}
+                  </div>
                 </div>
                 
                 <div>
-                  <label className="text-[10px] uppercase text-muted-foreground font-bold mb-2 block">State Type</label>
+                  <label className="text-[10px] uppercase text-muted-foreground font-bold mb-2 block">Type</label>
                   <select 
                     value={activeNode.type}
                     onChange={(e) => {
-                      setCartridge(prev => ({
+                      setFile(prev => ({
                         ...prev,
-                        fsm: {
-                          ...prev.fsm,
+                        logic: {
+                          ...prev.logic,
                           states: {
-                            ...prev.fsm.states,
+                            ...prev.logic.states,
                             [activeNode.id]: { ...activeNode, type: e.target.value as any }
                           }
                         }
@@ -333,7 +310,7 @@ export default function BluPrince() {
             ) : (
               <div className="h-full flex flex-col items-center justify-center text-muted-foreground text-center p-4">
                 <MousePointer2 className="w-8 h-8 mb-4 opacity-50" />
-                <p className="text-sm">Select a node to edit its properties and logic.</p>
+                <p className="text-sm">Select a node to edit its properties.</p>
               </div>
             )}
           </div>
@@ -342,3 +319,4 @@ export default function BluPrince() {
     </div>
   );
 }
+
