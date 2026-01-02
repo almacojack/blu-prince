@@ -83,28 +83,36 @@ const ScreenContent = ({ engineState }: { engineState: RuntimeState | null }) =>
 
   return (
     <Html transform scale={0.2} position={[0, 0, 0]}>
-      <div className="w-[320px] h-[240px] bg-black border-2 border-white/10 p-4 font-mono text-xs text-white overflow-hidden relative">
+      <div className="w-[320px] h-[240px] bg-black border-none p-0 font-mono text-xs text-white overflow-hidden relative flex flex-col">
         {/* Scanline Effect */}
         <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-10 bg-[length:100%_2px,3px_100%]" />
         
-        {/* Status Bar */}
-        <div className="flex justify-between border-b border-white/20 pb-1 mb-2">
-          <span>TING_OS v1.0</span>
-          <span>BAT: 98%</span>
+        {/* Status Bar - Compact & Full Width */}
+        <div className="flex justify-between bg-white/10 px-2 py-1 text-[8px] uppercase tracking-wider shrink-0">
+          <span>TING_OS_RUNTIME</span>
+          <span>GRP:MAIN • ID:DEMO</span>
         </div>
 
-        {/* Main Content Area */}
-        <div className="h-[160px] flex flex-col items-center justify-center text-center space-y-4">
-          <div className="text-xl font-bold text-primary animate-pulse">
-            {engineState.currentStateId.toUpperCase()}
+        {/* Main Content Area - FILLS SPACE */}
+        <div className="flex-1 flex flex-col p-2 overflow-y-auto">
+          {/* Example of "Collection" filling width */}
+          <div className="w-full bg-primary/20 border border-primary/50 p-2 mb-2 rounded flex items-center justify-between">
+             <span className="font-bold text-primary">{engineState.currentStateId.toUpperCase()}</span>
+             <span className="animate-pulse w-2 h-2 bg-primary rounded-full"></span>
           </div>
-          <div className="text-muted-foreground">
-            Waiting for input...
+
+          <div className="w-full flex-1 border border-white/10 rounded p-2 bg-white/5 flex flex-col items-center justify-center text-center">
+             <p className="text-white/80 leading-relaxed">
+               Content centered and filling available viewport space.
+             </p>
+             <p className="text-[10px] text-muted-foreground mt-2">
+               Grouping Logic: Active
+             </p>
           </div>
         </div>
 
-        {/* Context Debug */}
-        <div className="absolute bottom-0 left-0 w-full bg-white/10 p-1 text-[10px]">
+        {/* Context Debug - Minimal Footer */}
+        <div className="shrink-0 bg-black border-t border-white/10 px-2 py-1 text-[8px] font-mono text-muted-foreground truncate">
           CTX: {JSON.stringify(engineState.context)}
         </div>
       </div>
