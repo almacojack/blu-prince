@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { ArrowLeft, Copy, Check, Zap, Radio, Gauge, Monitor, Music, QrCode, Download } from "lucide-react";
+import { ArrowLeft, Copy, Check, Zap, Radio, Gauge, Monitor, Music, QrCode, Download, Plane } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GeigerCounter } from "@/components/GeigerCounter";
 import { NixieDisplay, MagicEyeTube, TubeArray, VacuumTube } from "@/components/VacuumTubeDisplay";
 import { VUMeter, StereoVUMeter } from "@/components/VUMeter";
 import { SonarScanner, FishFinder } from "@/components/SonarWidgets";
+import { DronePilotDemo } from "@/components/DronePilotDemo";
 import { QRColorCustomizer } from "@/components/QRColorCustomizer";
 import { useTranslation } from "react-i18next";
 import { Anchor } from "lucide-react";
@@ -402,6 +403,10 @@ export default function WidgetsPage() {
               <Gauge className="w-4 h-4 mr-2" />
               Gauges
             </TabsTrigger>
+            <TabsTrigger value="drone" className="data-[state=active]:bg-purple-900/30">
+              <Plane className="w-4 h-4 mr-2" />
+              Drone
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="radiation" className="space-y-6">
@@ -624,6 +629,57 @@ export default function WidgetsPage() {
               <p className="text-sm text-gray-500">
                 Pressure gauges, speedometers, altimeters, and more industrial instrumentation.
               </p>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="drone" className="space-y-6">
+            <WidgetShowcase
+              title="Drone Pilot Simulator"
+              description="Full 3D drone piloting with keyboard or gamepad controls. Three camera modes: Follow, FPV, and Orbit. Features realistic physics, HUD telemetry, and a procedural world."
+              category="simulation"
+              tossExample={`{
+  "widget": "DronePilot",
+  "props": {
+    "cameraMode": "follow",
+    "showHUD": true,
+    "world": "urban"
+  },
+  "bindings": {
+    "gamepad.leftStick": ["throttle", "yaw"],
+    "gamepad.rightStick": ["pitch", "roll"],
+    "gamepad.A": "toggleCamera"
+  }
+}`}
+              tngliId="w-drone"
+            >
+              <DronePilotDemo />
+            </WidgetShowcase>
+            
+            <div className="p-4 rounded-lg bg-black/30 border border-purple-900/20">
+              <h4 className="text-sm font-semibold text-white mb-3">Controls</h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <div className="text-purple-400 font-mono mb-1">W / S</div>
+                  <div className="text-gray-500">Throttle Up/Down</div>
+                </div>
+                <div>
+                  <div className="text-purple-400 font-mono mb-1">A / D</div>
+                  <div className="text-gray-500">Yaw Left/Right</div>
+                </div>
+                <div>
+                  <div className="text-purple-400 font-mono mb-1">↑ / ↓</div>
+                  <div className="text-gray-500">Pitch Forward/Back</div>
+                </div>
+                <div>
+                  <div className="text-purple-400 font-mono mb-1">← / →</div>
+                  <div className="text-gray-500">Roll Left/Right</div>
+                </div>
+              </div>
+              <div className="mt-3 pt-3 border-t border-gray-800 text-xs text-gray-500">
+                <span className="mr-4"><kbd className="bg-gray-800 px-1.5 py-0.5 rounded">C</kbd> Cycle Camera</span>
+                <span><kbd className="bg-gray-800 px-1.5 py-0.5 rounded">H</kbd> Toggle HUD</span>
+                <span className="ml-4">🎮 Gamepad supported (dual stick)</span>
+              </div>
             </div>
           </TabsContent>
         </Tabs>

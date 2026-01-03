@@ -41,6 +41,8 @@ Preferred communication style: Simple, everyday language.
   - SpriteSheetAsset: Animation frame support with named animation sequences
   - SculptedModel: CSG operation history for procedural model rebuilding
 - **Hint Component** - Unified tooltip wrapper with i18n integration
+- **Drone Pilot Simulator** - Full 3D drone with keyboard/gamepad controls, FPV/Follow/Orbit cameras, HUD telemetry
+- **Pricing Page** - Freemium tiers (Arcade/Indie/Studio/Enterprise) with QR codes and usage calculator
 - **Environmental Forces Panel** - Separated into its own dockable panel with scientific units (Kelvin, m/s, Pascals, Sieverts, Liters)
 - **Theme System** - Global ThemeProvider with Cyberpunk/Neon and Victorian/Brass themes, theme switcher in navigation
 - **Thing Catalog** - Library card motif component browser with search, star/archive, and grid/list views
