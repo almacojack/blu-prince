@@ -415,35 +415,15 @@ export default function BluPrince() {
     URL.revokeObjectURL(url);
   };
 
-  const handleNodeDrag = useCallback((nodeId: string, info: { point: { x: number; y: number } }) => {
-    if (!canvasRef.current) return;
+  const handleNodeDragEnd = useCallback((nodeId: string, info: { offset: { x: number; y: number } }) => {
+    const node = nodes.find(n => n.id === nodeId);
+    if (!node) return;
     
-    const rect = canvasRef.current.getBoundingClientRect();
-    const x = (info.point.x - rect.left) / zoom;
-    const y = (info.point.y - rect.top) / zoom;
-    
-    const updatedNodes = nodes.map(n => 
-      n.id === nodeId ? { ...n, x: Math.max(0, x - 80), y: Math.max(0, y - 40) } : n
-    );
-    
-    setFile(prev => ({
-      ...prev,
-      _editor: {
-        ...prev._editor!,
-        nodes: updatedNodes
-      }
-    }));
-  }, [nodes, zoom]);
-
-  const handleNodeDragEnd = useCallback((nodeId: string, info: { point: { x: number; y: number } }) => {
-    if (!canvasRef.current) return;
-    
-    const rect = canvasRef.current.getBoundingClientRect();
-    const x = (info.point.x - rect.left) / zoom;
-    const y = (info.point.y - rect.top) / zoom;
+    const newX = Math.max(0, node.x + info.offset.x / zoom);
+    const newY = Math.max(0, node.y + info.offset.y / zoom);
     
     const updatedNodes = nodes.map(n => 
-      n.id === nodeId ? { ...n, x: Math.max(0, x - 80), y: Math.max(0, y - 40) } : n
+      n.id === nodeId ? { ...n, x: newX, y: newY } : n
     );
     
     const updatedFile: TossFile = {
@@ -1189,13 +1169,13 @@ export default function BluPrince() {
                     key={node.id}
                     drag
                     dragMomentum={false}
-                    onDrag={(_, info) => handleNodeDrag(node.id, info)}
+                    dragElastic={0}
                     onDragEnd={(_, info) => handleNodeDragEnd(node.id, info)}
-                    initial={{ scale: 0, opacity: 0 }}
+                    initial={{ scale: 0, opacity: 0, x: 0, y: 0 }}
                     animate={{ scale: 1, opacity: 1, x: 0, y: 0 }}
                     whileHover={{ scale: 1.02 }}
                     whileDrag={{ scale: 1.05, zIndex: 100 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                    transition={{ scale: { type: "spring", stiffness: 300, damping: 20 }, opacity: { duration: 0.2 } }}
                     style={{ left: node.x, top: node.y }}
                     className={`absolute w-40 p-0 rounded-lg border border-white/10 bg-[#1a1b23] shadow-xl cursor-pointer overflow-hidden ${selectedNodeId === node.id ? 'ring-2 ring-primary' : ''}`}
                     onClick={() => setSelectedNodeId(node.id)}
