@@ -563,7 +563,7 @@ function ComponentPalette({ onAddComponent, onToggleLayers, showLayers, colorIco
   );
 }
 
-// Layers Panel
+// Layers Panel - Now uses DockablePanel for consistency
 interface LayersPanelProps {
   items: TossItem[];
   selectedId: string | null;
@@ -571,68 +571,77 @@ interface LayersPanelProps {
   onToggleVisibility: (id: string) => void;
   onDelete: (id: string) => void;
   hiddenLayers: Set<string>;
+  onClose: () => void;
 }
 
-function LayersPanel({ items, selectedId, onSelect, onToggleVisibility, onDelete, hiddenLayers }: LayersPanelProps) {
+function LayersPanel({ items, selectedId, onSelect, onToggleVisibility, onDelete, hiddenLayers, onClose }: LayersPanelProps) {
   return (
-    <div className="absolute left-20 top-1/2 -translate-y-1/2 z-40 w-56 bg-black/90 backdrop-blur border border-white/10 rounded-lg overflow-hidden">
-      <div className="p-2 border-b border-white/10">
-        <div className="text-xs font-mono uppercase text-muted-foreground flex items-center gap-2">
-          <Layers className="w-3 h-3" /> Scene Layers
-        </div>
-      </div>
-      <ScrollArea className="max-h-[300px]">
-        <div className="p-2 space-y-1">
-          {items.length === 0 ? (
-            <div className="text-xs text-muted-foreground p-2 text-center">No objects in scene</div>
-          ) : (
-            items.map((item) => {
-              const isHidden = hiddenLayers.has(item.id);
-              const isSelected = selectedId === item.id;
-              return (
-                <div 
-                  key={item.id}
-                  className={`flex items-center justify-between p-2 rounded cursor-pointer transition-colors ${
-                    isSelected ? 'bg-primary/20 border border-primary/50' : 'hover:bg-white/5'
-                  } ${isHidden ? 'opacity-50' : ''}`}
-                  onClick={() => onSelect(item.id)}
-                >
-                  <div className="flex items-center gap-2">
-                    <div 
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: item.material?.color || '#7c3aed' }}
-                    />
-                    <span className="text-xs text-white font-mono truncate max-w-[100px]">
-                      {item.id.split('_')[1] || item.id}
-                    </span>
-                    <Badge variant="outline" className="text-[8px] px-1 py-0 border-white/20">
-                      {item.bounds.type || 'box'}
-                    </Badge>
+    <div className="absolute left-60 top-14 bottom-4 z-40">
+      <DockablePanel
+        id="layers"
+        title="Layers"
+        icon={<Layers className="w-4 h-4" />}
+        defaultDocked={false}
+        defaultCollapsed={false}
+        defaultPosition={{ x: 240, y: 80 }}
+        onClose={onClose}
+      >
+        <ScrollArea className="max-h-[400px]">
+          <div className="p-2 space-y-1">
+            {items.length === 0 ? (
+              <div className="text-xs text-muted-foreground p-2 text-center">No objects in scene</div>
+            ) : (
+              items.map((item) => {
+                const isHidden = hiddenLayers.has(item.id);
+                const isSelected = selectedId === item.id;
+                return (
+                  <div 
+                    key={item.id}
+                    className={`flex items-center justify-between p-2 rounded cursor-pointer transition-colors ${
+                      isSelected ? 'bg-primary/20 border border-primary/50' : 'hover:bg-white/5'
+                    } ${isHidden ? 'opacity-50' : ''}`}
+                    onClick={() => onSelect(item.id)}
+                    data-testid={`layer-item-${item.id}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: item.material?.color || '#7c3aed' }}
+                      />
+                      <span className="text-xs text-white font-mono truncate max-w-[100px]">
+                        {item.props?.label || item.id.split('_')[1] || item.id}
+                      </span>
+                      <Badge variant="outline" className="text-[8px] px-1 py-0 border-white/20">
+                        {item.bounds.type || 'box'}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="w-6 h-6"
+                        onClick={(e) => { e.stopPropagation(); onToggleVisibility(item.id); }}
+                        data-testid={`button-visibility-${item.id}`}
+                      >
+                        {isHidden ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="w-6 h-6 text-red-400 hover:text-red-300"
+                        onClick={(e) => { e.stopPropagation(); onDelete(item.id); }}
+                        data-testid={`button-delete-${item.id}`}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="w-6 h-6"
-                      onClick={(e) => { e.stopPropagation(); onToggleVisibility(item.id); }}
-                    >
-                      {isHidden ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="w-6 h-6 text-red-400 hover:text-red-300"
-                      onClick={(e) => { e.stopPropagation(); onDelete(item.id); }}
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-      </ScrollArea>
+                );
+              })
+            )}
+          </div>
+        </ScrollArea>
+      </DockablePanel>
     </div>
   );
 }
@@ -2332,6 +2341,7 @@ export default function BluPrinceEditor() {
           onToggleVisibility={toggleLayerVisibility}
           onDelete={deleteItem}
           hiddenLayers={hiddenLayers}
+          onClose={() => setShowLayers(false)}
         />
       )}
 
