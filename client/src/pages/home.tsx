@@ -99,7 +99,7 @@ export default function Home() {
               </div>
               <div className="p-3 rounded-lg bg-white/5 border border-white/10">
                 <div className="flex items-center gap-2 mb-1">
-                  <Box className="w-4 h-4 text-violet-400" />
+                  <Box className="w-4 h-4 text-[#daa520]" />
                   <Zap className="w-4 h-4 text-yellow-400" />
                 </div>
                 <span className="text-xs text-muted-foreground">Hitbox Collisions</span>
@@ -172,7 +172,7 @@ export default function Home() {
         
         <div className="grid md:grid-cols-3 gap-6 mt-8">
           <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
-            <Box className="w-8 h-8 text-violet-400 mb-4" />
+            <Box className="w-8 h-8 text-[#daa520] mb-4" />
             <h3 className="text-lg font-bold mb-2">Hitbox Collisions</h3>
             <p className="text-sm text-muted-foreground">
               Force emitters have hitboxes. Objects detect overlap and fire events to targets.

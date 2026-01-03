@@ -16,7 +16,10 @@ interface ThemeColors {
   textMuted: string;
   success: string;
   danger: string;
+  cheeseheadYellow: string;
 }
+
+export const CHEESEHEAD_YELLOW = '#daa520';
 
 interface ThemeTypography {
   fontFamily: string;
@@ -55,6 +58,7 @@ const CYBERPUNK_THEME: Theme = {
     textMuted: 'rgba(255, 255, 255, 0.6)',
     success: '#22c55e',
     danger: '#ef4444',
+    cheeseheadYellow: CHEESEHEAD_YELLOW,
   },
   typography: {
     fontFamily: '"Inter", system-ui, sans-serif',
@@ -85,6 +89,7 @@ const VICTORIAN_THEME: Theme = {
     textMuted: 'rgba(245, 240, 230, 0.6)',
     success: '#2e8b57',
     danger: '#8b0000',
+    cheeseheadYellow: CHEESEHEAD_YELLOW,
   },
   typography: {
     fontFamily: '"Crimson Pro", "Georgia", serif',

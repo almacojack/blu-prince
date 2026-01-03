@@ -27,6 +27,7 @@ import DataTables from "@/pages/data-tables";
 import VaultDashboard from "@/pages/vault";
 import AdminEvents from "@/pages/admin-events";
 import Utilities from "@/pages/utilities";
+import Playground from "@/pages/playground";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -46,6 +47,7 @@ function Router() {
       <Route path="/vault" component={VaultDashboard} />
       <Route path="/admin/events" component={AdminEvents} />
       <Route path="/utilities" component={Utilities} />
+      <Route path="/playground" component={Playground} />
       <Route component={NotFound} />
     </Switch>
   );
