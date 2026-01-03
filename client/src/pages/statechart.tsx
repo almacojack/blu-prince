@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo, useCallback } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, Text, Line, Billboard, PerspectiveCamera } from "@react-three/drei";
 import * as THREE from "three";
 import { Link } from "wouter";
@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   ArrowLeft, Plus, Trash2, Play, GitBranch, Save, 
-  Zap, Circle, ArrowRight, Palette
+  Zap, Circle, ArrowRight, Palette, Maximize2
 } from "lucide-react";
 import { ItemFSM } from "@/lib/toss-v1";
 
@@ -457,16 +457,49 @@ function VectorTransition({ fromState, toState, event, isHighlighted, isSelfLoop
   );
 }
 
+function CameraController({ onReady }: { onReady: (resetFn: () => void) => void }) {
+  const { camera } = useThree();
+  const controlsRef = useRef<any>(null);
+  
+  React.useEffect(() => {
+    const resetCamera = () => {
+      camera.position.set(10, 6, 10);
+      camera.lookAt(0, 0, 0);
+      if (controlsRef.current) {
+        controlsRef.current.target.set(0, 0, 0);
+        controlsRef.current.update();
+      }
+    };
+    onReady(resetCamera);
+  }, [camera, onReady]);
+  
+  return (
+    <OrbitControls 
+      ref={controlsRef}
+      makeDefault 
+      enablePan={true}
+      enableZoom={true}
+      enableRotate={true}
+      minDistance={6}
+      maxDistance={25}
+      autoRotate
+      autoRotateSpeed={0.3}
+    />
+  );
+}
+
 function StatechartScene({ 
   fsm, 
   selectedState, 
   onSelectState,
-  theme
+  theme,
+  onCameraReady
 }: { 
   fsm: ItemFSM; 
   selectedState: string | null;
   onSelectState: (s: string) => void;
   theme: Theme3D;
+  onCameraReady: (resetFn: () => void) => void;
 }) {
   const states = Object.keys(fsm.states);
   const positions = useMemo(() => calculateGeometricLayout(states), [states]);
@@ -516,16 +549,7 @@ function StatechartScene({
         />
       ))}
       
-      <OrbitControls 
-        makeDefault 
-        enablePan={true}
-        enableZoom={true}
-        enableRotate={true}
-        minDistance={6}
-        maxDistance={25}
-        autoRotate
-        autoRotateSpeed={0.3}
-      />
+      <CameraController onReady={onCameraReady} />
     </>
   );
 }
@@ -545,6 +569,17 @@ export default function StatechartEditor() {
   const [newEvent, setNewEvent] = useState("");
   const [newTarget, setNewTarget] = useState("");
   const [themeIndex, setThemeIndex] = useState(0);
+  const resetCameraRef = useRef<(() => void) | null>(null);
+
+  const handleCameraReady = useCallback((resetFn: () => void) => {
+    resetCameraRef.current = resetFn;
+  }, []);
+
+  const zoomToFit = useCallback(() => {
+    if (resetCameraRef.current) {
+      resetCameraRef.current();
+    }
+  }, []);
 
   const theme = THEMES[themeIndex];
   const states = Object.keys(fsm.states);
@@ -753,7 +788,7 @@ export default function StatechartEditor() {
         </div>
       </div>
 
-      <div className="flex-1 relative">
+      <div className="flex-1 relative overflow-hidden">
         <Canvas 
           key={theme.id}
           onCreated={({ gl }) => {
@@ -775,11 +810,29 @@ export default function StatechartEditor() {
             selectedState={selectedState}
             onSelectState={setSelectedState}
             theme={theme}
+            onCameraReady={handleCameraReady}
           />
         </Canvas>
         
         <div className="absolute bottom-4 left-4 text-xs font-mono" style={{ color: theme.nodeColor + '80' }}>
-          Orbit: drag | Zoom: scroll | Select: click
+          Pan: drag | Zoom: scroll | Select: click
+        </div>
+        
+        <div className="absolute bottom-4 right-4">
+          <Button 
+            onClick={zoomToFit}
+            size="lg"
+            className="font-bold text-lg px-6 py-3 shadow-lg"
+            style={{ 
+              background: theme.nodeColor, 
+              color: '#000',
+              boxShadow: `0 0 20px ${theme.nodeColor}66`
+            }}
+            data-testid="button-zoom-to-fit"
+          >
+            <Maximize2 className="w-5 h-5 mr-2" />
+            ZOOM TO FIT
+          </Button>
         </div>
         
         <div className="absolute top-4 right-4 flex gap-2">
