@@ -111,6 +111,49 @@ export interface TossItem {
   children_ids?: string[]; // child items
 }
 
+// 3D Asset formats supported
+export type Asset3DFormat = "gltf" | "glb" | "obj" | "stl" | "threejs-json";
+
+// 3D Asset metadata
+export interface Asset3DMetadata {
+  name: string;
+  format: Asset3DFormat;
+  fileSize: number;           // bytes
+  vertexCount?: number;
+  faceCount?: number;
+  hasAnimations?: boolean;
+  hasTextures?: boolean;
+  boundingBox?: {
+    min: { x: number; y: number; z: number };
+    max: { x: number; y: number; z: number };
+  };
+  printable?: {               // 3D printing metadata
+    watertight: boolean;
+    volume_mm3?: number;
+    surfaceArea_mm2?: number;
+    units: "mm" | "cm" | "m" | "inches";
+  };
+  importedAt: string;         // ISO date
+  originalFilename: string;
+}
+
+// 3D Asset stored in TOSS
+export interface TossAsset3D {
+  id: string;
+  type: "model";
+  metadata: Asset3DMetadata;
+  data: string;               // base64-encoded binary for GLB/STL, or JSON string for GLTF/OBJ/ThreeJS
+  thumbnail?: string;         // base64-encoded PNG preview
+}
+
+// General asset union (expandable for audio, images, etc.)
+export type TossAsset = TossAsset3D;
+
+// Asset registry in cartridge
+export interface TossAssetRegistry {
+  models: TossAsset3D[];
+}
+
 // Commerce fields (for artsy.sale, unwanted.ad)
 export interface CommerceFields {
   sku: string;
@@ -144,6 +187,9 @@ export interface TossCartridge {
   meta: TossMeta;
   items: TossItem[];
   commerce?: CommerceFields;
+  
+  // 3D assets and other binary content
+  assets?: TossAssetRegistry;
   
   // Test harness for validation
   tests?: TestHarness;
@@ -204,6 +250,9 @@ export function createNewCartridge(): TossCartridge {
       version: "0.1.0",
     },
     items: [],
+    assets: {
+      models: [],
+    },
     tests: {
       assertions: [],
       all_passed: false,

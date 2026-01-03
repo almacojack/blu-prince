@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Save, Settings, Plus, Zap, 
   ChevronDown, ZoomIn, ZoomOut, MousePointer2,
-  ArrowRight, FileJson, Download, Cloud, CloudOff, Users, Share2
+  ArrowRight, FileJson, Download, Cloud, CloudOff, Users, Share2,
+  Upload, Box, Trash2, Eye
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -17,6 +18,11 @@ import { TossFile, createNewTossFile, TossState } from "@/lib/toss";
 import { saveCartridge } from "@/lib/api";
 import { useCollaboration, CollabUser } from "@/hooks/use-collaboration";
 import { useAuth } from "@/hooks/use-auth";
+import { importAsset, getAcceptString, ImportProgress } from "@/lib/asset-importer";
+import { createThumbnailFromData } from "@/lib/asset-loader";
+import type { Toss3DAsset } from "@/lib/toss";
+import { Progress } from "@/components/ui/progress";
+import { Asset3DPreview } from "@/components/Asset3DPreview";
 
 const STORAGE_KEY = "blu-prince-cartridge";
 
@@ -294,12 +300,16 @@ export default function BluPrince() {
   const [hasLocalChanges, setHasLocalChanges] = useState(false);
   const [collabRoomId, setCollabRoomId] = useState<string>(() => file.manifest.tngli_id);
   const [shareLink, setShareLink] = useState("");
+  const [importProgress, setImportProgress] = useState<ImportProgress | null>(null);
+  const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
+  const [showAssetPreview, setShowAssetPreview] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const collaboration = useCollaboration<TossFile>({
     roomId: collabRoomId,
     userId: user?.id,
-    userName: user?.username || user?.firstName,
+    userName: user?.firstName || user?.id?.slice(0, 8),
     initialState: file,
     autoConnect: isAuthenticated && isOnline,
     onStateChange: (newState, fromUserId) => {
@@ -440,6 +450,80 @@ export default function BluPrince() {
       description: "Share this link with collaborators",
     });
   };
+
+  const handleImport3DAsset = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
+    const fileToImport = files[0];
+    
+    try {
+      const result = await importAsset(fileToImport, setImportProgress);
+      
+      if (result.success && result.asset) {
+        const updatedFile: TossFile = {
+          ...file,
+          assets: {
+            models: [...(file.assets?.models || []), result.asset],
+          },
+        };
+        
+        setFile(updatedFile);
+        
+        if (collaboration.isJoined) {
+          collaboration.sendFullState(updatedFile);
+        }
+        
+        toast({
+          title: "3D Asset Imported",
+          description: `${result.asset.metadata.name} (${result.asset.metadata.format.toUpperCase()}) imported successfully`,
+        });
+      } else {
+        toast({
+          title: "Import Failed",
+          description: result.error || "Unknown error",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Import Failed",
+        description: String(error),
+        variant: "destructive",
+      });
+    } finally {
+      setImportProgress(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleDeleteAsset = (assetId: string) => {
+    const updatedFile: TossFile = {
+      ...file,
+      assets: {
+        models: (file.assets?.models || []).filter(a => a.id !== assetId),
+      },
+    };
+    
+    setFile(updatedFile);
+    
+    if (collaboration.isJoined) {
+      collaboration.sendFullState(updatedFile);
+    }
+    
+    if (selectedAssetId === assetId) {
+      setSelectedAssetId(null);
+    }
+    
+    toast({
+      title: "Asset Deleted",
+      description: "3D asset removed from cartridge",
+    });
+  };
+
+  const getAssets = () => file.assets?.models || [];
 
   const getTransitions = () => {
     const edges: Array<{from: string, to: string}> = [];
@@ -583,6 +667,12 @@ export default function BluPrince() {
         </DialogContent>
       </Dialog>
 
+      <Asset3DPreview
+        asset={getAssets().find(a => a.id === selectedAssetId) || null}
+        open={showAssetPreview}
+        onOpenChange={setShowAssetPreview}
+      />
+
       <div className="flex flex-1 overflow-hidden">
         <div className="w-64 border-r border-white/10 bg-black/20 flex flex-col">
           <div className="p-4 border-b border-white/5">
@@ -617,6 +707,136 @@ export default function BluPrince() {
                 </Button>
               </div>
             </div>
+          </div>
+          
+          <div className="p-4 border-t border-white/5 flex-1 flex flex-col min-h-0">
+            <h3 className="text-xs font-mono uppercase text-muted-foreground mb-4 flex items-center gap-2">
+              <Box className="w-3 h-3" /> 3D Assets
+            </h3>
+            
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept={getAcceptString()}
+              onChange={handleImport3DAsset}
+              className="hidden"
+              data-testid="input-3d-file"
+            />
+            
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full text-xs justify-start border-dashed border-white/20 hover:border-cyan-500/50 hover:bg-cyan-500/10 hover:text-cyan-400 mb-3"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={!!importProgress}
+              data-testid="button-import-3d"
+            >
+              <Upload className="w-3 h-3 mr-2" /> 
+              {importProgress ? importProgress.message : "Import 3D Model"}
+            </Button>
+            
+            {importProgress && (
+              <div className="mb-3">
+                <Progress value={importProgress.percent} className="h-1" />
+                <span className="text-[10px] text-muted-foreground mt-1 block">{importProgress.stage}</span>
+              </div>
+            )}
+            
+            <ScrollArea className="flex-1">
+              <div className="space-y-2 pr-2">
+                {getAssets().length === 0 ? (
+                  <div className="text-center py-6 text-muted-foreground">
+                    <Box className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                    <p className="text-[10px]">No 3D assets yet</p>
+                    <p className="text-[9px] opacity-60 mt-1">
+                      Supports glTF, GLB, OBJ, STL
+                    </p>
+                  </div>
+                ) : (
+                  getAssets().map((asset) => (
+                    <motion.div
+                      key={asset.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={`group relative p-2 rounded-lg border transition-colors cursor-pointer ${
+                        selectedAssetId === asset.id 
+                          ? 'border-cyan-500/50 bg-cyan-500/10' 
+                          : 'border-white/10 bg-white/5 hover:border-white/20'
+                      }`}
+                      onClick={() => setSelectedAssetId(asset.id)}
+                      data-testid={`asset-item-${asset.id}`}
+                    >
+                      <div className="flex items-start gap-2">
+                        {asset.thumbnail ? (
+                          <img 
+                            src={createThumbnailFromData(asset.thumbnail) || ''} 
+                            alt={asset.metadata.name}
+                            className="w-10 h-10 rounded bg-black/50 object-cover"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded bg-black/50 flex items-center justify-center">
+                            <Box className="w-5 h-5 text-muted-foreground" />
+                          </div>
+                        )}
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-mono text-white truncate">
+                            {asset.metadata.name}
+                          </div>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <Badge 
+                              variant="outline" 
+                              className="text-[8px] h-4 px-1.5 border-purple-500/50 text-purple-400 bg-purple-500/10"
+                            >
+                              {asset.metadata.format.toUpperCase()}
+                            </Badge>
+                            <span className="text-[9px] text-muted-foreground">
+                              {(asset.metadata.fileSize / 1024).toFixed(1)}KB
+                            </span>
+                          </div>
+                          {asset.metadata.printable && (
+                            <Badge 
+                              variant="outline" 
+                              className="text-[8px] h-4 px-1.5 mt-1 border-green-500/50 text-green-400 bg-green-500/10"
+                            >
+                              3D Printable
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 hover:bg-cyan-500/20 hover:text-cyan-400"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedAssetId(asset.id);
+                            setShowAssetPreview(true);
+                          }}
+                          data-testid={`button-preview-${asset.id}`}
+                        >
+                          <Eye className="w-3 h-3" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 hover:bg-red-500/20 hover:text-red-400"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteAsset(asset.id);
+                          }}
+                          data-testid={`button-delete-${asset.id}`}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </motion.div>
+                  ))
+                )}
+              </div>
+            </ScrollArea>
           </div>
         </div>
 

@@ -58,11 +58,47 @@ export interface TossContext {
 }
 
 // 4. The "Resources" (External Links - No binaries in the payload)
-export interface TossAssetRegistry {
-  [key: string]: {
-    type: 'image' | 'audio' | 'video' | 'model';
-    uri: string; // Must be a portable URL (ipfs://, https://, asset://)
+export interface TossAssetRef {
+  type: 'image' | 'audio' | 'video' | 'model';
+  uri: string; // Must be a portable URL (ipfs://, https://, asset://)
+}
+
+// 3D Asset stored inline (for GLB, STL, etc.)
+export interface Toss3DAssetMetadata {
+  name: string;
+  format: 'gltf' | 'glb' | 'obj' | 'stl' | 'threejs-json';
+  fileSize: number;
+  vertexCount?: number;
+  faceCount?: number;
+  hasAnimations?: boolean;
+  hasTextures?: boolean;
+  boundingBox?: {
+    min: { x: number; y: number; z: number };
+    max: { x: number; y: number; z: number };
   };
+  printable?: {
+    watertight: boolean;
+    volume_mm3?: number;
+    surfaceArea_mm2?: number;
+    units: 'mm' | 'cm' | 'm' | 'inches';
+  };
+  importedAt: string;
+  originalFilename: string;
+}
+
+export interface Toss3DAsset {
+  id: string;
+  type: 'model';
+  metadata: Toss3DAssetMetadata;
+  data: string; // base64 or JSON string
+  thumbnail?: string;
+}
+
+export interface TossAssetRegistry {
+  // Legacy keyed assets (external refs)
+  refs?: Record<string, TossAssetRef>;
+  // Inline 3D models
+  models?: Toss3DAsset[];
 }
 
 // THE FILE (The Portable Payload)
@@ -108,7 +144,7 @@ export const createNewTossFile = (): TossFile => ({
   memory: {
     schema: {}
   },
-  assets: {},
+  assets: { models: [] },
   _editor: {
     nodes: [{ id: "init", x: 100, y: 100, color: "bg-green-500" }],
     viewport: { x: 0, y: 0, zoom: 1 }
