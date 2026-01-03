@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { ArrowRight, Gamepad2, Users, Briefcase, Terminal, Layers, Hexagon, Code, Cpu, Flame, Snowflake, Droplets, Wind, Zap, Box } from "lucide-react";
+import { ArrowRight, Gamepad2, Users, Briefcase, Terminal, Layers, Hexagon, Code, Cpu, Flame, Snowflake, Droplets, Wind, Zap, Box, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -119,6 +119,12 @@ export default function Home() {
                   SIMULATOR
                 </Button>
               </Link>
+              <Link href="/playground">
+                <Button size="lg" className="min-h-11 bg-[#7fff00] hover:bg-[#9fff33] text-black font-mono cursor-pointer border-2 border-[#7fff00] hover:border-white/40 transition-all touch-manipulation shadow-[0_0_20px_#7fff00aa] hover:shadow-[0_0_30px_#7fff00cc]" data-testid="button-playground">
+                  <Play className="mr-2 h-4 w-4" />
+                  PLAYGROUND
+                </Button>
+              </Link>
             </div>
           </motion.div>
 
@@ -186,7 +192,7 @@ export default function Home() {
             </p>
           </div>
           <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
-            <Gamepad2 className="w-8 h-8 text-primary mb-4" />
+            <Gamepad2 className="w-8 h-8 text-violet-400 mb-4" />
             <h3 className="text-lg font-bold mb-2">Controller First</h3>
             <p className="text-sm text-muted-foreground">
               Zero-config gamepad detection. Haptic feedback, visual bindings, cross-platform.
