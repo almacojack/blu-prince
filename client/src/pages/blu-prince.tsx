@@ -25,12 +25,14 @@ import { TossFile, createNewTossFile, TossState } from "@/lib/toss";
 import { saveCartridge } from "@/lib/api";
 import { useCollaboration, CollabUser } from "@/hooks/use-collaboration";
 import { useAuth } from "@/hooks/use-auth";
+import type { User } from "@shared/models/auth";
 import { importAsset, getAcceptString, ImportProgress } from "@/lib/asset-importer";
 import { createThumbnailFromData } from "@/lib/asset-loader";
 import type { Toss3DAsset } from "@/lib/toss";
 import { Progress } from "@/components/ui/progress";
 import { Asset3DPreview } from "@/components/Asset3DPreview";
 import { QRIconButton } from "@/components/QRCodePopup";
+import { WolfensteinHealth } from "@/components/WolfensteinHealth";
 import bluPrinceLogo from "@assets/generated_images/jeweled_blue_deity_walnut_bg.png";
 
 const STORAGE_KEY = "blu-prince-cartridge";
@@ -257,6 +259,7 @@ function CartridgeBezel({
   myColor,
   isCollabConnected,
   roomId,
+  user,
   onSave,
   onExport,
   onInspect,
@@ -273,6 +276,7 @@ function CartridgeBezel({
   myColor: string;
   isCollabConnected: boolean;
   roomId: string | null;
+  user: User | null | undefined;
   onSave: () => void;
   onExport: () => void;
   onInspect: () => void;
@@ -381,12 +385,21 @@ function CartridgeBezel({
                   className="relative cursor-pointer"
                   whileHover={{ scale: 1.08 }}
                   whileTap={{ scale: 0.95 }}
+                  data-testid="header-avatar"
                 >
-                  <img 
-                    src={bluPrinceLogo} 
-                    alt="Blu-Prince"
-                    className="w-14 h-14 object-contain drop-shadow-lg"
-                  />
+                  {user?.profileImageUrl ? (
+                    <img 
+                      src={user.profileImageUrl} 
+                      alt={user.firstName || "User"}
+                      className="w-14 h-14 rounded-full object-cover border-2 border-cyan-500/50 shadow-[0_0_15px_rgba(34,211,238,0.3)]"
+                    />
+                  ) : (
+                    <img 
+                      src={bluPrinceLogo} 
+                      alt="Blu-Prince"
+                      className="w-14 h-14 object-contain drop-shadow-lg"
+                    />
+                  )}
                 </motion.div>
               </Link>
               
@@ -458,6 +471,8 @@ function CartridgeBezel({
                   LIVE
                 </Badge>
               )}
+              
+              <WolfensteinHealth health={isOnline ? 100 : 40} />
               
               <div className="h-6 w-px bg-white/10" />
               
@@ -1022,6 +1037,7 @@ export default function BluPrince() {
         myColor={collaboration.myColor}
         isCollabConnected={collaboration.isJoined}
         roomId={collaboration.roomId}
+        user={user}
         onSave={handleSave}
         onExport={handleExport}
         onInspect={() => setShowJson(true)}
