@@ -30,7 +30,7 @@ const MOCK_GALLERY: ArtCartridge[] = [
     toss_manifest: {
       title: "Neon Genesis 01",
       artist: "@digital_dreamer",
-      description: "A study in light and recursive geometry."
+      description: "A study in light and recursive geometry. Generated through 47 iterations of neural feedback loops."
     },
     state_ctx: {
       current_bid: "2.5 ETH",
@@ -46,7 +46,7 @@ const MOCK_GALLERY: ArtCartridge[] = [
     toss_manifest: {
       title: "Void Structure",
       artist: "@architect_null",
-      description: "Nullspace visualization algorithm."
+      description: "Nullspace visualization algorithm. What exists between dimensions when no one is looking."
     },
     state_ctx: {
       current_bid: "1.8 ETH",
@@ -62,12 +62,60 @@ const MOCK_GALLERY: ArtCartridge[] = [
     toss_manifest: {
       title: "Chromesthetic III",
       artist: "@color_theory",
-      description: "Sound to color mapping generator."
+      description: "Sound to color mapping generator. Synesthesia encoded as visual data."
     },
     state_ctx: {
       current_bid: "0.5 ETH",
       status: "EXHIBITION",
       verified_owner: "0xTNG...ART1"
+    },
+    assets: {
+      primary_view: null
+    }
+  },
+  {
+    id: "4",
+    toss_manifest: {
+      title: "Entropy Garden",
+      artist: "@chaos_bloom",
+      description: "Procedural decay simulation. Every viewing is unique as patterns dissolve and reform."
+    },
+    state_ctx: {
+      current_bid: "4.2 ETH",
+      status: "AUCTION",
+      verified_owner: "0x88A...7F32"
+    },
+    assets: {
+      primary_view: null
+    }
+  },
+  {
+    id: "5",
+    toss_manifest: {
+      title: "Memory Palace (Corrupted)",
+      artist: "@ghost_in_machine",
+      description: "Recovered fragments of AI training data. Artifacts of learning to see."
+    },
+    state_ctx: {
+      current_bid: "12.0 ETH",
+      status: "AUCTION",
+      verified_owner: "0x44C...2E91"
+    },
+    assets: {
+      primary_view: null
+    }
+  },
+  {
+    id: "6",
+    toss_manifest: {
+      title: "Quantum Superposition #7",
+      artist: "@wave_collapse",
+      description: "The piece exists in multiple states until observed. Observation changes the art."
+    },
+    state_ctx: {
+      current_bid: "8.8 ETH",
+      status: "EXHIBITION",
+      verified_owner: "0xQNT...WAVE"
     },
     assets: {
       primary_view: null
@@ -98,10 +146,10 @@ export default function Artsy() {
 
           <div className="flex items-center gap-4">
             <Badge variant="outline" className="border-white/20 text-xs font-mono text-muted-foreground">
-              CLIENT_MODE: READ_ONLY
+              GALLERY_MODE: VIEWING
             </Badge>
-            <Button variant="outline" className="rounded-full border-white/20 hover:bg-white hover:text-black transition-all">
-              Connect Wallet
+            <Button variant="outline" className="rounded-full border-white/20 hover:bg-white hover:text-black transition-all text-sm" data-testid="button-sign-in">
+              Sign In
             </Button>
           </div>
         </div>

@@ -221,9 +221,10 @@ interface VectorNodeProps {
   onSelect: () => void;
   phaseOffset: number;
   theme: Theme3D;
+  nodePositionsRef: NodePositionsRef;
 }
 
-function VectorNode({ name, position, isInitial, isSelected, onSelect, phaseOffset, theme }: VectorNodeProps) {
+function VectorNode({ name, position, isInitial, isSelected, onSelect, phaseOffset, theme, nodePositionsRef }: VectorNodeProps) {
   const groupRef = useRef<THREE.Group>(null);
   const meshRef = useRef<THREE.Mesh>(null);
   const [hovered, setHovered] = useState(false);
@@ -239,6 +240,11 @@ function VectorNode({ name, position, isInitial, isSelected, onSelect, phaseOffs
     groupRef.current.position.set(motion.x, motion.y, motion.z);
     meshRef.current.rotation.set(motion.rotX, motion.rotY, motion.rotZ);
     meshRef.current.scale.setScalar(motion.scale);
+    
+    if (!nodePositionsRef.current[name]) {
+      nodePositionsRef.current[name] = new THREE.Vector3();
+    }
+    nodePositionsRef.current[name].set(motion.x, motion.y, motion.z);
   });
 
   const color = isInitial ? theme.nodeInitialColor : isSelected ? theme.nodeSelectedColor : hovered ? theme.nodeSelectedColor : theme.nodeColor;
@@ -311,63 +317,92 @@ function VectorNode({ name, position, isInitial, isSelected, onSelect, phaseOffs
   );
 }
 
+type NodePositionsRef = React.MutableRefObject<Record<string, THREE.Vector3>>;
+
 interface VectorTransitionProps {
-  from: [number, number, number];
-  to: [number, number, number];
+  fromState: string;
+  toState: string;
   event: string;
   isHighlighted: boolean;
   isSelfLoop: boolean;
   theme: Theme3D;
+  nodePositionsRef: NodePositionsRef;
 }
 
-function VectorTransition({ from, to, event, isHighlighted, isSelfLoop, theme }: VectorTransitionProps) {
-  const curve = useMemo(() => {
-    if (isSelfLoop) {
-      return new THREE.CubicBezierCurve3(
-        new THREE.Vector3(from[0] + 0.5, from[1], from[2]),
-        new THREE.Vector3(from[0] + 0.8, from[1] + 1.5, from[2]),
-        new THREE.Vector3(from[0] - 0.8, from[1] + 1.5, from[2]),
-        new THREE.Vector3(from[0] - 0.5, from[1], from[2])
-      );
-    }
-    const mid = new THREE.Vector3(
-      (from[0] + to[0]) / 2,
-      (from[1] + to[1]) / 2 + 0.8,
-      (from[2] + to[2]) / 2
-    );
-    return new THREE.QuadraticBezierCurve3(
-      new THREE.Vector3(...from),
-      mid,
-      new THREE.Vector3(...to)
-    );
-  }, [from, to, isSelfLoop]);
-
-  const points = useMemo(() => curve.getPoints(16), [curve]);
+function VectorTransition({ fromState, toState, event, isHighlighted, isSelfLoop, theme, nodePositionsRef }: VectorTransitionProps) {
+  const groupRef = useRef<THREE.Group>(null);
+  const lineRef = useRef<any>(null);
+  const arrowRef = useRef<THREE.Mesh>(null);
+  const labelRef = useRef<THREE.Group>(null);
+  const frameCount = useRef(0);
+  const [ready, setReady] = useState(false);
+  
   const color = isHighlighted ? theme.nodeSelectedColor : theme.transitionColor;
 
-  const arrowData = useMemo(() => {
-    const point = curve.getPoint(0.85);
-    const tangent = curve.getTangent(0.85).normalize();
-    const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), tangent);
-    return { position: point, quaternion: quat };
-  }, [curve]);
-
-  const labelPos = useMemo(() => {
-    const p = curve.getPoint(0.5);
-    return [p.x, p.y + 0.25, p.z] as [number, number, number];
-  }, [curve]);
+  useFrame(() => {
+    frameCount.current++;
+    if (frameCount.current % 2 !== 0) return;
+    
+    const fromPos = nodePositionsRef.current[fromState];
+    const toPos = nodePositionsRef.current[toState];
+    
+    if (!fromPos || !toPos) {
+      if (ready) setReady(false);
+      return;
+    }
+    
+    if (!ready) setReady(true);
+    
+    let curve: THREE.Curve<THREE.Vector3>;
+    if (isSelfLoop) {
+      curve = new THREE.CubicBezierCurve3(
+        new THREE.Vector3(fromPos.x + 0.5, fromPos.y, fromPos.z),
+        new THREE.Vector3(fromPos.x + 0.8, fromPos.y + 1.5, fromPos.z),
+        new THREE.Vector3(fromPos.x - 0.8, fromPos.y + 1.5, fromPos.z),
+        new THREE.Vector3(fromPos.x - 0.5, fromPos.y, fromPos.z)
+      );
+    } else {
+      const dir = new THREE.Vector3().subVectors(toPos, fromPos).normalize();
+      const start = new THREE.Vector3().copy(fromPos).addScaledVector(dir, 0.55);
+      const end = new THREE.Vector3().copy(toPos).addScaledVector(dir, -0.55);
+      const mid = new THREE.Vector3(
+        (start.x + end.x) / 2,
+        (start.y + end.y) / 2 + 0.8,
+        (start.z + end.z) / 2
+      );
+      curve = new THREE.QuadraticBezierCurve3(start, mid, end);
+    }
+    
+    const points = curve.getPoints(16);
+    if (lineRef.current?.geometry) {
+      lineRef.current.geometry.setPositions(points.flatMap(p => [p.x, p.y, p.z]));
+    }
+    
+    if (arrowRef.current) {
+      const arrowPos = curve.getPoint(0.85);
+      const tangent = curve.getTangent(0.85).normalize();
+      arrowRef.current.position.copy(arrowPos);
+      arrowRef.current.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), tangent);
+    }
+    
+    if (labelRef.current) {
+      const labelP = curve.getPoint(0.5);
+      labelRef.current.position.set(labelP.x, labelP.y + 0.25, labelP.z);
+    }
+  });
 
   return (
-    <group>
+    <group ref={groupRef} visible={ready}>
       <Line
-        points={points}
+        ref={lineRef}
+        points={[[0,0,0], [0.01,0.01,0.01]]}
         color={color}
         lineWidth={isHighlighted ? 2.5 : 1.5}
         transparent
         opacity={theme.id === "vector-arcade" ? 0.7 : 0.8}
       />
       
-      <mesh position={arrowData.position} quaternion={arrowData.quaternion}>
+      <mesh ref={arrowRef}>
         <coneGeometry args={[0.06, 0.15, 4]} />
         <meshStandardMaterial 
           color={color} 
@@ -377,18 +412,20 @@ function VectorTransition({ from, to, event, isHighlighted, isSelfLoop, theme }:
         />
       </mesh>
       
-      <Billboard position={labelPos}>
-        <Text
-          fontSize={0.16}
-          color={theme.labelColor}
-          anchorX="center"
-          anchorY="bottom"
-          outlineWidth={0.01}
-          outlineColor="#000000"
-        >
-          {event}
-        </Text>
-      </Billboard>
+      <group ref={labelRef}>
+        <Billboard>
+          <Text
+            fontSize={0.16}
+            color={theme.labelColor}
+            anchorX="center"
+            anchorY="bottom"
+            outlineWidth={0.01}
+            outlineColor="#000000"
+          >
+            {event}
+          </Text>
+        </Billboard>
+      </group>
     </group>
   );
 }
@@ -406,12 +443,7 @@ function StatechartScene({
 }) {
   const states = Object.keys(fsm.states);
   const positions = useMemo(() => calculateGeometricLayout(states), [states]);
-  
-  const positionMap = useMemo(() => {
-    const map: Record<string, [number, number, number]> = {};
-    positions.forEach(p => { map[p.name] = p.position; });
-    return map;
-  }, [positions]);
+  const nodePositionsRef = useRef<Record<string, THREE.Vector3>>({});
 
   const transitions = useMemo(() => {
     const result: { from: string; to: string; event: string }[] = [];
@@ -440,43 +472,22 @@ function StatechartScene({
           onSelect={() => onSelectState(name)}
           phaseOffset={idx * 1.2}
           theme={theme}
+          nodePositionsRef={nodePositionsRef}
         />
       ))}
       
-      {transitions.map(({ from, to, event }, idx) => {
-        const fromPos = positionMap[from];
-        const toPos = positionMap[to];
-        if (!fromPos || !toPos) return null;
-        
-        const isSelfLoop = from === to;
-        if (!isSelfLoop) {
-          const dir = new THREE.Vector3(...toPos).sub(new THREE.Vector3(...fromPos)).normalize();
-          const start: [number, number, number] = [fromPos[0] + dir.x * 0.55, fromPos[1] + dir.y * 0.55, fromPos[2] + dir.z * 0.55];
-          const end: [number, number, number] = [toPos[0] - dir.x * 0.55, toPos[1] - dir.y * 0.55, toPos[2] - dir.z * 0.55];
-          return (
-            <VectorTransition
-              key={`${from}-${event}-${to}-${idx}`}
-              from={start}
-              to={end}
-              event={event}
-              isHighlighted={from === selectedState}
-              isSelfLoop={false}
-              theme={theme}
-            />
-          );
-        }
-        return (
-          <VectorTransition
-            key={`${from}-${event}-${to}-${idx}`}
-            from={fromPos}
-            to={toPos}
-            event={event}
-            isHighlighted={from === selectedState}
-            isSelfLoop={true}
-            theme={theme}
-          />
-        );
-      })}
+      {transitions.map(({ from, to, event }, idx) => (
+        <VectorTransition
+          key={`${from}-${event}-${to}-${idx}`}
+          fromState={from}
+          toState={to}
+          event={event}
+          isHighlighted={from === selectedState}
+          isSelfLoop={from === to}
+          theme={theme}
+          nodePositionsRef={nodePositionsRef}
+        />
+      ))}
       
       <OrbitControls 
         makeDefault 

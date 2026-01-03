@@ -1,55 +1,149 @@
 import { Link } from "wouter";
-import { ArrowLeft, Filter, Search, ShoppingBag } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ArrowLeft, Filter, Search, ShoppingBag, Clock, Flame, Skull, AlertTriangle, Sparkles, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import misfitToyImage from "@assets/generated_images/cyberpunk_robot_toy.png";
 
-// Minimal Cartridge Data (The View Model)
 interface CartridgeListing {
   id: string;
   cartridge_name: string;
-  current_state: string; // e.g., "BIDDING_OPEN", "SOLD", "PENDING"
-  price_ctx: number; // Value from context
+  description: string;
+  endTime: number;
+  price_ctx: number;
+  bids: number;
   image_url: string | null;
   tags: string[];
+  urgency: "hot" | "warm" | "cold";
 }
 
+const now = Date.now();
 const MOCK_CARTRIDGES: CartridgeListing[] = [
   {
     id: "1",
     cartridge_name: "Glitch Robot 9000",
-    current_state: "2h 45m LEFT",
+    description: "Eye flickers every 3.7 seconds. Left arm detached. Still dreams of electric sheep.",
+    endTime: now + 9900000,
     price_ctx: 45.00,
+    bids: 12,
     image_url: misfitToyImage,
-    tags: ["Toy", "Vintage", "Broken"]
+    tags: ["Toy", "Vintage", "Broken"],
+    urgency: "hot"
   },
   {
     id: "2",
     cartridge_name: "Unfinished Novel",
-    current_state: "5h 20m LEFT",
+    description: "387 pages of a murder mystery. Author vanished before chapter 12. Ending unknown.",
+    endTime: now + 19200000,
     price_ctx: 15.00,
+    bids: 3,
     image_url: null,
-    tags: ["Document", "Mystery"]
+    tags: ["Document", "Mystery", "Incomplete"],
+    urgency: "cold"
   },
   {
     id: "3",
     cartridge_name: "Cursed Lava Lamp",
-    current_state: "12m LEFT",
+    description: "Former owner claims it predicts stock crashes. Glows red before recessions.",
+    endTime: now + 720000,
     price_ctx: 88.00,
+    bids: 27,
     image_url: null,
-    tags: ["Decor", "Haunted"]
+    tags: ["Decor", "Haunted", "Prophetic"],
+    urgency: "hot"
   },
   {
     id: "4",
     cartridge_name: "Leftover Cable Box",
-    current_state: "1d 4h LEFT",
+    description: "Still receives channels that no longer exist. Sometimes shows news from tomorrow.",
+    endTime: now + 100800000,
     price_ctx: 5.00,
+    bids: 1,
     image_url: null,
-    tags: ["Tech", "Junk"]
+    tags: ["Tech", "Anomalous"],
+    urgency: "cold"
+  },
+  {
+    id: "5",
+    cartridge_name: "Taxidermied Furby",
+    description: "Eyes still move when no one's watching. Batteries removed in 2003. Voice box sealed.",
+    endTime: now + 3600000,
+    price_ctx: 156.00,
+    bids: 41,
+    image_url: null,
+    tags: ["Toy", "Haunted", "90s"],
+    urgency: "hot"
+  },
+  {
+    id: "6",
+    cartridge_name: "Dial-Up Modem (Screaming)",
+    description: "Makes the sound even when unplugged. Previous owner wore earplugs to sleep.",
+    endTime: now + 54000000,
+    price_ctx: 23.00,
+    bids: 8,
+    image_url: null,
+    tags: ["Tech", "Loud", "Vintage"],
+    urgency: "warm"
+  },
+  {
+    id: "7",
+    cartridge_name: "Grandfather Clock (Runs Backwards)",
+    description: "Perfect condition. Perfect mechanism. Just counts down. To what, we don't know.",
+    endTime: now + 172800000,
+    price_ctx: 444.00,
+    bids: 15,
+    image_url: null,
+    tags: ["Decor", "Anomalous", "Antique"],
+    urgency: "warm"
+  },
+  {
+    id: "8",
+    cartridge_name: "VHS of Static",
+    description: "6 hours of static. Sometimes faces appear. Viewers report deja vu for weeks.",
+    endTime: now + 7200000,
+    price_ctx: 31.00,
+    bids: 19,
+    image_url: null,
+    tags: ["Media", "Cursed", "VHS"],
+    urgency: "hot"
   }
 ];
+
+function CountdownTimer({ endTime, urgency }: { endTime: number; urgency: string }) {
+  const [timeLeft, setTimeLeft] = useState("");
+  
+  useEffect(() => {
+    const update = () => {
+      const diff = endTime - Date.now();
+      if (diff <= 0) {
+        setTimeLeft("ENDED");
+        return;
+      }
+      const days = Math.floor(diff / 86400000);
+      const hours = Math.floor((diff % 86400000) / 3600000);
+      const mins = Math.floor((diff % 3600000) / 60000);
+      const secs = Math.floor((diff % 60000) / 1000);
+      
+      if (days > 0) setTimeLeft(`${days}d ${hours}h`);
+      else if (hours > 0) setTimeLeft(`${hours}h ${mins}m`);
+      else setTimeLeft(`${mins}m ${secs}s`);
+    };
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, [endTime]);
+  
+  const isUrgent = urgency === "hot";
+  return (
+    <div className={`flex items-center gap-1.5 font-mono text-xs ${isUrgent ? 'text-red-400 animate-pulse' : 'text-muted-foreground'}`}>
+      <Clock className="w-3 h-3" />
+      {timeLeft}
+      {isUrgent && <Flame className="w-3 h-3 text-orange-500" />}
+    </div>
+  );
+}
 
 export default function Unwanted() {
   return (
@@ -107,9 +201,9 @@ export default function Unwanted() {
 
           {/* Grid of Cartridges */}
           <div className="flex-1">
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {MOCK_CARTRIDGES.map((item) => (
-                <Card key={item.id} className="bg-white/[0.02] border-white/10 overflow-hidden hover:border-secondary/50 transition-colors group cursor-pointer">
+                <Card key={item.id} className="bg-white/[0.02] border-white/10 overflow-hidden hover:border-secondary/50 transition-colors group cursor-pointer" data-testid={`card-auction-${item.id}`}>
                   <div className="aspect-[4/3] bg-black relative overflow-hidden">
                     {item.image_url ? (
                       <img 
@@ -118,19 +212,31 @@ export default function Unwanted() {
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80 group-hover:opacity-100"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-white/5">
-                        <ShoppingBag className="w-12 h-12 text-white/10" />
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-white/5 to-white/[0.02]">
+                        {item.tags.includes("Haunted") ? (
+                          <Skull className="w-12 h-12 text-white/10" />
+                        ) : item.tags.includes("Anomalous") ? (
+                          <AlertTriangle className="w-12 h-12 text-white/10" />
+                        ) : (
+                          <Package className="w-12 h-12 text-white/10" />
+                        )}
                       </div>
                     )}
-                    <Badge className="absolute top-3 right-3 bg-black/80 backdrop-blur text-white border-white/10 font-mono">
-                      {item.current_state}
-                    </Badge>
+                    <div className="absolute top-3 right-3">
+                      <CountdownTimer endTime={item.endTime} urgency={item.urgency} />
+                    </div>
+                    {item.urgency === "hot" && (
+                      <Badge className="absolute top-3 left-3 bg-red-500/90 text-white border-none text-[10px]">
+                        HOT
+                      </Badge>
+                    )}
                   </div>
                   
                   <CardHeader className="p-4 pb-2">
                     <h3 className="font-bold text-white truncate font-mono text-sm">{item.cartridge_name}</h3>
+                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{item.description}</p>
                     <div className="flex gap-2 flex-wrap mt-2">
-                      {item.tags.map(tag => (
+                      {item.tags.slice(0, 3).map(tag => (
                         <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-muted-foreground border border-white/5">
                           #{tag}
                         </span>
@@ -139,17 +245,21 @@ export default function Unwanted() {
                   </CardHeader>
                   
                   <CardContent className="p-4 pt-2">
-                    <div className="flex justify-between items-end mt-2">
+                    <div className="flex justify-between items-end">
                       <div>
-                        <span className="text-[10px] text-muted-foreground block uppercase">CTX.PRICE</span>
-                        <span className="text-lg font-mono text-secondary">${item.price_ctx}</span>
+                        <span className="text-[10px] text-muted-foreground block uppercase">CURRENT BID</span>
+                        <span className="text-lg font-mono text-secondary">${item.price_ctx.toFixed(2)}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[10px] text-muted-foreground block uppercase">BIDS</span>
+                        <span className="text-sm font-mono text-white">{item.bids}</span>
                       </div>
                     </div>
                   </CardContent>
 
                   <CardFooter className="p-4 pt-0">
-                    <Button className="w-full bg-white/5 hover:bg-white/10 text-white font-mono text-xs border border-white/10 group-hover:bg-secondary group-hover:text-black transition-colors">
-                      LOAD CARTRIDGE
+                    <Button className="w-full bg-white/5 hover:bg-white/10 text-white font-mono text-xs border border-white/10 group-hover:bg-secondary group-hover:text-black transition-colors" data-testid={`button-bid-${item.id}`}>
+                      PLACE BID
                     </Button>
                   </CardFooter>
                 </Card>
