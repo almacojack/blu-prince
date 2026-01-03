@@ -258,6 +258,44 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Quick Links Navigation */}
+      <section className="relative z-10 py-8 bg-black/30 border-t border-white/5">
+        <div className="container mx-auto px-6">
+          <h3 className="text-sm font-mono text-muted-foreground mb-4 flex items-center gap-2">
+            <Layers className="w-4 h-4" />
+            QUICK NAVIGATION
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            {[
+              { path: "/", label: "Home", icon: "🏠" },
+              { path: "/blu-prince", label: "Blu-Prince", icon: "👑" },
+              { path: "/statechart", label: "3D Statechart", icon: "🎮" },
+              { path: "/editor", label: "Editor", icon: "✏️" },
+              { path: "/controller", label: "Controller", icon: "🕹️" },
+              { path: "/library", label: "Library", icon: "📚" },
+              { path: "/runtime", label: "Simulator", icon: "⚡" },
+              { path: "/playground", label: "Playground", icon: "🎨" },
+              { path: "/data-tables", label: "Data Tables", icon: "📊" },
+              { path: "/vault", label: "Vault", icon: "🔐" },
+              { path: "/utilities", label: "Utilities", icon: "🔧" },
+              { path: "/unwanted", label: "unwanted.ad", icon: "🧸" },
+              { path: "/artsy", label: "artsy.sale", icon: "🎭" },
+              { path: "/coins", label: "coins.rip", icon: "💰" },
+            ].map(({ path, label, icon }) => (
+              <Link key={path} href={path}>
+                <div 
+                  className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 hover:border-primary/50 hover:bg-primary/5 transition-colors cursor-pointer group"
+                  data-testid={`link-nav-${label.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
+                >
+                  <span className="text-sm mr-2">{icon}</span>
+                  <span className="text-xs font-mono text-muted-foreground group-hover:text-white transition-colors">{label}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <footer className="relative z-10 border-t border-white/10 py-12 bg-black/60">
         <div className="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="text-xs font-mono text-muted-foreground">

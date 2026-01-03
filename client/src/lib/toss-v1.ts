@@ -47,6 +47,7 @@ export interface PhysicsProps {
   gravityScale: number; // 0 = floats, 1 = normal, >1 = heavy
   linearDamping?: number;
   angularDamping?: number;
+  dropping?: boolean;   // temporary flag for drop animation on creation
 }
 
 // ============================================

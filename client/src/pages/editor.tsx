@@ -149,7 +149,10 @@ function PhysicsThing({
     points: Array<{ pos: THREE.Vector3; time: number }>;
   }>({ active: false, startPos: null, points: [] });
   
-  const isAnchored = item.physics?.anchored || mode === "DESIGN";
+  // In DESIGN mode, items are anchored unless they have the special 'dropping' flag
+  // This allows newly created items to drop briefly, then anchor for positioning
+  const isDropping = item.physics?.dropping === true;
+  const isAnchored = item.physics?.anchored || (mode === "DESIGN" && !isDropping);
   const gravityScale = item.physics?.gravityScale ?? 1;
   const squashIntensity = item.animation?.squash_intensity ?? 0.4;
   const recoverySpeed = item.animation?.squash_recovery_speed ?? 8;
@@ -2131,6 +2134,9 @@ export default function BluPrinceEditor() {
     // If gravity disabled, make it float
     if (!gravityEnabled) {
       newThing.physics = { ...newThing.physics!, gravityScale: 0 };
+    } else {
+      // Enable dropping animation - item will fall, then anchor after landing
+      newThing.physics = { ...newThing.physics!, dropping: true };
     }
 
     updateCartridgeWithSync(prev => ({
@@ -2139,6 +2145,21 @@ export default function BluPrinceEditor() {
     }));
 
     setSelectedId(newThing.id);
+
+    // After a delay, remove the dropping flag so item becomes anchored in DESIGN mode
+    if (gravityEnabled) {
+      const itemId = newThing.id;
+      setTimeout(() => {
+        updateCartridgeWithSync(prev => ({
+          ...prev,
+          items: prev.items.map(item => 
+            item.id === itemId 
+              ? { ...item, physics: { ...item.physics!, dropping: false } }
+              : item
+          )
+        }));
+      }, 2500); // Give 2.5 seconds for drop animation
+    }
 
     toast({
       title: `${type.charAt(0).toUpperCase() + type.slice(1)} Created`,
