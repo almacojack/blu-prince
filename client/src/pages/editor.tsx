@@ -7,6 +7,7 @@ import {
 import { Physics, RigidBody, CuboidCollider, RapierRigidBody } from "@react-three/rapier";
 import * as THREE from "three";
 import { Link } from "wouter";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -19,7 +20,7 @@ import {
   Triangle, Settings, Layers, Zap, Save, Upload, CheckCircle, XCircle,
   Plus, Trash2, ArrowRight, GitBranch, X, Gamepad2, Vibrate,
   Pentagon, Hexagon, Diamond, Cone, FileImage, Eye, EyeOff,
-  Palette, Move, RotateCw, Maximize2, Database, Wrench
+  Palette, Move, RotateCw, Maximize2, Database, Wrench, Users, Share2, Copy
 } from "lucide-react";
 import { DockablePanel } from "@/components/DockablePanel";
 import { ToolsPanel, type PhysicsTool } from "@/components/ToolsPanel";
@@ -35,6 +36,8 @@ import {
   createNewCartridge, createThing, DEFAULT_PHYSICS, CONTROLLER_BUTTONS
 } from "@/lib/toss-v1";
 import { useToast } from "@/hooks/use-toast";
+import { useCollaboration, type CollabUser } from "@/hooks/use-collaboration";
+import { useAuth } from "@/hooks/use-auth";
 // FSM 3D visualization is rendered inline with position hints
 // Full 3D editor would need dedicated Canvas - deferred to avoid WebGL context issues
 
@@ -1584,8 +1587,79 @@ function runAssertions(cartridge: TossCartridge): { passed: boolean; results: Us
   return { passed: allPassed, results };
 }
 
+// Collaboration UI Components
+function CollaboratorAvatars({ users, myColor }: { users: CollabUser[]; myColor: string }) {
+  if (users.length === 0) return null;
+  
+  return (
+    <div className="flex items-center gap-1">
+      <Users className="w-3 h-3 text-muted-foreground mr-1" />
+      <div className="flex -space-x-2">
+        {users.slice(0, 5).map((user) => (
+          <motion.div
+            key={user.id}
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            className="w-6 h-6 rounded-full border-2 border-background flex items-center justify-center text-[8px] font-bold text-white"
+            style={{ backgroundColor: user.color }}
+            title={user.name || user.id.slice(0, 8)}
+          >
+            {(user.name || user.id).slice(0, 2).toUpperCase()}
+          </motion.div>
+        ))}
+        {users.length > 5 && (
+          <div className="w-6 h-6 rounded-full border-2 border-background bg-muted flex items-center justify-center text-[8px] font-bold">
+            +{users.length - 5}
+          </div>
+        )}
+      </div>
+      <div 
+        className="w-6 h-6 rounded-full border-2 border-background flex items-center justify-center text-[8px] font-bold text-white ml-1"
+        style={{ backgroundColor: myColor }}
+        title="You"
+      >
+        ME
+      </div>
+    </div>
+  );
+}
+
+function RemoteCursor({ user }: { user: CollabUser }) {
+  if (!user.cursor) return null;
+  
+  return (
+    <motion.div
+      className="absolute pointer-events-none z-50"
+      initial={{ opacity: 0 }}
+      animate={{ 
+        opacity: 1,
+        x: user.cursor.x,
+        y: user.cursor.y,
+      }}
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+    >
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path 
+          d="M5 3L19 12L12 13L9 20L5 3Z" 
+          fill={user.color} 
+          stroke="white" 
+          strokeWidth="1"
+        />
+      </svg>
+      <div 
+        className="absolute left-5 top-4 px-2 py-0.5 rounded text-[10px] font-mono text-white whitespace-nowrap"
+        style={{ backgroundColor: user.color }}
+      >
+        {user.name || user.id.slice(0, 8)}
+      </div>
+    </motion.div>
+  );
+}
+
 // Main Editor
 export default function BluPrinceEditor() {
+  const { user } = useAuth();
   const [cartridge, setCartridge] = useState<TossCartridge>(createNewCartridge());
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [testStatus, setTestStatus] = useState<"pending" | "running" | "pass" | "fail">("pending");
@@ -1599,7 +1673,39 @@ export default function BluPrinceEditor() {
   const [toolPower, setToolPower] = useState(100);
   const [magnetPolarity, setMagnetPolarity] = useState<'attract' | 'repel'>('attract');
   const [magnetizedObjects, setMagnetizedObjects] = useState<Set<string>>(new Set());
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [collaborationEnabled, setCollaborationEnabled] = useState(false);
   const rigidBodyRegistry = useRef<Map<string, RapierRigidBody>>(new Map());
+  const editorRef = useRef<HTMLDivElement>(null);
+  
+  const roomId = useMemo(() => {
+    return `editor-${cartridge.meta?.title?.replace(/\s+/g, '-').toLowerCase() || 'default'}`;
+  }, [cartridge.meta?.title]);
+  
+  const collab = useCollaboration<TossCartridge>({
+    roomId,
+    userId: user?.id || `anon-${Math.random().toString(36).slice(2, 8)}`,
+    userName: user?.firstName || 'Anonymous',
+    initialState: cartridge,
+    autoConnect: collaborationEnabled && !!user,
+    onStateChange: useCallback((newState: TossCartridge, userId: string) => {
+      if (userId !== user?.id) {
+        setCartridge(newState);
+      }
+    }, [user?.id]),
+    onUserJoin: useCallback((joinedUser: CollabUser) => {
+      toast({
+        title: "User Joined",
+        description: `${joinedUser.name || joinedUser.id.slice(0, 8)} joined the session`,
+      });
+    }, []),
+    onUserLeave: useCallback((leftUserId: string) => {
+      toast({
+        title: "User Left",
+        description: "A collaborator left the session",
+      });
+    }, []),
+  });
   
   const handleRegisterBody = useCallback((id: string, body: RapierRigidBody | null) => {
     if (body) {
@@ -1910,11 +2016,41 @@ export default function BluPrinceEditor() {
     toast({ title: "Item Deleted" });
   }, [selectedId, toast]);
 
+  // Sync local cartridge changes to collaboration
+  const syncToCollab = useCallback((newCartridge: TossCartridge) => {
+    if (collaborationEnabled && collab.isJoined) {
+      collab.sendFullState(newCartridge);
+    }
+  }, [collaborationEnabled, collab.isJoined, collab.sendFullState]);
+  
+  // Track mouse position for collaboration cursors
+  useEffect(() => {
+    if (!collaborationEnabled || !collab.isJoined || !editorRef.current) return;
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      const rect = editorRef.current?.getBoundingClientRect();
+      if (rect) {
+        collab.sendCursor({
+          x: e.clientX - rect.left,
+          y: e.clientY - rect.top,
+        });
+      }
+    };
+    
+    const editor = editorRef.current;
+    editor.addEventListener('mousemove', handleMouseMove);
+    return () => editor.removeEventListener('mousemove', handleMouseMove);
+  }, [collaborationEnabled, collab.isJoined, collab.sendCursor]);
+
   const toggleGravity = () => {
-    setCartridge(prev => ({
-      ...prev,
-      _editor: { ...prev._editor!, gravity_enabled: !gravityEnabled }
-    }));
+    setCartridge(prev => {
+      const updated = {
+        ...prev,
+        _editor: { ...prev._editor!, gravity_enabled: !gravityEnabled }
+      };
+      syncToCollab(updated);
+      return updated;
+    });
     toast({
       title: gravityEnabled ? "Gravity Disabled" : "Gravity Enabled",
       description: gravityEnabled ? "Objects will float!" : "Objects will fall!",
@@ -1928,7 +2064,7 @@ export default function BluPrinceEditor() {
   };
 
   return (
-    <div className="w-full h-screen bg-[#0a0a0f] relative overflow-hidden">
+    <div ref={editorRef} className="w-full h-screen bg-[#0a0a0f] relative overflow-hidden">
       {/* Top Bar */}
       <header className="absolute top-0 left-0 right-0 z-50 h-14 flex items-center justify-between px-4 bg-black/40 backdrop-blur border-b border-white/10">
         <div className="flex items-center gap-4">
@@ -2006,6 +2142,24 @@ export default function BluPrinceEditor() {
               </Button>
             </>
           )}
+          <Separator orientation="vertical" className="h-6" />
+          
+          {/* Collaboration UI */}
+          {collaborationEnabled && collab.isConnected && (
+            <CollaboratorAvatars users={collab.otherUsers} myColor={collab.myColor} />
+          )}
+          
+          <Button
+            size="sm"
+            variant={collaborationEnabled ? "default" : "ghost"}
+            onClick={() => setShowShareDialog(true)}
+            className={collaborationEnabled ? "bg-cyan-600 text-white" : "text-cyan-400"}
+            data-testid="button-share"
+          >
+            {collaborationEnabled ? <Users className="w-4 h-4 mr-1" /> : <Share2 className="w-4 h-4 mr-1" />}
+            {collaborationEnabled ? `${collab.otherUsers.length + 1}` : "Share"}
+          </Button>
+          
           <Separator orientation="vertical" className="h-6" />
           <Button 
             size="sm" 
@@ -2229,6 +2383,109 @@ export default function BluPrinceEditor() {
         <Environment preset="night" />
       </Canvas>
 
+      {/* Remote Cursors */}
+      {collaborationEnabled && collab.isConnected && (
+        <AnimatePresence>
+          {collab.otherUsers.map(u => (
+            <RemoteCursor key={u.id} user={u} />
+          ))}
+        </AnimatePresence>
+      )}
+
+      {/* Share Dialog */}
+      <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Share2 className="w-5 h-5" />
+              Real-Time Collaboration
+            </DialogTitle>
+            <DialogDescription>
+              Enable real-time collaboration to edit this statechart with others simultaneously.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-3 rounded-lg bg-muted">
+              <div>
+                <div className="font-medium">Enable Collaboration</div>
+                <div className="text-sm text-muted-foreground">
+                  {collaborationEnabled ? "Sharing enabled" : "Click to enable sharing"}
+                </div>
+              </div>
+              <Switch
+                checked={collaborationEnabled}
+                onCheckedChange={(checked) => {
+                  setCollaborationEnabled(checked);
+                  if (checked && !collab.isConnected) {
+                    collab.connect();
+                  } else if (!checked) {
+                    collab.disconnect();
+                  }
+                }}
+              />
+            </div>
+            
+            {collaborationEnabled && (
+              <>
+                <div className="space-y-2">
+                  <Label>Share Link</Label>
+                  <div className="flex gap-2">
+                    <Input 
+                      readOnly 
+                      value={`${window.location.origin}/editor?room=${encodeURIComponent(roomId)}`}
+                      className="text-xs"
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        navigator.clipboard.writeText(`${window.location.origin}/editor?room=${encodeURIComponent(roomId)}`);
+                        toast({ title: "Link Copied", description: "Share link copied to clipboard" });
+                      }}
+                    >
+                      <Copy className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Connected Users ({collab.users.length})</Label>
+                  <div className="space-y-1">
+                    {collab.users.map(u => (
+                      <div key={u.id} className="flex items-center gap-2 p-2 rounded bg-muted/50">
+                        <div 
+                          className="w-3 h-3 rounded-full" 
+                          style={{ backgroundColor: u.color }}
+                        />
+                        <span className="text-sm">{u.name || u.id.slice(0, 8)}</span>
+                        {u.id === user?.id && (
+                          <Badge variant="outline" className="ml-auto text-[10px]">You</Badge>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="text-xs text-muted-foreground">
+                  {collab.isConnected ? (
+                    <span className="flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                      Connected (v{collab.version})
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-orange-500" />
+                      Connecting...
+                    </span>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Status Bar */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-4 text-xs font-mono text-muted-foreground">
         <span>Items: {cartridge.items.length}</span>
@@ -2240,6 +2497,15 @@ export default function BluPrinceEditor() {
           <>
             <span>|</span>
             <span className="text-primary">Selected: {selectedId.split('_')[1]}</span>
+          </>
+        )}
+        {collaborationEnabled && collab.isConnected && (
+          <>
+            <span>|</span>
+            <span className="text-cyan-400">
+              <Users className="w-3 h-3 inline mr-1" />
+              {collab.users.length} online
+            </span>
           </>
         )}
       </div>
