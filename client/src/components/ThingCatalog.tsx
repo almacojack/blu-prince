@@ -315,9 +315,9 @@ export function ThingCatalog({
   });
 
   return (
-    <div className={cn("flex flex-col h-full", className)}>
+    <div className={cn("flex flex-col h-full min-h-0 overflow-hidden", className)}>
       <div className={cn(
-        "p-4 border-b",
+        "p-4 border-b shrink-0",
         isVictorian ? "border-amber-700/30 bg-amber-950/30" : "border-white/10 bg-black/30"
       )}>
         <div className="flex items-center gap-3 mb-4">
@@ -442,9 +442,9 @@ export function ThingCatalog({
         )}
       </div>
 
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 min-h-0">
         <div className={cn(
-          "p-4",
+          "p-4 pb-8",
           viewMode === 'grid' 
             ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
             : "space-y-2"

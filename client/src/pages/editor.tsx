@@ -2635,11 +2635,10 @@ export default function BluPrinceEditor() {
           defaultDocked={true}
           defaultCollapsed={true}
         >
-          <div className="h-80">
-            <ThingCatalog 
-              onSelectEntry={(entry) => console.log('Selected:', entry)}
-            />
-          </div>
+          <ThingCatalog 
+            onSelectEntry={(entry) => console.log('Selected:', entry)}
+            className="max-h-[calc(100vh-200px)]"
+          />
         </DockablePanel>
       </div>
 
