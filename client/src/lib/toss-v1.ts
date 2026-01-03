@@ -12,7 +12,7 @@ export interface Transform {
 
 // 3D Bounds for collision/layout
 export interface Bounds {
-  type: "box" | "sphere" | "cylinder";
+  type: "box" | "sphere" | "cylinder" | "cone" | "torus" | "tetrahedron" | "octahedron" | "icosahedron" | "dodecahedron";
   width?: number;
   height?: number;
   depth?: number;
@@ -146,12 +146,30 @@ export interface TossAsset3D {
   thumbnail?: string;         // base64-encoded PNG preview
 }
 
+// Database asset for embedded SQLite
+export interface TossDatabaseMetadata {
+  name: string;
+  fileSize: number;
+  tableCount: number;
+  tables: string[];
+  importedAt: string;
+  originalFilename?: string;
+}
+
+export interface TossDatabaseAsset {
+  id: string;
+  type: 'sqlite';
+  metadata: TossDatabaseMetadata;
+  data: string; // base64 encoded SQLite file
+}
+
 // General asset union (expandable for audio, images, etc.)
-export type TossAsset = TossAsset3D;
+export type TossAsset = TossAsset3D | TossDatabaseAsset;
 
 // Asset registry in cartridge
 export interface TossAssetRegistry {
   models: TossAsset3D[];
+  databases?: TossDatabaseAsset[];
 }
 
 // Commerce fields (for artsy.sale, unwanted.ad)
@@ -252,6 +270,7 @@ export function createNewCartridge(): TossCartridge {
     items: [],
     assets: {
       models: [],
+      databases: [],
     },
     tests: {
       assertions: [],

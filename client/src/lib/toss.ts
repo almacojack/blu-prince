@@ -94,11 +94,30 @@ export interface Toss3DAsset {
   thumbnail?: string;
 }
 
+// Embedded SQLite database asset
+export interface TossDatabaseMetadata {
+  name: string;
+  fileSize: number;
+  tableCount?: number;
+  tables?: string[];
+  importedAt: string;
+  originalFilename: string;
+}
+
+export interface TossDatabaseAsset {
+  id: string;
+  type: 'sqlite';
+  metadata: TossDatabaseMetadata;
+  data: string; // base64 encoded SQLite file
+}
+
 export interface TossAssetRegistry {
   // Legacy keyed assets (external refs)
   refs?: Record<string, TossAssetRef>;
   // Inline 3D models
   models?: Toss3DAsset[];
+  // Embedded SQLite databases
+  databases?: TossDatabaseAsset[];
 }
 
 // THE FILE (The Portable Payload)

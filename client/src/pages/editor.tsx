@@ -19,12 +19,12 @@ import {
   Triangle, Settings, Layers, Zap, Save, Upload, CheckCircle, XCircle,
   Plus, Trash2, ArrowRight, GitBranch, X, Gamepad2, Vibrate,
   Pentagon, Hexagon, Diamond, Cone, FileImage, Eye, EyeOff,
-  Palette, Move, RotateCw, Maximize2
+  Palette, Move, RotateCw, Maximize2, Database
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { 
-  TossCartridge, TossItem, EditorMode, UserAssertion, ItemFSM, ControllerBinding,
+  TossCartridge, TossItem, EditorMode, UserAssertion, ItemFSM, ControllerBinding, Bounds,
   createNewCartridge, createThing, DEFAULT_PHYSICS, CONTROLLER_BUTTONS
 } from "@/lib/toss-v1";
 import { useToast } from "@/hooks/use-toast";
@@ -1654,7 +1654,7 @@ export default function BluPrinceEditor() {
     );
 
     // Set the correct bounds type for all shapes
-    newThing.bounds.type = type;
+    newThing.bounds.type = type as Bounds["type"];
     if (type === "sphere") {
       newThing.bounds.radius = 0.5;
     }
@@ -1782,6 +1782,16 @@ export default function BluPrinceEditor() {
                   data-testid="button-3d-statechart"
                 >
                   <Box className="w-4 h-4 mr-1" /> 3D View
+                </Button>
+              </Link>
+              <Link href="/data-tables">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  className="text-emerald-400 border-emerald-400/50 hover:bg-emerald-400/10"
+                  data-testid="button-data-tables"
+                >
+                  <Database className="w-4 h-4 mr-1" /> Data
                 </Button>
               </Link>
               <Button 
