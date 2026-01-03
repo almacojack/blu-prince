@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Slider } from "@/components/ui/slider";
 import { Clock, MapPin, Calendar, Compass, ChevronLeft, ChevronRight, Settings2 } from "lucide-react";
 
-interface SpacetimeValue {
+export interface SpacetimeValue {
   datetime: Date;
   timezone: string;
   location?: {
@@ -23,7 +23,7 @@ interface SpacetimePickerProps {
   showLocation?: boolean;
   allowPast?: boolean;
   allowFuture?: boolean;
-  theme?: "steampunk" | "cyberpunk" | "minimal";
+  theme?: "steampunk" | "cyberpunk" | "minimal" | "artsy";
 }
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -75,6 +75,15 @@ export function SpacetimePicker({
       glow: "",
       dial: "bg-slate-800 border border-slate-700",
       gear: "text-slate-700"
+    },
+    artsy: {
+      bg: "bg-gradient-to-br from-stone-100 via-rose-50 to-amber-50",
+      accent: "text-rose-600",
+      border: "border-stone-300",
+      button: "bg-white hover:bg-rose-50 border-rose-300 text-rose-700",
+      glow: "shadow-md",
+      dial: "bg-white border-2 border-rose-300 shadow-inner",
+      gear: "text-rose-200"
     }
   };
 

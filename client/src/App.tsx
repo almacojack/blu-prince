@@ -24,6 +24,7 @@ import RuntimeSimulator from "@/pages/runtime";
 import StatechartEditor from "@/pages/statechart";
 import DataTables from "@/pages/data-tables";
 import VaultDashboard from "@/pages/vault";
+import AdminEvents from "@/pages/admin-events";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -41,6 +42,7 @@ function Router() {
       <Route path="/statechart" component={StatechartEditor} />
       <Route path="/data-tables" component={DataTables} />
       <Route path="/vault" component={VaultDashboard} />
+      <Route path="/admin/events" component={AdminEvents} />
       <Route component={NotFound} />
     </Switch>
   );
