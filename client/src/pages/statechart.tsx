@@ -329,15 +329,35 @@ interface VectorTransitionProps {
   nodePositionsRef: NodePositionsRef;
 }
 
+const CURVE_SEGMENTS = 24;
+
 function VectorTransition({ fromState, toState, event, isHighlighted, isSelfLoop, theme, nodePositionsRef }: VectorTransitionProps) {
   const groupRef = useRef<THREE.Group>(null);
-  const lineRef = useRef<any>(null);
+  const lineRef = useRef<THREE.Line>(null);
   const arrowRef = useRef<THREE.Mesh>(null);
   const labelRef = useRef<THREE.Group>(null);
   const frameCount = useRef(0);
-  const [ready, setReady] = useState(false);
+  const readyRef = useRef(false);
   
-  const color = isHighlighted ? theme.nodeSelectedColor : theme.transitionColor;
+  const geometry = useMemo(() => {
+    const geo = new THREE.BufferGeometry();
+    const positions = new Float32Array((CURVE_SEGMENTS + 1) * 3);
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    return geo;
+  }, []);
+  
+  const material = useMemo(() => {
+    return new THREE.LineBasicMaterial({
+      color: isHighlighted ? theme.nodeSelectedColor : theme.transitionColor,
+      transparent: true,
+      opacity: theme.id === "vector-arcade" ? 0.7 : 0.8,
+      linewidth: 1,
+    });
+  }, [isHighlighted, theme]);
+
+  const lineObject = useMemo(() => {
+    return new THREE.Line(geometry, material);
+  }, [geometry, material]);
 
   useFrame(() => {
     frameCount.current++;
@@ -347,11 +367,17 @@ function VectorTransition({ fromState, toState, event, isHighlighted, isSelfLoop
     const toPos = nodePositionsRef.current[toState];
     
     if (!fromPos || !toPos) {
-      if (ready) setReady(false);
+      if (readyRef.current && groupRef.current) {
+        groupRef.current.visible = false;
+        readyRef.current = false;
+      }
       return;
     }
     
-    if (!ready) setReady(true);
+    if (!readyRef.current && groupRef.current) {
+      groupRef.current.visible = true;
+      readyRef.current = true;
+    }
     
     let curve: THREE.Curve<THREE.Vector3>;
     if (isSelfLoop) {
@@ -373,10 +399,18 @@ function VectorTransition({ fromState, toState, event, isHighlighted, isSelfLoop
       curve = new THREE.QuadraticBezierCurve3(start, mid, end);
     }
     
-    const points = curve.getPoints(16);
-    if (lineRef.current?.geometry) {
-      lineRef.current.geometry.setPositions(points.flatMap(p => [p.x, p.y, p.z]));
+    const points = curve.getPoints(CURVE_SEGMENTS);
+    const positionAttr = geometry.getAttribute('position') as THREE.BufferAttribute;
+    const arr = positionAttr.array as Float32Array;
+    
+    for (let i = 0; i <= CURVE_SEGMENTS; i++) {
+      const p = points[i] || points[points.length - 1];
+      arr[i * 3] = p.x;
+      arr[i * 3 + 1] = p.y;
+      arr[i * 3 + 2] = p.z;
     }
+    positionAttr.needsUpdate = true;
+    geometry.computeBoundingSphere();
     
     if (arrowRef.current) {
       const arrowPos = curve.getPoint(0.85);
@@ -392,21 +426,14 @@ function VectorTransition({ fromState, toState, event, isHighlighted, isSelfLoop
   });
 
   return (
-    <group ref={groupRef} visible={ready}>
-      <Line
-        ref={lineRef}
-        points={[[0,0,0], [0.01,0.01,0.01]]}
-        color={color}
-        lineWidth={isHighlighted ? 2.5 : 1.5}
-        transparent
-        opacity={theme.id === "vector-arcade" ? 0.7 : 0.8}
-      />
+    <group ref={groupRef} visible={false}>
+      <primitive object={lineObject} ref={lineRef} />
       
       <mesh ref={arrowRef}>
         <coneGeometry args={[0.06, 0.15, 4]} />
         <meshStandardMaterial 
-          color={color} 
-          emissive={color} 
+          color={isHighlighted ? theme.nodeSelectedColor : theme.transitionColor} 
+          emissive={isHighlighted ? theme.nodeSelectedColor : theme.transitionColor} 
           emissiveIntensity={theme.emissiveIntensity * 0.5}
           wireframe={theme.wireframe}
         />

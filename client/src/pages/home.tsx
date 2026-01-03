@@ -44,7 +44,7 @@ const EcosystemCard = ({ title, description, icon: Icon, colorKey, domain, statu
         <CardFooter>
           <Link href={link || "#"}>
             <Button variant="ghost" className="w-full group-hover:bg-white/5 font-mono text-xs justify-between cursor-pointer">
-              <span>ACCESS TERMINAL</span>
+              <span>EXPLORE</span>
               <ArrowRight className="w-4 h-4 opacity-0 -translate-x-2 transition-all group-hover:opacity-100 group-hover:translate-x-0" />
             </Button>
           </Link>
@@ -78,7 +78,7 @@ export default function Home() {
           <a href="#" className="hover:text-primary transition-colors">BPM</a>
         </div>
         <Button variant="outline" className="font-mono text-xs border-primary/50 text-primary hover:bg-primary/10">
-          CONNECT WALLET
+          Sign In
         </Button>
       </nav>
 

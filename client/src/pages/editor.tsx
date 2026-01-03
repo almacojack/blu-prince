@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, Suspense, useCallback } from "react";
+import React, { useState, useRef, useEffect, Suspense, useCallback, useMemo } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { 
   OrbitControls, Grid, Environment, Html, 
@@ -209,7 +209,10 @@ function ComponentPalette({ onAddComponent }: { onAddComponent: (type: string) =
   ];
 
   return (
-    <div className="absolute left-4 top-1/2 -translate-y-1/2 flex flex-col gap-2 bg-black/60 backdrop-blur p-2 rounded-lg border border-white/10">
+    <div 
+      className="absolute left-4 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-2 bg-black/80 backdrop-blur p-2 rounded-lg border border-white/10"
+      onPointerDown={(e) => e.stopPropagation()}
+    >
       {components.map((comp) => (
         <Button
           key={comp.id}
@@ -224,7 +227,7 @@ function ComponentPalette({ onAddComponent }: { onAddComponent: (type: string) =
         </Button>
       ))}
       <Separator className="my-1" />
-      <Button size="icon" variant="ghost" className="w-10 h-10 text-muted-foreground">
+      <Button size="icon" variant="ghost" className="w-10 h-10 text-muted-foreground" title="Layers">
         <Layers className="w-5 h-5" />
       </Button>
     </div>
@@ -389,7 +392,7 @@ function FSMEditor({ item, onUpdate, onClose }: FSMEditorProps) {
              states.length === 6 ? " Octahedron" : " Helix"}
           </div>
           <div className="mt-2 grid grid-cols-3 gap-1">
-            {positions.slice(0, 6).map(({ name, position }) => (
+            {positions.slice(0, 6).map(({ name, position }: { name: string; position: [number, number, number] }) => (
               <div 
                 key={name}
                 className={`text-[9px] p-1 rounded cursor-pointer transition-all
@@ -1409,6 +1412,7 @@ export default function BluPrinceEditor() {
           minDistance={3} 
           maxDistance={30}
           maxPolarAngle={Math.PI / 2.1}
+          enableDamping={false}
         />
         <Environment preset="night" />
       </Canvas>
