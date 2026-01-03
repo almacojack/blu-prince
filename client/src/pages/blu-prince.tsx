@@ -26,7 +26,7 @@ import type { Toss3DAsset } from "@/lib/toss";
 import { Progress } from "@/components/ui/progress";
 import { Asset3DPreview } from "@/components/Asset3DPreview";
 import { QRIconButton } from "@/components/QRCodePopup";
-import bluPrinceLogo from "@assets/generated_images/blue-skinned_prince-style_rocker_logo.png";
+import bluPrinceLogo from "@assets/generated_images/8-bit_pixel_art_blu-prince.png";
 
 const STORAGE_KEY = "blu-prince-cartridge";
 
