@@ -612,7 +612,7 @@ export default function CartridgeLibrary() {
                 />
 
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xs text-zinc-500">Tng.li ID:</span>
+                  <span className="text-xs text-zinc-500">tng.li ID:</span>
                   <TngliLink 
                     tngliId={selectedCartridge.tngli_id} 
                     title={selectedCartridge.title}
