@@ -6,7 +6,7 @@ import {
   ChevronDown, ZoomIn, ZoomOut, MousePointer2,
   ArrowRight, FileJson, Download, Cloud, CloudOff, Users, Share2,
   Upload, Box, Trash2, Eye, Pencil, Music2, VolumeX, Volume2, SkipForward,
-  CircuitBoard
+  CircuitBoard, Maximize2
 } from "lucide-react";
 import { AtariResetKnob } from "@/components/AtariResetKnob";
 import { AtariDockPanel, AtariDockedPanel, AtariMiniPanel, Atari5200CartridgeSlot, AtariSilverRail } from "@/components/AtariDockPanel";
@@ -1479,6 +1479,22 @@ export default function BluPrince() {
               <span className="text-xs font-bold">FRITZING</span>
             </Button>
 
+          </div>
+          
+          {/* Prominent ZOOM TO FIT Button - Bottom Right */}
+          <div className="absolute bottom-4 right-4 z-40">
+            <Button 
+              onClick={handleZoomReset}
+              size="lg"
+              className="font-bold text-lg px-6 py-3 shadow-lg bg-cyan-500 hover:bg-cyan-400 text-black"
+              style={{ 
+                boxShadow: '0 0 20px rgba(6, 182, 212, 0.5)'
+              }}
+              data-testid="button-zoom-to-fit"
+            >
+              <Maximize2 className="w-5 h-5 mr-2" />
+              ZOOM TO FIT
+            </Button>
           </div>
 
           {/* Floating Controls Panel (when popped out) */}
