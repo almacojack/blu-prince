@@ -702,7 +702,13 @@ export default function BluPrince() {
   };
 
   const handleAddNode = (type: TossState['type']) => {
-    const newId = `state_${Date.now()}`;
+    const existingIds = Object.keys(file.logic.states);
+    let counter = 0;
+    let newId = `s_${counter}`;
+    while (existingIds.includes(newId)) {
+      counter++;
+      newId = `s_${counter}`;
+    }
     const newNode = {
       id: newId,
       x: 300 + (nodes.length * 20), 
