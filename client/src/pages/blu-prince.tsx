@@ -500,7 +500,7 @@ export default function BluPrince() {
     newStates[newId] = { ...stateData, id: newId };
     
     Object.values(newStates).forEach(state => {
-      state.transitions = state.transitions.map(t => 
+      state.transitions = (state.transitions ?? []).map(t => 
         t.target === oldId ? { ...t, target: newId } : t
       );
     });
@@ -654,7 +654,7 @@ export default function BluPrince() {
   const getTransitions = () => {
     const edges: Array<{from: string, to: string}> = [];
     Object.values(file.logic.states).forEach(state => {
-      state.transitions.forEach(trans => {
+      (state.transitions ?? []).forEach(trans => {
         if (trans.target && file.logic.states[trans.target]) {
           edges.push({ from: state.id, to: trans.target });
         }
@@ -873,11 +873,11 @@ export default function BluPrince() {
               
               <div>
                 <label className="text-[10px] uppercase text-muted-foreground font-bold mb-2 block">
-                  Transitions ({activeNode.transitions.length})
+                  Transitions ({(activeNode.transitions ?? []).length})
                 </label>
-                {activeNode.transitions.length > 0 ? (
+                {(activeNode.transitions ?? []).length > 0 ? (
                   <div className="space-y-2">
-                    {activeNode.transitions.map((t, idx) => (
+                    {(activeNode.transitions ?? []).map((t, idx) => (
                       <div key={idx} className="flex items-center gap-2 p-2 rounded bg-white/5 text-xs">
                         <Zap className="w-3 h-3 text-yellow-500" />
                         <span className="text-muted-foreground">{t.event || 'auto'}</span>
@@ -1146,7 +1146,7 @@ export default function BluPrince() {
                   
                   const pathD = `M ${x1} ${y1} Q ${controlX} ${controlY} ${x2} ${y2}`;
                   
-                  const transition = file.logic.states[edge.from]?.transitions.find(t => t.target === edge.to);
+                  const transition = (file.logic.states[edge.from]?.transitions ?? []).find(t => t.target === edge.to);
                   const eventLabel = transition?.event || 'auto';
 
                   return (
@@ -1344,11 +1344,11 @@ export default function BluPrince() {
 
                 <div>
                    <label className="text-[10px] uppercase text-muted-foreground font-bold mb-2 block">Transitions</label>
-                   {activeNode.transitions.length === 0 && (
+                   {(activeNode.transitions ?? []).length === 0 && (
                      <div className="text-xs text-muted-foreground italic mb-2">No transitions defined.</div>
                    )}
                    <div className="space-y-2">
-                     {activeNode.transitions.map((t, idx) => (
+                     {(activeNode.transitions ?? []).map((t, idx) => (
                        <div key={idx} className="flex items-center justify-between p-2 rounded bg-white/5 text-xs">
                          <span className="font-mono text-primary">{t.event}</span>
                          <ArrowRight className="w-3 h-3 text-muted-foreground" />

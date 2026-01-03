@@ -432,7 +432,7 @@ export default function CartridgeLibrary() {
           </Link>
           <div className="flex items-center gap-2">
             <FolderOpen className="w-5 h-5 text-violet-400" />
-            <h1 className="text-lg font-semibold">Thing Buckets</h1>
+            <h1 className="text-lg font-semibold">Cartridge Library</h1>
           </div>
           <Badge variant="outline" className="text-zinc-400">
             {filteredCartridges.length} cartridges
