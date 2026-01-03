@@ -128,10 +128,19 @@ interface ToolsPanelProps {
   onToolPowerChange: (power: number) => void;
   magnetPolarity: 'attract' | 'repel';
   onMagnetPolarityChange: (polarity: 'attract' | 'repel') => void;
-  environmentalForces: ForceConfig[];
-  onForceToggle: (type: EnvironmentalForce) => void;
-  onForceIntensityChange: (type: EnvironmentalForce, intensity: number) => void;
+  environmentalForces?: ForceConfig[];
+  onForceToggle?: (type: EnvironmentalForce) => void;
+  onForceIntensityChange?: (type: EnvironmentalForce, intensity: number) => void;
 }
+
+const DEFAULT_FORCES: ForceConfig[] = [
+  { type: 'FIRE', intensity: 1200, enabled: false },
+  { type: 'ICE', intensity: 77, enabled: false },
+  { type: 'WIND', intensity: 25, enabled: false },
+  { type: 'WATER', intensity: 100, enabled: false },
+  { type: 'VACUUM', intensity: 1, enabled: false },
+  { type: 'NUKE', intensity: 1, enabled: false },
+];
 
 const TRANSFORM_TOOLS: { id: PhysicsTool; icon: React.ReactNode; label: string; shortcut?: string }[] = [
   { id: 'select', icon: <MousePointer2 className="w-4 h-4" />, label: 'Select', shortcut: 'V' },
@@ -155,9 +164,9 @@ export function ToolsPanel({
   onToolPowerChange,
   magnetPolarity,
   onMagnetPolarityChange,
-  environmentalForces,
-  onForceToggle,
-  onForceIntensityChange,
+  environmentalForces = DEFAULT_FORCES,
+  onForceToggle = () => {},
+  onForceIntensityChange = () => {},
 }: ToolsPanelProps) {
   const getForceConfig = (type: EnvironmentalForce) => 
     environmentalForces.find(f => f.type === type) || { type, intensity: 0, enabled: false };

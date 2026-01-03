@@ -20,11 +20,13 @@ import {
   Triangle, Settings, Layers, Zap, Save, Upload, CheckCircle, XCircle,
   Plus, Trash2, ArrowRight, GitBranch, X, Gamepad2, Vibrate,
   Pentagon, Hexagon, Diamond, Cone, FileImage, Eye, EyeOff,
-  Palette, Move, RotateCw, Maximize2, Database, Wrench, Users, Share2, Copy, FolderOpen
+  Palette, Move, RotateCw, Maximize2, Database, Wrench, Users, Share2, Copy, FolderOpen, Droplets
 } from "lucide-react";
 import { DockablePanel } from "@/components/DockablePanel";
 import { ToolsPanel, type PhysicsTool, type ForceConfig, type EnvironmentalForce } from "@/components/ToolsPanel";
 import { ControllerMappingsPanel } from "@/components/ControllerMappingsPanel";
+import { WaterContainer } from "@/components/WaterContainer";
+import { WaterControlPanel, createDefaultWaterContainer, type WaterContainerConfig } from "@/components/WaterControlPanel";
 import {
   createGestureState, startGesture, updateGesture, endGesture,
   calculateFlickVelocity, calculatePoolCueImpulse, calculateSlingshotImpulse,
@@ -1699,6 +1701,8 @@ export default function BluPrinceEditor() {
   const [gestureState, setGestureState] = useState<GestureState>(createGestureState());
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
   const [importProgress, setImportProgress] = useState<{ percent: number; stage: string; message: string } | null>(null);
+  const [waterContainers, setWaterContainers] = useState<WaterContainerConfig[]>([]);
+  const [activeWaterContainerId, setActiveWaterContainerId] = useState<string | null>(null);
   const rigidBodyRegistry = useRef<Map<string, RapierRigidBody>>(new Map());
   const editorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -2223,6 +2227,31 @@ export default function BluPrinceEditor() {
     ));
   }, []);
 
+  // Water container handlers
+  const handleAddWaterContainer = useCallback(() => {
+    const newContainer = createDefaultWaterContainer();
+    setWaterContainers(prev => [...prev, newContainer]);
+    setActiveWaterContainerId(newContainer.id);
+    toast({ title: "Water Container Added", description: "SPLISH SPLASH!" });
+  }, [toast]);
+
+  const handleRemoveWaterContainer = useCallback((id: string) => {
+    setWaterContainers(prev => prev.filter(c => c.id !== id));
+    if (activeWaterContainerId === id) {
+      setActiveWaterContainerId(null);
+    }
+  }, [activeWaterContainerId]);
+
+  const handleUpdateWaterContainer = useCallback((id: string, updates: Partial<WaterContainerConfig>) => {
+    setWaterContainers(prev => prev.map(c => 
+      c.id === id ? { ...c, ...updates } : c
+    ));
+  }, []);
+
+  // Get wind intensity for water waves
+  const windForce = environmentalForces.find(f => f.type === 'WIND');
+  const windIntensity = windForce?.enabled ? windForce.intensity : 0;
+
   const resetScene = () => {
     updateCartridgeWithSync(createNewCartridge());
     setSelectedId(null);
@@ -2451,6 +2480,25 @@ export default function BluPrinceEditor() {
           />
         </DockablePanel>
 
+        {/* Water Panel */}
+        <DockablePanel
+          id="water"
+          title="Water"
+          icon={<Droplets className="w-4 h-4" />}
+          defaultDocked={true}
+          defaultCollapsed={true}
+        >
+          <WaterControlPanel
+            containers={waterContainers}
+            onAddContainer={handleAddWaterContainer}
+            onRemoveContainer={handleRemoveWaterContainer}
+            onUpdateContainer={handleUpdateWaterContainer}
+            windIntensity={windIntensity}
+            activeContainerId={activeWaterContainerId}
+            onSelectContainer={setActiveWaterContainerId}
+          />
+        </DockablePanel>
+
         {/* Files Panel */}
         <DockablePanel
           id="files"
@@ -2670,6 +2718,21 @@ export default function BluPrinceEditor() {
               polarity={magnetPolarity}
               power={toolPower}
             />
+            
+            {/* Water Containers */}
+            {waterContainers.map(container => (
+              <WaterContainer
+                key={container.id}
+                position={container.position}
+                containerType={container.containerType}
+                maxVolume={container.maxVolume}
+                currentVolume={container.currentVolume}
+                containerRadius={container.containerRadius}
+                containerHeight={container.containerHeight}
+                showWaves={container.showWaves}
+                windIntensity={windIntensity}
+              />
+            ))}
           </Physics>
         </Suspense>
 
