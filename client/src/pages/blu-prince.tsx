@@ -1119,7 +1119,7 @@ export default function BluPrince() {
 
         <div 
           ref={canvasRef}
-          className="flex-1 relative bg-[#0c0c10] overflow-hidden"
+          className="flex-1 relative bg-[#0c0c10] overflow-auto"
           onMouseMove={handleCanvasMouseMove}
           onWheel={handleCanvasWheel}
         >
@@ -1129,14 +1129,7 @@ export default function BluPrince() {
             ))}
           </AnimatePresence>
           
-          <div className="absolute inset-0 opacity-[0.03]" 
-               style={{ 
-                 backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)',
-                 backgroundSize: '20px 20px'
-               }} 
-          />
-          
-          <div className="absolute bottom-4 left-4 flex gap-2">
+          <div className="absolute bottom-4 left-4 flex gap-2 z-50">
              <div className="flex bg-black/50 backdrop-blur rounded-lg border border-white/10 p-1">
                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleZoomOut} data-testid="button-zoom-out"><ZoomOut className="w-4 h-4" /></Button>
                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleZoomReset} data-testid="button-zoom-reset"><span className="text-xs">{Math.round(zoom * 100)}%</span></Button>
@@ -1145,9 +1138,20 @@ export default function BluPrince() {
           </div>
 
           <div 
-            className="absolute inset-0 origin-top-left"
-            style={{ transform: `scale(${zoom})` }}
+            className="relative origin-top-left"
+            style={{ 
+              transform: `scale(${zoom})`,
+              transformOrigin: 'top left',
+              width: '2000px',
+              height: '2000px'
+            }}
           >
+            <div className="absolute inset-0 opacity-[0.03]" 
+                 style={{ 
+                   backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)',
+                   backgroundSize: '20px 20px'
+                 }} 
+            />
             <div className="absolute inset-0 pointer-events-none">
               <svg className="w-full h-full" style={{ overflow: 'visible' }}>
                 <defs>
