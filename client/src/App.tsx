@@ -31,6 +31,7 @@ import AdminEvents from "@/pages/admin-events";
 import Utilities from "@/pages/utilities";
 import Playground from "@/pages/playground";
 import Widgets from "@/pages/widgets";
+import Pricing from "@/pages/pricing";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -52,6 +53,7 @@ function Router() {
       <Route path="/utilities" component={Utilities} />
       <Route path="/playground" component={Playground} />
       <Route path="/widgets" component={Widgets} />
+      <Route path="/pricing" component={Pricing} />
       <Route component={NotFound} />
     </Switch>
   );
