@@ -7,7 +7,36 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GeigerCounter } from "@/components/GeigerCounter";
 import { NixieDisplay, MagicEyeTube, TubeArray, VacuumTube } from "@/components/VacuumTubeDisplay";
 import { VUMeter, StereoVUMeter } from "@/components/VUMeter";
+import { SonarScanner, FishFinder } from "@/components/SonarWidgets";
+import { QRColorCustomizer } from "@/components/QRColorCustomizer";
+import { useTranslation } from "react-i18next";
+import { Anchor } from "lucide-react";
 import QRCodeLib from "qrcode";
+import i18n from "@/i18n/config";
+
+function LanguagePicker() {
+  const { t } = useTranslation();
+  const currentLang = i18n.language;
+  
+  const toggleLanguage = () => {
+    const newLang = currentLang === 'en' ? 'ru' : 'en';
+    i18n.changeLanguage(newLang);
+  };
+  
+  return (
+    <Button 
+      variant="ghost" 
+      size="sm" 
+      onClick={toggleLanguage}
+      className="h-8 px-2 text-xs font-mono text-purple-400 hover:text-purple-300 border border-purple-900/30"
+      data-testid="button-language-toggle"
+    >
+      <span className={currentLang === 'en' ? 'text-white' : 'text-gray-500'}>EN</span>
+      <span className="mx-1 text-gray-600">/</span>
+      <span className={currentLang === 'ru' ? 'text-white' : 'text-gray-500'}>РУ</span>
+    </Button>
+  );
+}
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Palette } from "lucide-react";
 
@@ -335,7 +364,8 @@ export default function WidgetsPage() {
               <p className="text-xs text-gray-500">TingOS Component Library</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <LanguagePicker />
             <NixieDisplay value={nixieValue} digits={4} size="small" />
           </div>
         </div>
@@ -351,7 +381,7 @@ export default function WidgetsPage() {
         </div>
 
         <Tabs defaultValue="radiation" className="space-y-6">
-          <TabsList className="bg-black/30 border border-purple-900/30">
+          <TabsList className="bg-black/30 border border-purple-900/30 flex-wrap">
             <TabsTrigger value="radiation" className="data-[state=active]:bg-purple-900/30">
               <Radio className="w-4 h-4 mr-2" />
               Radiation
@@ -363,6 +393,10 @@ export default function WidgetsPage() {
             <TabsTrigger value="audio" className="data-[state=active]:bg-purple-900/30">
               <Music className="w-4 h-4 mr-2" />
               Audio
+            </TabsTrigger>
+            <TabsTrigger value="marine" className="data-[state=active]:bg-purple-900/30">
+              <Anchor className="w-4 h-4 mr-2" />
+              Marine
             </TabsTrigger>
             <TabsTrigger value="gauges" className="data-[state=active]:bg-purple-900/30">
               <Gauge className="w-4 h-4 mr-2" />
@@ -511,6 +545,75 @@ export default function WidgetsPage() {
                 variant="classic" 
                 size="md" 
               />
+            </WidgetShowcase>
+          </TabsContent>
+
+          <TabsContent value="marine" className="space-y-6">
+            <WidgetShowcase
+              title="Submarine Sonar Scanner"
+              description="Military-grade rotating sweep sonar with ping audio, contact tracking, and multiple visual modes. Perfect for submarine simulators and naval games."
+              category="marine"
+              tossExample={`{
+  "widget": "SonarScanner",
+  "props": {
+    "mode": "active",
+    "gain": 0.7,
+    "rangeYards": 5000,
+    "variant": "military",
+    "sweepSpeed": 4
+  },
+  "bindings": {
+    "onPing": "context.lastPingTime = Date.now()"
+  }
+}`}
+              tngliId="w-sonar"
+            >
+              <div className="flex gap-6 flex-wrap justify-center">
+                <div className="text-center">
+                  <SonarScanner variant="military" size={220} />
+                  <span className="text-xs text-gray-500 mt-2 block">Military</span>
+                </div>
+                <div className="text-center">
+                  <SonarScanner variant="classic" size={220} />
+                  <span className="text-xs text-gray-500 mt-2 block">Classic</span>
+                </div>
+                <div className="text-center">
+                  <SonarScanner variant="modern" size={220} />
+                  <span className="text-xs text-gray-500 mt-2 block">Modern</span>
+                </div>
+              </div>
+            </WidgetShowcase>
+
+            <WidgetShowcase
+              title="Fish Finder"
+              description="Depth sonar with real-time fish echoes, bottom contour mapping, and water temperature. Multiple frequency modes for different fishing conditions."
+              category="marine"
+              tossExample={`{
+  "widget": "FishFinder",
+  "props": {
+    "maxDepth": 100,
+    "frequency": 200,
+    "sensitivity": 0.7,
+    "variant": "color",
+    "showTemp": true
+  }
+}`}
+              tngliId="w-fishfinder"
+            >
+              <div className="flex gap-6 flex-wrap justify-center">
+                <div className="text-center">
+                  <FishFinder variant="color" width={280} height={180} />
+                  <span className="text-xs text-gray-500 mt-2 block">Color</span>
+                </div>
+                <div className="text-center">
+                  <FishFinder variant="classic" width={280} height={180} />
+                  <span className="text-xs text-gray-500 mt-2 block">Classic</span>
+                </div>
+                <div className="text-center">
+                  <FishFinder variant="chirp" width={280} height={180} />
+                  <span className="text-xs text-gray-500 mt-2 block">CHIRP</span>
+                </div>
+              </div>
             </WidgetShowcase>
           </TabsContent>
 

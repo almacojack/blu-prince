@@ -63,6 +63,66 @@ export interface TossAssetRef {
   uri: string; // Must be a portable URL (ipfs://, https://, asset://)
 }
 
+// Sprite/Image asset for UI elements, game graphics, icons
+export interface TossImageMetadata {
+  name: string;
+  format: 'png' | 'jpg' | 'webp' | 'gif' | 'svg' | 'ico' | 'xpm' | 'bmp';
+  originalFormat: string;
+  width: number;
+  height: number;
+  fileSize: number;
+  compressedSize?: number;
+  hasAlpha: boolean;
+  colorDepth: 8 | 16 | 24 | 32;
+  palette?: string[]; // For indexed color images (XPM, GIF)
+  frameCount?: number; // For animated GIF
+  importedAt: string;
+  originalFilename: string;
+}
+
+export interface TossImageAsset {
+  id: string;
+  type: 'image';
+  metadata: TossImageMetadata;
+  data: string; // base64 encoded image data
+  thumbnail?: string; // small base64 preview for UI
+  variants?: {
+    // Multiple resolutions for responsive/retro displays
+    size: string; // e.g., "1x", "2x", "thumb", "icon"
+    data: string;
+    width: number;
+    height: number;
+  }[];
+}
+
+// Sprite sheet for animation and game graphics
+export interface TossSpriteSheetMetadata {
+  name: string;
+  format: 'png' | 'webp';
+  width: number;
+  height: number;
+  frameWidth: number;
+  frameHeight: number;
+  frameCount: number;
+  columns: number;
+  rows: number;
+  animations?: {
+    name: string;
+    frames: number[]; // frame indices
+    fps: number;
+    loop: boolean;
+  }[];
+  importedAt: string;
+  originalFilename: string;
+}
+
+export interface TossSpriteSheetAsset {
+  id: string;
+  type: 'spritesheet';
+  metadata: TossSpriteSheetMetadata;
+  data: string; // base64 encoded sprite sheet
+}
+
 // 3D Asset stored inline (for GLB, STL, etc.)
 export interface Toss3DAssetMetadata {
   name: string;
@@ -167,6 +227,10 @@ export interface TossAssetRegistry {
   fonts?: TossFontAsset[];
   // Sculpted/procedural models with edit history
   sculptedModels?: TossSculptedModel[];
+  // Images and sprites (PNG, JPG, WebP, GIF, SVG, ICO, XPM)
+  images?: TossImageAsset[];
+  // Sprite sheets for animation
+  spriteSheets?: TossSpriteSheetAsset[];
 }
 
 // THE FILE (The Portable Payload)

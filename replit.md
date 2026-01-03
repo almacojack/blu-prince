@@ -31,6 +31,16 @@ Preferred communication style: Simple, everyday language.
 - **Dual Theme System** - Cyberpunk Neon (default) and Victorian Brass themes available via theme switcher
 
 ### Recent Changes (January 2026)
+- **i18n Support** - Full internationalization with English and Russian languages via react-i18next, language picker in widget showcase
+- **Widget Library Expansion** - Added Submarine Sonar Scanner and Fish Finder simulator widgets with portable data models for TUI/MicroPython
+- **QR Color Customizer** - Reusable QR code component with 8 color presets and custom color picker (black/white default)
+- **3D Print Lab Panel** - New panel with watertight validation, leak particle animation, print bed preview, and repair tools
+- **TOSS Asset Schema Expansion**:
+  - FontAsset: TTF/OTF import with WOFF2 compression, glyph path extraction for 3D text extrusion
+  - ImageAsset: PNG, JPG, WebP, GIF, SVG, ICO, XPM, BMP with variants and thumbnails
+  - SpriteSheetAsset: Animation frame support with named animation sequences
+  - SculptedModel: CSG operation history for procedural model rebuilding
+- **Hint Component** - Unified tooltip wrapper with i18n integration
 - **Environmental Forces Panel** - Separated into its own dockable panel with scientific units (Kelvin, m/s, Pascals, Sieverts, Liters)
 - **Theme System** - Global ThemeProvider with Cyberpunk/Neon and Victorian/Brass themes, theme switcher in navigation
 - **Thing Catalog** - Library card motif component browser with search, star/archive, and grid/list views
