@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { 
@@ -12,11 +12,13 @@ import {
   User,
   LogOut,
   Cog,
+  FlaskConical,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { useTheme } from "@/contexts/ThemeContext";
+import { DEV_MODE_BANNER, getMarvinQuote } from "@shared/devMode";
 
 interface NavNode {
   id: string;
@@ -68,6 +70,16 @@ interface NeonPathNavProps {
   isFullscreen?: boolean;
 }
 
+const isDevEnvironment = (): boolean => {
+  if (typeof window !== 'undefined') {
+    return window.location.hostname === 'localhost' || 
+           window.location.hostname === '127.0.0.1' ||
+           window.location.hostname.includes('.replit.dev') ||
+           window.location.hostname.includes('.repl.co');
+  }
+  return false;
+};
+
 export function NeonPathNav({ 
   onCommandPaletteOpen, 
   onFullscreenToggle,
@@ -75,9 +87,17 @@ export function NeonPathNav({
 }: NeonPathNavProps) {
   const [location] = useLocation();
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
+  const [marvinQuote, setMarvinQuote] = useState<string>("");
   const { user, isLoading, isAuthenticated, logout } = useAuth();
   const { theme } = useTheme();
   const isVictorian = theme.variant === 'victorian';
+  const isDev = isDevEnvironment();
+  
+  useEffect(() => {
+    if (isDev) {
+      setMarvinQuote(getMarvinQuote());
+    }
+  }, [isDev]);
   
   const activeIndex = NAV_NODES.findIndex(n => {
     if (n.path === "/") return location === "/";
@@ -183,6 +203,33 @@ export function NeonPathNav({
             </div>
           </motion.div>
         </Link>
+
+        {isDev && (
+          <motion.div
+            className={cn(
+              "hidden md:flex items-center gap-1.5 px-2 py-1 rounded-md cursor-help",
+              isVictorian
+                ? "bg-amber-900/50 border border-amber-600/50"
+                : "bg-emerald-900/50 border border-emerald-500/50"
+            )}
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            whileHover={{ scale: 1.05 }}
+            title={marvinQuote}
+            data-testid="badge-dev-mode"
+          >
+            <FlaskConical className={cn(
+              "w-3.5 h-3.5",
+              isVictorian ? "text-amber-400" : "text-emerald-400"
+            )} />
+            <span className={cn(
+              "text-[10px] font-mono font-bold tracking-wider",
+              isVictorian ? "text-amber-300" : "text-emerald-300"
+            )}>
+              {isVictorian ? "DEV" : "DEV_MODE"}
+            </span>
+          </motion.div>
+        )}
 
         <div className="flex items-center gap-1 sm:gap-2">
           {NAV_NODES.map((node, index) => {
