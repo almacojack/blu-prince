@@ -12,6 +12,7 @@ import { AtariResetKnob } from "@/components/AtariResetKnob";
 import { AtariDockPanel, AtariDockedPanel, AtariMiniPanel, Atari5200CartridgeSlot, AtariSilverRail } from "@/components/AtariDockPanel";
 import { WinAmpPanel } from "@/components/WinAmpPanel";
 import { FritzingPanel, ElectronicPart } from "@/components/FritzingPanel";
+import { FlightControlsDashboard } from "@/components/FlightControlsDashboard";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -1425,7 +1426,7 @@ export default function BluPrince() {
 
         <div 
           ref={canvasRef}
-          className="flex-1 relative bg-[#0c0c10] overflow-auto"
+          className="flex-1 relative bg-[#0c0c10] overflow-hidden pb-24"
           onMouseMove={handleCanvasMouseMove}
           onWheel={handleCanvasWheel}
         >
@@ -1914,6 +1915,17 @@ export default function BluPrince() {
           </div>
         </div>
       </div>
+      
+      {/* Flight Controls Dashboard */}
+      <FlightControlsDashboard
+        onFlightInput={(input) => {
+          // Flight input handler - can be connected to 3D camera later
+          console.log('Flight input:', input);
+        }}
+        position={{ x: 0, y: 0, z: 0 }}
+        velocity={0}
+        heading={0}
+      />
     </div>
   );
 }

@@ -251,11 +251,33 @@ function VectorNode({ name, position, isInitial, isSelected, onSelect, phaseOffs
 
   return (
     <group ref={groupRef} position={position}>
+      {/* BOLD CIRCULAR TOKEN - Active state indicator */}
       {isSelected && (
-        <mesh scale={1.5}>
-          <icosahedronGeometry args={[0.6, 0]} />
-          <meshBasicMaterial color={theme.nodeSelectedColor} transparent opacity={0.1} wireframe />
-        </mesh>
+        <>
+          {/* Solid token ring */}
+          <mesh rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[0.85, 0.08, 16, 32]} />
+            <meshStandardMaterial 
+              color={theme.nodeSelectedColor}
+              emissive={theme.nodeSelectedColor}
+              emissiveIntensity={2.5}
+            />
+          </mesh>
+          {/* Outer glow ring */}
+          <mesh rotation={[Math.PI / 2, 0, 0]} scale={1.1}>
+            <torusGeometry args={[0.85, 0.15, 16, 32]} />
+            <meshBasicMaterial 
+              color={theme.nodeSelectedColor}
+              transparent
+              opacity={0.3}
+            />
+          </mesh>
+          {/* Pulsing outer halo */}
+          <mesh scale={1.8}>
+            <icosahedronGeometry args={[0.6, 0]} />
+            <meshBasicMaterial color={theme.nodeSelectedColor} transparent opacity={0.08} wireframe />
+          </mesh>
+        </>
       )}
       
       <mesh
@@ -268,7 +290,7 @@ function VectorNode({ name, position, isInitial, isSelected, onSelect, phaseOffs
         <meshStandardMaterial 
           color={color}
           emissive={color}
-          emissiveIntensity={theme.emissiveIntensity}
+          emissiveIntensity={isSelected ? theme.emissiveIntensity * 1.5 : theme.emissiveIntensity}
           wireframe={theme.wireframe}
           transparent
           opacity={theme.wireframe ? 0.9 : 1}
@@ -457,9 +479,39 @@ function VectorTransition({ fromState, toState, event, isHighlighted, isSelfLoop
   );
 }
 
-function CameraController({ onReady }: { onReady: (resetFn: () => void) => void }) {
+interface CameraControllerProps {
+  onReady: (resetFn: () => void, focusFn: (target: THREE.Vector3) => void) => void;
+}
+
+function CameraController({ onReady }: CameraControllerProps) {
   const { camera } = useThree();
   const controlsRef = useRef<any>(null);
+  const animatingRef = useRef(false);
+  const targetPosRef = useRef(new THREE.Vector3());
+  const startPosRef = useRef(new THREE.Vector3());
+  const startTargetRef = useRef(new THREE.Vector3());
+  const progressRef = useRef(0);
+  
+  useFrame((_, delta) => {
+    if (!animatingRef.current || !controlsRef.current) return;
+    
+    progressRef.current += delta * 2;
+    const t = Math.min(progressRef.current, 1);
+    const eased = 1 - Math.pow(1 - t, 3);
+    
+    const newTarget = new THREE.Vector3().lerpVectors(startTargetRef.current, targetPosRef.current, eased);
+    controlsRef.current.target.copy(newTarget);
+    
+    const offset = new THREE.Vector3(6, 4, 6);
+    const newCamPos = new THREE.Vector3().addVectors(newTarget, offset);
+    camera.position.lerpVectors(startPosRef.current, newCamPos, eased);
+    
+    controlsRef.current.update();
+    
+    if (t >= 1) {
+      animatingRef.current = false;
+    }
+  });
   
   React.useEffect(() => {
     const resetCamera = () => {
@@ -470,7 +522,17 @@ function CameraController({ onReady }: { onReady: (resetFn: () => void) => void 
         controlsRef.current.update();
       }
     };
-    onReady(resetCamera);
+    
+    const focusOnNode = (target: THREE.Vector3) => {
+      if (!controlsRef.current) return;
+      startPosRef.current.copy(camera.position);
+      startTargetRef.current.copy(controlsRef.current.target);
+      targetPosRef.current.copy(target);
+      progressRef.current = 0;
+      animatingRef.current = true;
+    };
+    
+    onReady(resetCamera, focusOnNode);
   }, [camera, onReady]);
   
   return (
@@ -493,17 +555,18 @@ function StatechartScene({
   selectedState, 
   onSelectState,
   theme,
-  onCameraReady
+  onCameraReady,
+  nodePositionsRef
 }: { 
   fsm: ItemFSM; 
   selectedState: string | null;
   onSelectState: (s: string) => void;
   theme: Theme3D;
-  onCameraReady: (resetFn: () => void) => void;
+  onCameraReady: (resetFn: () => void, focusFn: (target: THREE.Vector3) => void) => void;
+  nodePositionsRef: React.MutableRefObject<Record<string, THREE.Vector3>>;
 }) {
   const states = Object.keys(fsm.states);
   const positions = useMemo(() => calculateGeometricLayout(states), [states]);
-  const nodePositionsRef = useRef<Record<string, THREE.Vector3>>({});
 
   const transitions = useMemo(() => {
     const result: { from: string; to: string; event: string }[] = [];
@@ -570,15 +633,28 @@ export default function StatechartEditor() {
   const [newTarget, setNewTarget] = useState("");
   const [themeIndex, setThemeIndex] = useState(0);
   const resetCameraRef = useRef<(() => void) | null>(null);
+  const focusCameraRef = useRef<((target: THREE.Vector3) => void) | null>(null);
+  const nodePositionsRef = useRef<Record<string, THREE.Vector3>>({});
 
-  const handleCameraReady = useCallback((resetFn: () => void) => {
+  const handleCameraReady = useCallback((resetFn: () => void, focusFn: (target: THREE.Vector3) => void) => {
     resetCameraRef.current = resetFn;
+    focusCameraRef.current = focusFn;
   }, []);
 
   const zoomToFit = useCallback(() => {
     if (resetCameraRef.current) {
       resetCameraRef.current();
     }
+  }, []);
+
+  const handleSelectState = useCallback((stateName: string) => {
+    setSelectedState(stateName);
+    setTimeout(() => {
+      const pos = nodePositionsRef.current[stateName];
+      if (pos && focusCameraRef.current) {
+        focusCameraRef.current(pos);
+      }
+    }, 100);
   }, []);
 
   const theme = THEMES[themeIndex];
@@ -696,7 +772,7 @@ export default function StatechartEditor() {
                     background: selectedState === name ? theme.nodeColor + '20' : 'rgba(255,255,255,0.02)',
                     borderColor: selectedState === name ? theme.nodeColor + '60' : 'transparent'
                   }}
-                  onClick={() => setSelectedState(name)}
+                  onClick={() => handleSelectState(name)}
                   data-testid={`state-item-${name}`}
                 >
                   <div className="flex items-center gap-2">
@@ -808,9 +884,10 @@ export default function StatechartEditor() {
           <StatechartScene 
             fsm={fsm} 
             selectedState={selectedState}
-            onSelectState={setSelectedState}
+            onSelectState={handleSelectState}
             theme={theme}
             onCameraReady={handleCameraReady}
+            nodePositionsRef={nodePositionsRef}
           />
         </Canvas>
         

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SimulatorDisplay } from "@/components/SimulatorDisplay";
+import { HeroCarousel } from "@/components/HeroCarousel";
 
 const colorMap: Record<string, { bg: string, text: string, border: string, glow: string }> = {
   primary: { bg: "bg-primary", text: "text-primary", border: "border-primary", glow: "shadow-primary/50" },
@@ -134,7 +135,7 @@ export default function Home() {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="relative"
           >
-            <SimulatorDisplay showControls={true} autoAnimate={true} />
+            <HeroCarousel />
           </motion.div>
         </div>
       </section>
