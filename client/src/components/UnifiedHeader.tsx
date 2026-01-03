@@ -25,7 +25,8 @@ import {
   Menu,
   ZoomIn,
   ZoomOut,
-  Eye
+  Eye,
+  PlayCircle
 } from "lucide-react";
 import { useUiScale, MIN_SCALE, MAX_SCALE, DEFAULT_SCALE } from "@/contexts/UiScaleContext";
 import { Slider } from "@/components/ui/slider";
@@ -433,6 +434,7 @@ export function UnifiedHeader({
     { label: "Data Tables", icon: <Database className="w-5 h-5" />, path: "/data-tables" },
     { label: "Library", icon: <FolderOpen className="w-5 h-5" />, path: "/library" },
     { label: "Controller", icon: <Gamepad2 className="w-5 h-5" />, path: "/controller" },
+    { label: "Playground", icon: <PlayCircle className="w-5 h-5 text-[#7fff00]" />, path: "/playground" },
   ];
   
   return (
@@ -498,6 +500,12 @@ export function UnifiedHeader({
           <Link href="/">
             <Button variant="ghost" size="icon" className="h-11 w-11 text-muted-foreground hover:text-white touch-manipulation" data-testid="button-home">
               <ArrowLeft className="w-5 h-5" />
+            </Button>
+          </Link>
+          
+          <Link href="/playground">
+            <Button variant="ghost" size="icon" className="h-11 w-11 text-[#7fff00] hover:text-[#9fff33] hover:shadow-[0_0_10px_#7fff00aa] touch-manipulation" data-testid="button-playground-nav">
+              <PlayCircle className="w-5 h-5" />
             </Button>
           </Link>
           
