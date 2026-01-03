@@ -441,7 +441,7 @@ function PhysicsThing({
   );
 }
 
-// Mode indicator bar
+// Mode indicator bar - Pip-Boy/Steampunk industrial device style
 function ModeBar({ mode, onModeChange, testStatus }: { 
   mode: EditorMode; 
   onModeChange: (m: EditorMode) => void;
@@ -450,44 +450,152 @@ function ModeBar({ mode, onModeChange, testStatus }: {
   const modes: EditorMode[] = ["DESIGN", "TEST", "DEPLOY", "PLAY"];
   
   const canDeploy = testStatus === "pass";
+  const isSimulating = mode === "TEST" || mode === "PLAY";
   
   return (
-    <div className="flex items-center gap-1 bg-black/60 backdrop-blur rounded-lg p-1 border border-white/10">
-      {modes.map((m) => {
-        const isActive = mode === m;
-        const isDisabled = m === "DEPLOY" && !canDeploy;
-        
-        let bgColor = "bg-transparent";
-        if (isActive) {
-          bgColor = m === "DESIGN" ? "bg-blue-600" : 
-                    m === "TEST" ? "bg-yellow-600" : 
-                    m === "DEPLOY" ? "bg-green-600" : "bg-purple-600";
-        }
-        
-        return (
-          <Button
-            key={m}
-            size="sm"
-            variant="ghost"
-            disabled={isDisabled}
-            onClick={() => onModeChange(m)}
-            className={`${bgColor} ${isActive ? 'text-white' : 'text-muted-foreground'} 
-                       ${isDisabled ? 'opacity-30 cursor-not-allowed' : ''} 
-                       text-xs font-mono px-3`}
+    <div 
+      className="relative rounded-xl overflow-hidden"
+      style={{
+        background: "linear-gradient(135deg, #8b5a2b 0%, #654321 50%, #4a3219 100%)",
+        boxShadow: "inset 2px 2px 4px rgba(255,255,255,0.15), inset -2px -2px 4px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.5)",
+      }}
+      data-testid="mode-bar-enclosure"
+    >
+      {/* Rust/weathering texture */}
+      <div 
+        className="absolute inset-0 opacity-20 mix-blend-overlay pointer-events-none"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+        }}
+      />
+      
+      {/* Corner screws */}
+      {["-top-0.5 -left-0.5", "-top-0.5 -right-0.5", "-bottom-0.5 -left-0.5", "-bottom-0.5 -right-0.5"].map((pos, i) => (
+        <div 
+          key={i}
+          className={`absolute w-3 h-3 rounded-full ${pos}`}
+          style={{
+            background: "linear-gradient(135deg, #b8860b 0%, #8b6914 50%, #654321 100%)",
+            boxShadow: "inset 1px 1px 2px rgba(255,255,255,0.3), inset -1px -1px 2px rgba(0,0,0,0.5)",
+          }}
+        >
+          <div 
+            className="absolute inset-[3px] rounded-full"
+            style={{ background: "linear-gradient(135deg, #654321 0%, #3d2817 100%)" }}
+          />
+          <div 
+            className="absolute top-1/2 left-1/2 w-[6px] h-[1px] bg-zinc-600"
+            style={{ transform: "translate(-50%, -50%) rotate(45deg)" }}
+          />
+        </div>
+      ))}
+      
+      {/* Inner recessed panel */}
+      <div 
+        className="relative m-1.5 rounded-lg p-1"
+        style={{
+          background: "linear-gradient(180deg, #1a1408 0%, #0f0c05 50%, #0a0805 100%)",
+          boxShadow: "inset 3px 3px 8px rgba(0,0,0,0.8), inset -1px -1px 3px rgba(139,69,19,0.2)",
+          border: "1px solid rgba(139,69,19,0.4)",
+        }}
+      >
+        {/* Status indicator bar */}
+        <div 
+          className="flex items-center justify-between px-2 py-1 mb-1 rounded"
+          style={{
+            background: "linear-gradient(90deg, rgba(139,69,19,0.3) 0%, transparent 50%, rgba(139,69,19,0.3) 100%)",
+            borderBottom: "1px solid rgba(139,69,19,0.3)",
+          }}
+        >
+          <div className="flex items-center gap-1.5">
+            <div 
+              className={`w-2 h-2 rounded-full ${isSimulating ? "animate-pulse" : ""}`}
+              style={{
+                background: isSimulating ? "#4ade80" : "#ef4444",
+                boxShadow: isSimulating ? "0 0 8px rgba(74,222,128,0.8)" : "0 0 4px rgba(239,68,68,0.5)",
+              }}
+            />
+            <span 
+              className="text-[9px] font-mono font-bold uppercase tracking-wider"
+              style={{
+                color: isSimulating ? "#4ade80" : "#d4a574",
+                textShadow: isSimulating ? "0 0 6px rgba(74,222,128,0.5)" : "0 0 4px rgba(217,119,6,0.3)",
+              }}
+            >
+              {isSimulating ? "SIMULATION ACTIVE" : "STANDBY"}
+            </span>
+          </div>
+          <span 
+            className="text-[8px] font-mono"
+            style={{ color: "#8b7355" }}
           >
-            {m}
-            {m === "TEST" && testStatus === "running" && (
-              <span className="ml-1 w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
-            )}
-            {m === "TEST" && testStatus === "pass" && (
-              <CheckCircle className="ml-1 w-3 h-3 text-green-400" />
-            )}
-            {m === "TEST" && testStatus === "fail" && (
-              <XCircle className="ml-1 w-3 h-3 text-red-400" />
-            )}
-          </Button>
-        );
-      })}
+            v1.0
+          </span>
+        </div>
+        
+        {/* Mode buttons - hardware switch style */}
+        <div className="flex gap-0.5">
+          {modes.map((m) => {
+            const isActive = mode === m;
+            const isDisabled = m === "DEPLOY" && !canDeploy;
+            
+            const modeColors = {
+              DESIGN: { active: "#3b82f6", glow: "rgba(59,130,246,0.6)" },
+              TEST: { active: "#eab308", glow: "rgba(234,179,8,0.6)" },
+              DEPLOY: { active: "#22c55e", glow: "rgba(34,197,94,0.6)" },
+              PLAY: { active: "#a855f7", glow: "rgba(168,85,247,0.6)" },
+            };
+            
+            const colors = modeColors[m];
+            
+            return (
+              <button
+                key={m}
+                disabled={isDisabled}
+                onClick={() => onModeChange(m)}
+                className="relative flex-1 py-1.5 px-2 rounded text-[10px] font-mono font-bold uppercase tracking-wide transition-all"
+                style={{
+                  background: isActive 
+                    ? `linear-gradient(180deg, ${colors.active} 0%, ${colors.active}cc 100%)`
+                    : "linear-gradient(180deg, #2a2015 0%, #1a1408 100%)",
+                  boxShadow: isActive
+                    ? `0 0 12px ${colors.glow}, inset 0 1px 1px rgba(255,255,255,0.2)`
+                    : "inset 2px 2px 4px rgba(0,0,0,0.5), inset -1px -1px 2px rgba(139,69,19,0.1)",
+                  border: isActive ? `1px solid ${colors.active}` : "1px solid rgba(139,69,19,0.3)",
+                  color: isActive ? "#fff" : "#8b7355",
+                  textShadow: isActive ? "0 1px 2px rgba(0,0,0,0.5)" : "none",
+                  opacity: isDisabled ? 0.3 : 1,
+                  cursor: isDisabled ? "not-allowed" : "pointer",
+                }}
+                data-testid={`button-mode-${m.toLowerCase()}`}
+              >
+                {m}
+                {m === "TEST" && testStatus === "running" && (
+                  <span 
+                    className="ml-1 w-1.5 h-1.5 rounded-full inline-block animate-pulse"
+                    style={{ background: "#fbbf24", boxShadow: "0 0 6px rgba(251,191,36,0.8)" }}
+                  />
+                )}
+                {m === "TEST" && testStatus === "pass" && (
+                  <CheckCircle className="ml-1 w-3 h-3 text-green-400 inline" />
+                )}
+                {m === "TEST" && testStatus === "fail" && (
+                  <XCircle className="ml-1 w-3 h-3 text-red-400 inline" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      
+      {/* Outer frame border */}
+      <div 
+        className="absolute inset-0 rounded-xl pointer-events-none"
+        style={{
+          border: "2px solid rgba(139,69,19,0.6)",
+          boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.3)",
+        }}
+      />
     </div>
   );
 }
