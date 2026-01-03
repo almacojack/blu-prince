@@ -11,6 +11,7 @@ import {
 import { AtariResetKnob } from "@/components/AtariResetKnob";
 import { AtariDockPanel, AtariDockedPanel, AtariMiniPanel, Atari5200CartridgeSlot, AtariSilverRail } from "@/components/AtariDockPanel";
 import { WinAmpPanel } from "@/components/WinAmpPanel";
+import { ScrollableButtonPanel } from "@/components/ScrollableButtonPanel";
 import { FritzingPanel, ElectronicPart } from "@/components/FritzingPanel";
 import { FlightControlsDashboard } from "@/components/FlightControlsDashboard";
 import { DockablePanel } from "@/components/DockablePanel";
@@ -458,26 +459,30 @@ function CartridgeBezel({
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <AnimatePresence>
-                <CollaboratorAvatars users={collaborators} myColor={myColor} />
-              </AnimatePresence>
+            <ScrollableButtonPanel height={36} className="max-w-[400px] xl:max-w-none">
+              <div className="flex items-center h-9">
+                <AnimatePresence>
+                  <CollaboratorAvatars users={collaborators} myColor={myColor} />
+                </AnimatePresence>
+              </div>
               
               {isCollabConnected && roomId && (
                 <Badge 
                   variant="outline" 
-                  className="text-[8px] h-5 px-2 border-green-500/50 text-green-400 bg-green-500/10 gap-1"
+                  className="text-[8px] h-9 px-2 border-green-500/50 text-green-400 bg-green-500/10 gap-1 shrink-0"
                 >
                   <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
                   LIVE
                 </Badge>
               )}
               
-              <WolfensteinHealth health={isOnline ? 100 : 40} />
+              <div className="h-9 flex items-center shrink-0">
+                <WolfensteinHealth health={isOnline ? 100 : 40} />
+              </div>
               
-              <div className="h-6 w-px bg-white/10" />
+              <div className="h-9 w-px bg-white/10 shrink-0" />
               
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 h-9 px-2 rounded bg-black/20 shrink-0">
                 {isOnline ? (
                   <Cloud className="w-3 h-3 text-green-400" />
                 ) : (
@@ -489,9 +494,8 @@ function CartridgeBezel({
               </div>
               
               <Button 
-                size="sm" 
                 variant="ghost" 
-                className="gap-2 text-gray-400 hover:text-cyan-400 hover:bg-cyan-500/10" 
+                className="h-9 gap-2 text-gray-400 hover:text-cyan-400 hover:bg-cyan-500/10 shrink-0" 
                 onClick={onShareClick}
                 data-testid="button-share"
               >
@@ -500,9 +504,8 @@ function CartridgeBezel({
               </Button>
               
               <Button 
-                size="sm" 
                 variant="ghost" 
-                className="gap-2 text-gray-400 hover:text-white hover:bg-white/5" 
+                className="h-9 gap-2 text-gray-400 hover:text-white hover:bg-white/5 shrink-0" 
                 onClick={onInspect}
               >
                 <FileJson className="w-4 h-4" />
@@ -510,9 +513,8 @@ function CartridgeBezel({
               </Button>
               
               <Button 
-                size="sm" 
                 variant="ghost" 
-                className="gap-2 text-gray-400 hover:text-white hover:bg-white/5" 
+                className="h-9 gap-2 text-gray-400 hover:text-white hover:bg-white/5 shrink-0" 
                 onClick={onSave}
                 disabled={isSaving}
               >
@@ -521,14 +523,13 @@ function CartridgeBezel({
               </Button>
               
               <Button 
-                size="sm" 
-                className="bg-gradient-to-r from-purple-600/30 to-cyan-600/30 hover:from-purple-600/40 hover:to-cyan-600/40 text-white border border-purple-500/30 gap-2"
+                className="h-9 bg-gradient-to-r from-purple-600/30 to-cyan-600/30 hover:from-purple-600/40 hover:to-cyan-600/40 text-white border border-purple-500/30 gap-2 shrink-0"
                 onClick={onExport}
               >
                 <Download className="w-4 h-4" />
                 <span className="text-xs">Export</span>
               </Button>
-            </div>
+            </ScrollableButtonPanel>
           </div>
         </div>
         
