@@ -23,7 +23,7 @@ import {
   Palette, Move, RotateCw, Maximize2, Database, Wrench, Users, Share2, Copy, FolderOpen
 } from "lucide-react";
 import { DockablePanel } from "@/components/DockablePanel";
-import { ToolsPanel, type PhysicsTool } from "@/components/ToolsPanel";
+import { ToolsPanel, type PhysicsTool, type ForceConfig, type EnvironmentalForce } from "@/components/ToolsPanel";
 import { ControllerMappingsPanel } from "@/components/ControllerMappingsPanel";
 import {
   createGestureState, startGesture, updateGesture, endGesture,
@@ -1686,6 +1686,14 @@ export default function BluPrinceEditor() {
   const [toolPower, setToolPower] = useState(100);
   const [magnetPolarity, setMagnetPolarity] = useState<'attract' | 'repel'>('attract');
   const [magnetizedObjects, setMagnetizedObjects] = useState<Set<string>>(new Set());
+  const [environmentalForces, setEnvironmentalForces] = useState<ForceConfig[]>([
+    { type: 'FIRE', intensity: 1200, enabled: false },
+    { type: 'ICE', intensity: 77, enabled: false },
+    { type: 'WIND', intensity: 25, enabled: false },
+    { type: 'WATER', intensity: 100, enabled: false },
+    { type: 'VACUUM', intensity: 1, enabled: false },
+    { type: 'NUKE', intensity: 1, enabled: false },
+  ]);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [collaborationEnabled, setCollaborationEnabled] = useState(false);
   const [gestureState, setGestureState] = useState<GestureState>(createGestureState());
@@ -2202,6 +2210,19 @@ export default function BluPrinceEditor() {
     });
   };
 
+  // Environmental force handlers
+  const handleForceToggle = useCallback((type: EnvironmentalForce) => {
+    setEnvironmentalForces(prev => prev.map(f => 
+      f.type === type ? { ...f, enabled: !f.enabled } : f
+    ));
+  }, []);
+
+  const handleForceIntensityChange = useCallback((type: EnvironmentalForce, intensity: number) => {
+    setEnvironmentalForces(prev => prev.map(f => 
+      f.type === type ? { ...f, intensity } : f
+    ));
+  }, []);
+
   const resetScene = () => {
     updateCartridgeWithSync(createNewCartridge());
     setSelectedId(null);
@@ -2424,6 +2445,9 @@ export default function BluPrinceEditor() {
             onToolPowerChange={setToolPower}
             magnetPolarity={magnetPolarity}
             onMagnetPolarityChange={setMagnetPolarity}
+            environmentalForces={environmentalForces}
+            onForceToggle={handleForceToggle}
+            onForceIntensityChange={handleForceIntensityChange}
           />
         </DockablePanel>
 
