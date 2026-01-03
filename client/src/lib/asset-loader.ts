@@ -133,10 +133,15 @@ export async function exportAsSTL(asset: Toss3DAsset): Promise<Blob | null> {
   
   result.object3D.traverse((child) => {
     if (child instanceof THREE.Mesh && child.geometry) {
-      const clonedGeometry = child.geometry.clone();
+      let geom = child.geometry.clone();
       child.updateMatrixWorld();
-      clonedGeometry.applyMatrix4(child.matrixWorld);
-      geometries.push(clonedGeometry);
+      geom.applyMatrix4(child.matrixWorld);
+      
+      if (geom.index) {
+        geom = geom.toNonIndexed();
+      }
+      
+      geometries.push(geom);
     }
   });
   
@@ -152,24 +157,25 @@ export async function exportAsSTL(asset: Toss3DAsset): Promise<Blob | null> {
     mergedGeometry = merged;
   }
   
+  if (mergedGeometry.index) {
+    mergedGeometry = mergedGeometry.toNonIndexed();
+  }
+  
   const stlData = generateSTLBinary(mergedGeometry);
   return new Blob([stlData], { type: 'application/octet-stream' });
 }
 
 function generateSTLBinary(geometry: THREE.BufferGeometry): ArrayBuffer {
   const positionAttr = geometry.getAttribute('position');
-  const indexAttr = geometry.getIndex();
-  
-  let triangleCount: number;
-  if (indexAttr) {
-    triangleCount = indexAttr.count / 3;
-  } else {
-    triangleCount = positionAttr.count / 3;
-  }
+  const triangleCount = Math.floor(positionAttr.count / 3);
   
   const bufferSize = 84 + triangleCount * 50;
   const buffer = new ArrayBuffer(bufferSize);
   const dv = new DataView(buffer);
+  
+  for (let i = 0; i < 80; i++) {
+    dv.setUint8(i, 0);
+  }
   
   let offset = 80;
   dv.setUint32(offset, triangleCount, true);
@@ -183,16 +189,9 @@ function generateSTLBinary(geometry: THREE.BufferGeometry): ArrayBuffer {
   const edge2 = new THREE.Vector3();
   
   for (let i = 0; i < triangleCount; i++) {
-    let i1: number, i2: number, i3: number;
-    if (indexAttr) {
-      i1 = indexAttr.getX(i * 3);
-      i2 = indexAttr.getX(i * 3 + 1);
-      i3 = indexAttr.getX(i * 3 + 2);
-    } else {
-      i1 = i * 3;
-      i2 = i * 3 + 1;
-      i3 = i * 3 + 2;
-    }
+    const i1 = i * 3;
+    const i2 = i * 3 + 1;
+    const i3 = i * 3 + 2;
     
     v1.fromBufferAttribute(positionAttr, i1);
     v2.fromBufferAttribute(positionAttr, i2);
@@ -200,7 +199,14 @@ function generateSTLBinary(geometry: THREE.BufferGeometry): ArrayBuffer {
     
     edge1.subVectors(v2, v1);
     edge2.subVectors(v3, v1);
-    normal.crossVectors(edge1, edge2).normalize();
+    normal.crossVectors(edge1, edge2);
+    
+    const len = normal.length();
+    if (len > 0.0001) {
+      normal.divideScalar(len);
+    } else {
+      normal.set(0, 0, 1);
+    }
     
     dv.setFloat32(offset, normal.x, true); offset += 4;
     dv.setFloat32(offset, normal.y, true); offset += 4;
