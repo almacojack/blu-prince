@@ -177,6 +177,7 @@ export type FamousEvent = typeof famousEvents.$inferSelect;
 // Widget Documentation - Dynamic docs per component
 export const widgetDocs = pgTable("widget_docs", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tngli_id: text("tngli_id").unique(),
   component_name: text("component_name").notNull().unique(),
   display_name: text("display_name").notNull(),
   description: text("description").notNull(),
@@ -185,6 +186,7 @@ export const widgetDocs = pgTable("widget_docs", {
   props_schema: jsonb("props_schema"),
   usage_notes: text("usage_notes"),
   tags: text("tags").array(),
+  screenshot_url: text("screenshot_url"),
   is_published: boolean("is_published").default(true).notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),

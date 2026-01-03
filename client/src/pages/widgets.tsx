@@ -1,22 +1,64 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { ArrowLeft, Copy, Check, Zap, Radio, Gauge, Monitor, Music } from "lucide-react";
+import { ArrowLeft, Copy, Check, Zap, Radio, Gauge, Monitor, Music, QrCode, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GeigerCounter } from "@/components/GeigerCounter";
 import { NixieDisplay, MagicEyeTube, TubeArray, VacuumTube } from "@/components/VacuumTubeDisplay";
 import { VUMeter, StereoVUMeter } from "@/components/VUMeter";
+import QRCodeLib from "qrcode";
+
+function WidgetQRCode({ tngliId, title }: { tngliId: string; title: string }) {
+  const [qrDataUrl, setQrDataUrl] = useState<string>("");
+  const url = `https://tng.li?id=${tngliId}`;
+
+  useEffect(() => {
+    QRCodeLib.toDataURL(url, {
+      width: 200,
+      margin: 2,
+      color: { dark: "#a855f7", light: "#0a0a14" },
+      errorCorrectionLevel: "H",
+    }).then(setQrDataUrl).catch(console.error);
+  }, [url]);
+
+  const handleDownload = () => {
+    if (!qrDataUrl) return;
+    const link = document.createElement("a");
+    link.download = `${tngliId}-qr.png`;
+    link.href = qrDataUrl;
+    link.click();
+  };
+
+  return (
+    <div className="flex flex-col items-center gap-2 p-4 rounded-lg bg-black/40 border border-purple-500/20">
+      <div className="text-xs text-purple-400 font-mono flex items-center gap-1">
+        <QrCode className="w-3 h-3" />
+        {tngliId}
+      </div>
+      {qrDataUrl && (
+        <img src={qrDataUrl} alt={`QR for ${title}`} className="rounded-lg" style={{ width: 200, height: 200 }} />
+      )}
+      <div className="text-[10px] text-gray-500 font-mono text-center break-all max-w-[200px]">
+        {url}
+      </div>
+      <Button variant="ghost" size="sm" className="text-xs text-purple-400" onClick={handleDownload}>
+        <Download className="w-3 h-3 mr-1" /> Download QR
+      </Button>
+    </div>
+  );
+}
 
 interface WidgetShowcaseProps {
   title: string;
   description: string;
   category: string;
   tossExample: string;
+  tngliId?: string;
   children: React.ReactNode;
 }
 
-function WidgetShowcase({ title, description, category, tossExample, children }: WidgetShowcaseProps) {
+function WidgetShowcase({ title, description, category, tossExample, tngliId, children }: WidgetShowcaseProps) {
   const [copied, setCopied] = useState(false);
 
   const copyToClipboard = () => {
@@ -52,8 +94,13 @@ function WidgetShowcase({ title, description, category, tossExample, children }:
         <p className="text-sm text-gray-400">{description}</p>
       </div>
 
-      <div className="p-6 flex items-center justify-center min-h-[200px] bg-black/20">
-        {children}
+      <div className="p-6 flex flex-wrap items-start justify-center gap-6 min-h-[200px] bg-black/20">
+        <div className="flex items-center justify-center flex-1 min-w-[280px]">
+          {children}
+        </div>
+        {tngliId && (
+          <WidgetQRCode tngliId={tngliId} title={title} />
+        )}
       </div>
 
       <div className="border-t border-purple-900/30">
@@ -233,6 +280,7 @@ export default function WidgetsPage() {
               description="Authentic radiation detector with clicking audio, analog meter, and CPM readout. Perfect for Cold War era game aesthetics."
               category="radiation"
               tossExample={geigerToss}
+              tngliId="w-geiger"
             >
               <div className="flex gap-6 flex-wrap justify-center">
                 <div className="text-center">
@@ -274,6 +322,7 @@ export default function WidgetsPage() {
               description="Warm orange glow of nixie tube digits. Stack multiple for counters, clocks, or numeric displays."
               category="display"
               tossExample={nixieToss}
+              tngliId="w-nixie"
             >
               <div className="flex gap-8 flex-wrap justify-center items-end">
                 <NixieDisplay value={nixieValue} digits={4} size="small" label="SMALL" />
@@ -287,6 +336,7 @@ export default function WidgetsPage() {
               description="Classic tuning indicator with eerie green phosphor glow. Three variants for different visual effects."
               category="indicator"
               tossExample={magicEyeToss}
+              tngliId="w-magiceye"
             >
               <div className="flex gap-8 flex-wrap justify-center items-center">
                 <div className="text-center">
@@ -309,6 +359,7 @@ export default function WidgetsPage() {
               description="Glowing vacuum tubes with animated filaments. Mix triodes, pentodes, and rectifiers for authentic amp aesthetics."
               category="decorative"
               tossExample={tubeArrayToss}
+              tngliId="w-tubearray"
             >
               <div className="flex flex-col gap-6 items-center">
                 <TubeArray count={5} type="mixed" size="medium" />
@@ -336,6 +387,7 @@ export default function WidgetsPage() {
               description="Analog volume unit meter with bouncing needle, dB scale, and peak LED. Multiple visual styles available."
               category="audio"
               tossExample={vuMeterToss}
+              tngliId="w-vumeter"
             >
               <div className="flex gap-6 flex-wrap justify-center">
                 <div className="text-center">
@@ -355,6 +407,7 @@ export default function WidgetsPage() {
               description="Paired left/right channel meters for stereo audio visualization. Perfect for music players and audio apps."
               category="audio"
               tossExample={stereoVuToss}
+              tngliId="w-stereovu"
             >
               <StereoVUMeter 
                 leftLevel={vuLevel + (Math.random() - 0.5) * 0.2} 

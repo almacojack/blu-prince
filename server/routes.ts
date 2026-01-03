@@ -647,6 +647,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const widgetDefs = [
         {
           component_name: "GeigerCounter",
+          tngli_id: "w-geiger",
           display_name: "Geiger Counter",
           description: "Authentic radiation detector with clicking audio, analog meter, and CPM readout. Perfect for Cold War era game aesthetics with classic, military, and steampunk variants.",
           category: "radiation",
@@ -668,6 +669,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         },
         {
           component_name: "NixieDisplay",
+          tngli_id: "w-nixie",
           display_name: "Nixie Tube Display",
           description: "Warm orange glow of nixie tube digits. Stack multiple tubes for counters, clocks, or numeric displays with authentic vacuum tube aesthetics.",
           category: "display",
@@ -687,6 +689,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         },
         {
           component_name: "MagicEyeTube",
+          tngli_id: "w-magiceye",
           display_name: "Magic Eye Tube",
           description: "Classic tuning indicator with eerie green phosphor glow. Three variants (classic, dual, target) for different visual effects as signal strength indicators.",
           category: "indicator",
@@ -705,6 +708,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         },
         {
           component_name: "TubeArray",
+          tngli_id: "w-tubearray",
           display_name: "Vacuum Tube Array",
           description: "Glowing vacuum tubes with animated filaments. Mix triodes, pentodes, and rectifiers for authentic amplifier aesthetics with warm filament glow.",
           category: "decorative",
@@ -724,6 +728,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         },
         {
           component_name: "VUMeter",
+          tngli_id: "w-vumeter",
           display_name: "VU Meter",
           description: "Analog volume unit meter with bouncing needle, dB scale, and peak LED. Available in classic, steampunk, and neon variants for audio visualization.",
           category: "audio",
@@ -744,6 +749,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         },
         {
           component_name: "StereoVUMeter",
+          tngli_id: "w-stereovu",
           display_name: "Stereo VU Meters",
           description: "Paired left/right channel meters for stereo audio visualization. Perfect for music players, DAWs, and audio monitoring applications.",
           category: "audio",
