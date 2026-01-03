@@ -1402,12 +1402,12 @@ export default function BluPrince() {
           
           <AtariDockPanel
             title="Controls"
-            initialPosition={{ x: 16, y: typeof window !== 'undefined' ? window.innerHeight - 200 : 400 }}
-            initialSize={{ width: 200, height: 140 }}
+            initialPosition={{ x: 16, y: typeof window !== 'undefined' ? window.innerHeight - 220 : 400 }}
+            initialSize={{ width: 200, height: 180 }}
             minWidth={180}
-            minHeight={100}
+            minHeight={160}
             maxWidth={300}
-            maxHeight={200}
+            maxHeight={250}
             data-testid="panel-controls"
           >
             <div className="flex flex-col gap-2">
