@@ -23,6 +23,19 @@ export interface TossManifest {
     author: string;
     version: string;       // Cartridge Version
     icon_asset_key?: string; // Reference to an asset key
+    
+    // Optional but encouraged - sign of a great mind
+    motivation?: string;   // WHY does this cartridge exist? What drives its creation?
+    
+    // SEO fields for discoverability
+    seo?: {
+      keywords?: string[];      // Search keywords
+      category?: string;        // Primary category
+      tags?: string[];          // Hashtags/labels
+      language?: string;        // ISO 639-1 code (en, ru, ja, etc.)
+      ageRating?: 'everyone' | 'teen' | 'mature';
+      previewImage?: string;    // Open Graph image asset key
+    };
   };
 }
 

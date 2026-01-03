@@ -9,7 +9,8 @@ export function createHelpCartridge(): TossCartridge {
     description: "Welcome to TingOs! This interactive manual teaches you everything you need to know.",
     version: "1.0.0",
     created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
+    updated_at: new Date().toISOString(),
+    motivation: "Every platform deserves an interactive guide that respects the user's time while sparking curiosity. This cartridge exists to transform documentation from a chore into an adventure."
   };
   
   const welcomeBox = createThing("box", { x: 0, y: 2, z: 0 }, { 

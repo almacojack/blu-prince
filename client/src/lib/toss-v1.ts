@@ -413,6 +413,15 @@ export interface TossMeta {
   version?: string;
   created_at?: string;
   updated_at?: string;
+  motivation?: string;  // WHY does this cartridge exist?
+  seo?: {
+    keywords?: string[];
+    category?: string;
+    tags?: string[];
+    language?: string;
+    ageRating?: 'everyone' | 'teen' | 'mature';
+    previewImage?: string;
+  };
 }
 
 // Test harness for cartridge validation
