@@ -3,8 +3,17 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertCartridgeSchema } from "@shared/schema";
 import { z } from "zod";
+import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
+import { setupWebSocket, getChannelStats } from "./websocket";
 
 export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
+  // Setup authentication FIRST
+  await setupAuth(app);
+  registerAuthRoutes(app);
+  
+  // Setup WebSocket for controller events
+  setupWebSocket(httpServer);
+  
   // Health check
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok" });

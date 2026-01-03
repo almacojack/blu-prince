@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { ArrowRight, Gamepad2, Users, Briefcase, Terminal, Layers, Hexagon, Code, Cpu } from "lucide-react";
+import { ArrowRight, Gamepad2, Users, Briefcase, Terminal, Layers, Hexagon, Code, Cpu, LogOut, User } from "lucide-react";
 import heroImage from "@assets/generated_images/retro_futuristic_data_cartridge.png";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/use-auth";
 
 const colorMap: Record<string, { bg: string, text: string, border: string, glow: string }> = {
   primary: { bg: "bg-primary", text: "text-primary", border: "border-primary", glow: "shadow-primary/50" },
@@ -55,6 +56,8 @@ const EcosystemCard = ({ title, description, icon: Icon, colorKey, domain, statu
 };
 
 export default function Home() {
+  const { user, isLoading, isAuthenticated, logout } = useAuth();
+  
   return (
     <div className="relative min-h-screen overflow-hidden">
       {/* Background Gradients */}
@@ -77,9 +80,41 @@ export default function Home() {
           <a href="#" className="hover:text-primary transition-colors">MULTIPLAYER</a>
           <a href="#" className="hover:text-primary transition-colors">BPM</a>
         </div>
-        <Button variant="outline" className="font-mono text-xs border-primary/50 text-primary hover:bg-primary/10">
-          Sign In
-        </Button>
+        {isLoading ? (
+          <Button variant="outline" className="font-mono text-xs border-primary/50 text-primary" disabled>
+            Loading...
+          </Button>
+        ) : isAuthenticated ? (
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              {user?.profileImageUrl ? (
+                <img src={user.profileImageUrl} alt="" className="w-8 h-8 rounded-full border border-primary/50" />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                  <User className="w-4 h-4 text-primary" />
+                </div>
+              )}
+              <span className="text-xs font-mono text-white hidden md:inline">
+                {user?.firstName || user?.email?.split("@")[0] || "User"}
+              </span>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => logout()}
+              className="font-mono text-xs text-muted-foreground hover:text-red-400"
+              data-testid="button-logout"
+            >
+              <LogOut className="w-4 h-4" />
+            </Button>
+          </div>
+        ) : (
+          <a href="/api/login">
+            <Button variant="outline" className="font-mono text-xs border-primary/50 text-primary hover:bg-primary/10" data-testid="button-login">
+              Sign In
+            </Button>
+          </a>
+        )}
       </nav>
 
       {/* Hero Section */}
