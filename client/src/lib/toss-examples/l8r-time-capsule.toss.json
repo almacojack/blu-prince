@@ -1,0 +1,188 @@
+{
+  "toss_version": "1.0",
+  "manifest": {
+    "id": "l8r-time-capsule-001",
+    "tngli_id": "l8r_cap_001",
+    "title": "Time Capsule",
+    "author": "l8r.co",
+    "version": "1.0.0",
+    "description": "Schedule future events with countdown timers and notifications",
+    "tenant": "l8r",
+    "tags": ["scheduling", "timer", "countdown", "reminder"],
+    "thumbnail": "clock-brass.png"
+  },
+  "memory": {
+    "scheduled_items": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "id": "string",
+        "title": "string",
+        "target_time": "datetime",
+        "location": "geojson|null",
+        "status": "pending|active|completed|snoozed"
+      }
+    },
+    "current_item_index": {
+      "type": "number",
+      "default": 0
+    },
+    "snooze_duration_ms": {
+      "type": "number",
+      "default": 300000
+    },
+    "timezone": {
+      "type": "string",
+      "default": "UTC"
+    }
+  },
+  "fsm": {
+    "initial": "idle",
+    "states": {
+      "idle": {
+        "description": "Waiting for scheduled time or user action",
+        "on": {
+          "TIME_REACHED": "alerting",
+          "ADD_ITEM": "editing",
+          "NAVIGATE_NEXT": {
+            "actions": ["incrementIndex"]
+          },
+          "NAVIGATE_PREV": {
+            "actions": ["decrementIndex"]
+          }
+        }
+      },
+      "editing": {
+        "description": "User is creating or modifying a scheduled item",
+        "on": {
+          "SAVE_ITEM": {
+            "target": "idle",
+            "actions": ["saveItem", "scheduleTimer"]
+          },
+          "CANCEL": "idle",
+          "PICK_SPACETIME": "spacetime_picker"
+        }
+      },
+      "spacetime_picker": {
+        "description": "Steampunk spacetime selector is active",
+        "on": {
+          "SPACETIME_SELECTED": {
+            "target": "editing",
+            "actions": ["setTargetSpacetime"]
+          },
+          "CANCEL": "editing"
+        }
+      },
+      "alerting": {
+        "description": "Scheduled time has arrived - alerting user",
+        "entry": ["playAlertSound", "triggerHaptic"],
+        "on": {
+          "DISMISS": {
+            "target": "idle",
+            "actions": ["markCompleted"]
+          },
+          "SNOOZE": {
+            "target": "idle",
+            "actions": ["snoozeItem", "rescheduleTimer"]
+          }
+        }
+      }
+    }
+  },
+  "actions": {
+    "incrementIndex": {
+      "type": "context_update",
+      "expression": "Math.min(context.current_item_index + 1, context.scheduled_items.length - 1)"
+    },
+    "decrementIndex": {
+      "type": "context_update",
+      "expression": "Math.max(context.current_item_index - 1, 0)"
+    },
+    "saveItem": {
+      "type": "context_update",
+      "target": "scheduled_items",
+      "mode": "append_or_update"
+    },
+    "scheduleTimer": {
+      "type": "timer_schedule",
+      "event": "TIME_REACHED",
+      "source": "context.editing_item.target_time"
+    },
+    "markCompleted": {
+      "type": "context_update",
+      "target": "scheduled_items[current].status",
+      "value": "completed"
+    },
+    "snoozeItem": {
+      "type": "context_update",
+      "target": "scheduled_items[current].target_time",
+      "expression": "Date.now() + context.snooze_duration_ms"
+    },
+    "playAlertSound": {
+      "type": "audio",
+      "asset": "brass-chime.mp3"
+    },
+    "triggerHaptic": {
+      "type": "haptic",
+      "pattern": "notification"
+    }
+  },
+  "controller_mappings": {
+    "default": {
+      "A": { "event": "DISMISS", "label": "Done" },
+      "B": { "event": "SNOOZE", "label": "Snooze" },
+      "X": { "event": "ADD_ITEM", "label": "New" },
+      "Y": { "event": "PICK_SPACETIME", "label": "When/Where" },
+      "LEFT_STICK_LEFT": { "event": "NAVIGATE_PREV" },
+      "LEFT_STICK_RIGHT": { "event": "NAVIGATE_NEXT" },
+      "START": { "event": "SAVE_ITEM", "label": "Save" }
+    }
+  },
+  "time_controls": {
+    "timers": [
+      {
+        "id": "item_countdown",
+        "type": "countdown",
+        "source": "context.scheduled_items[context.current_item_index].target_time",
+        "on_complete": "TIME_REACHED"
+      }
+    ],
+    "clock": {
+      "visible": true,
+      "format": "12h",
+      "timezone_aware": true
+    }
+  },
+  "ui": {
+    "theme": "steampunk-brass",
+    "layout": "timeline",
+    "components": [
+      {
+        "type": "timeline_marquee",
+        "position": "top",
+        "shows": "scheduled_items",
+        "style": "brass-ticker"
+      },
+      {
+        "type": "countdown_display",
+        "position": "center",
+        "source": "timers.item_countdown",
+        "style": "nixie-tubes"
+      },
+      {
+        "type": "item_card",
+        "position": "bottom",
+        "shows": "scheduled_items[current_item_index]",
+        "style": "brass-plate"
+      }
+    ]
+  },
+  "assets": {
+    "audio": {
+      "brass-chime.mp3": "base64://..."
+    },
+    "images": {
+      "clock-brass.png": "base64://..."
+    }
+  }
+}

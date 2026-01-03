@@ -308,6 +308,72 @@ export interface CommerceFields {
   weight_grams?: number;
 }
 
+// ============================================
+// TIME CONTROLS - Timers and scheduling
+// ============================================
+
+// Timer types available in cartridges
+export type TimerType = "countdown" | "stopwatch" | "scheduled" | "interval";
+
+// A timer definition
+export interface TossTimer {
+  id: string;
+  type: TimerType;
+  
+  // For countdown: target datetime or duration
+  target_datetime?: string;     // ISO 8601 datetime (for scheduled)
+  duration_ms?: number;         // Duration in milliseconds (for countdown/interval)
+  
+  // For relative timing
+  starts_on?: string;           // FSM event that starts this timer
+  stops_on?: string | string[]; // FSM event(s) that stop this timer
+  
+  // Behavior
+  auto_start?: boolean;         // Start immediately when cartridge loads
+  repeating?: boolean;          // For interval timers
+  on_complete?: string;         // FSM event to emit when timer completes
+  
+  // Display
+  visible?: boolean;            // Show countdown in UI
+  format?: "hh:mm:ss" | "mm:ss" | "ss.ms" | "natural"; // Display format
+  style?: "digital" | "analog" | "nixie" | "flip" | "steampunk";
+}
+
+// Clock display configuration
+export interface TossClockConfig {
+  visible: boolean;
+  format: "12h" | "24h" | "relative";
+  timezone_aware?: boolean;
+  show_date?: boolean;
+  show_seconds?: boolean;
+  style?: "digital" | "analog" | "steampunk" | "nixie";
+}
+
+// Spacetime anchor - a point in space and time
+export interface SpacetimeAnchor {
+  datetime?: string;            // ISO 8601 datetime
+  timezone?: string;            // IANA timezone identifier
+  location?: {
+    lat: number;
+    lng: number;
+    name?: string;
+    geojson?: any;              // Full GeoJSON feature
+  };
+}
+
+// Time controls section of cartridge
+export interface TimeControls {
+  timers?: TossTimer[];
+  clock?: TossClockConfig;
+  spacetime?: SpacetimeAnchor;  // The "when/where" of this cartridge
+  
+  // Time-based triggers
+  triggers?: {
+    on_datetime?: { datetime: string; emit: string }[];  // Fire events at specific times
+    on_duration?: { after_ms: number; emit: string }[];  // Fire events after duration
+  };
+}
+
 // Controller button/axis mapping to scene actions
 export interface ControllerMappingEntry {
   input: string;           // e.g., "A", "LEFT_STICK_X", "RIGHT_TRIGGER"
@@ -376,6 +442,9 @@ export interface TossCartridge {
   
   // Controller mapping presets (games/apps can have multiple)
   controllerPresets?: ControllerPreset[];
+  
+  // Time controls (timers, clocks, scheduling)
+  timeControls?: TimeControls;
   
   // Preview metadata for 3D library display
   preview?: CartridgePreview;

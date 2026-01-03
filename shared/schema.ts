@@ -48,6 +48,9 @@ export const worlds = pgTable("worlds", {
   cover_image_url: text("cover_image_url"),
   visibility: text("visibility").default("private").notNull(),
   tenant: text("tenant").default("tingos"),
+  spacetime_datetime: timestamp("spacetime_datetime"),
+  spacetime_timezone: text("spacetime_timezone"),
+  spacetime_location: jsonb("spacetime_location"),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });

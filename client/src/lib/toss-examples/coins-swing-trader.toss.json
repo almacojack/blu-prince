@@ -1,0 +1,281 @@
+{
+  "toss_version": "1.0",
+  "manifest": {
+    "id": "coins-swing-trader-001",
+    "tngli_id": "coins_swing_001",
+    "title": "Swing Trade Playbook",
+    "author": "coins.rip",
+    "version": "1.0.0",
+    "description": "Visualize crypto swing trades with entry/exit zones and risk controls",
+    "tenant": "coins",
+    "tags": ["crypto", "trading", "visualization", "swing"],
+    "thumbnail": "chart-neon.png"
+  },
+  "memory": {
+    "asset_pair": {
+      "type": "string",
+      "default": "BTC/USD"
+    },
+    "thesis": {
+      "type": "string",
+      "default": ""
+    },
+    "entry_price": {
+      "type": "number",
+      "default": 0
+    },
+    "exit_target": {
+      "type": "number",
+      "default": 0
+    },
+    "stop_loss": {
+      "type": "number",
+      "default": 0
+    },
+    "position_size": {
+      "type": "number",
+      "default": 0
+    },
+    "risk_percent": {
+      "type": "number",
+      "default": 2
+    },
+    "current_price": {
+      "type": "number",
+      "default": 0
+    },
+    "price_history": {
+      "type": "array",
+      "default": [],
+      "max_length": 100
+    },
+    "trade_status": {
+      "type": "string",
+      "default": "planning"
+    },
+    "pnl": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "fsm": {
+    "initial": "watching",
+    "states": {
+      "watching": {
+        "description": "Monitoring price action, waiting for entry signal",
+        "on": {
+          "PRICE_UPDATE": {
+            "actions": ["updatePrice", "checkEntryZone"]
+          },
+          "MANUAL_ENTER": "entering",
+          "EDIT_PLAYBOOK": "planning",
+          "ENTRY_ZONE_HIT": "entering"
+        }
+      },
+      "planning": {
+        "description": "Setting up trade parameters",
+        "on": {
+          "SET_ENTRY": { "actions": ["setEntry"] },
+          "SET_TARGET": { "actions": ["setTarget"] },
+          "SET_STOP": { "actions": ["setStopLoss"] },
+          "CALCULATE_SIZE": { "actions": ["calculatePositionSize"] },
+          "CONFIRM_PLAN": "watching",
+          "CANCEL": "watching"
+        }
+      },
+      "entering": {
+        "description": "Entry conditions met - ready to take position",
+        "entry": ["alertEntry", "hapticPulse"],
+        "on": {
+          "CONFIRM_ENTRY": {
+            "target": "in_position",
+            "actions": ["recordEntry", "startPnLTracker"]
+          },
+          "SKIP": "watching"
+        }
+      },
+      "in_position": {
+        "description": "Active trade - monitoring for exit",
+        "on": {
+          "PRICE_UPDATE": {
+            "actions": ["updatePrice", "updatePnL", "checkExitConditions"]
+          },
+          "TARGET_HIT": "exiting",
+          "STOP_HIT": "stopped_out",
+          "MANUAL_EXIT": "exiting"
+        }
+      },
+      "exiting": {
+        "description": "Taking profit at target",
+        "entry": ["alertProfit", "hapticSuccess"],
+        "on": {
+          "CONFIRM_EXIT": {
+            "target": "completed",
+            "actions": ["recordExit", "calculateFinalPnL"]
+          }
+        }
+      },
+      "stopped_out": {
+        "description": "Stop loss triggered",
+        "entry": ["alertStop", "hapticWarning"],
+        "on": {
+          "ACKNOWLEDGE": {
+            "target": "completed",
+            "actions": ["recordStopOut"]
+          }
+        }
+      },
+      "completed": {
+        "description": "Trade closed - review results",
+        "on": {
+          "NEW_TRADE": {
+            "target": "planning",
+            "actions": ["resetTrade"]
+          },
+          "ARCHIVE": {
+            "actions": ["archiveTrade"]
+          }
+        }
+      }
+    }
+  },
+  "actions": {
+    "updatePrice": {
+      "type": "context_update",
+      "target": "current_price",
+      "source": "event.price"
+    },
+    "checkEntryZone": {
+      "type": "conditional",
+      "condition": "context.current_price <= context.entry_price && context.entry_price > 0",
+      "then_emit": "ENTRY_ZONE_HIT"
+    },
+    "checkExitConditions": {
+      "type": "conditional_multi",
+      "checks": [
+        {
+          "condition": "context.current_price >= context.exit_target",
+          "emit": "TARGET_HIT"
+        },
+        {
+          "condition": "context.current_price <= context.stop_loss",
+          "emit": "STOP_HIT"
+        }
+      ]
+    },
+    "calculatePositionSize": {
+      "type": "context_update",
+      "target": "position_size",
+      "expression": "(context.risk_percent / 100) * portfolio_value / Math.abs(context.entry_price - context.stop_loss)"
+    },
+    "updatePnL": {
+      "type": "context_update",
+      "target": "pnl",
+      "expression": "(context.current_price - context.entry_price) * context.position_size"
+    },
+    "alertEntry": { "type": "audio", "asset": "entry-chime.mp3" },
+    "alertProfit": { "type": "audio", "asset": "profit-fanfare.mp3" },
+    "alertStop": { "type": "audio", "asset": "stop-warning.mp3" },
+    "hapticPulse": { "type": "haptic", "pattern": "double-tap" },
+    "hapticSuccess": { "type": "haptic", "pattern": "success" },
+    "hapticWarning": { "type": "haptic", "pattern": "warning" }
+  },
+  "controller_mappings": {
+    "default": {
+      "A": { "event": "CONFIRM_ENTRY", "label": "Enter Trade" },
+      "B": { "event": "MANUAL_EXIT", "label": "Exit" },
+      "X": { "event": "EDIT_PLAYBOOK", "label": "Edit Plan" },
+      "Y": { "event": "SKIP", "label": "Pass" },
+      "LEFT_TRIGGER": { 
+        "event": "ADJUST_SIZE", 
+        "analog": true,
+        "maps_to": "position_size",
+        "label": "Size -" 
+      },
+      "RIGHT_TRIGGER": { 
+        "event": "ADJUST_SIZE", 
+        "analog": true,
+        "maps_to": "position_size",
+        "label": "Size +" 
+      },
+      "DPAD_UP": { "event": "SET_TARGET", "label": "Target +" },
+      "DPAD_DOWN": { "event": "SET_STOP", "label": "Stop -" }
+    }
+  },
+  "time_controls": {
+    "clock": {
+      "visible": true,
+      "format": "24h",
+      "show_market_hours": true
+    },
+    "timers": [
+      {
+        "id": "position_duration",
+        "type": "stopwatch",
+        "starts_on": "CONFIRM_ENTRY",
+        "stops_on": ["TARGET_HIT", "STOP_HIT", "MANUAL_EXIT"]
+      }
+    ]
+  },
+  "forces": {
+    "market_wind": {
+      "type": "wind",
+      "direction_source": "price_momentum",
+      "strength_source": "volume",
+      "affects": ["price_particles", "trade_card"]
+    },
+    "volatility_shake": {
+      "type": "vibration",
+      "intensity_source": "price_volatility",
+      "affects": ["chart_container"]
+    }
+  },
+  "ui": {
+    "theme": "cyberpunk-neon",
+    "layout": "trading_desk",
+    "components": [
+      {
+        "type": "holo_ticker",
+        "position": "top",
+        "shows": "asset_pair",
+        "style": "holographic"
+      },
+      {
+        "type": "swing_arc_chart",
+        "position": "center",
+        "shows": {
+          "price_history": "price_history",
+          "entry": "entry_price",
+          "target": "exit_target",
+          "stop": "stop_loss",
+          "current": "current_price"
+        },
+        "style": "neon-glow"
+      },
+      {
+        "type": "trade_card",
+        "position": "bottom-left",
+        "shows": {
+          "thesis": "thesis",
+          "risk": "risk_percent",
+          "size": "position_size",
+          "pnl": "pnl"
+        },
+        "style": "glass-panel"
+      },
+      {
+        "type": "status_indicator",
+        "position": "bottom-right",
+        "shows": "fsm.current_state",
+        "style": "led-display"
+      }
+    ]
+  },
+  "assets": {
+    "audio": {
+      "entry-chime.mp3": "base64://...",
+      "profit-fanfare.mp3": "base64://...",
+      "stop-warning.mp3": "base64://..."
+    }
+  }
+}

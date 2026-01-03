@@ -12,6 +12,12 @@ TingOs is a virtual machine execution environment for TOSS files (ThingOs State 
 
 The killer feature is **game controller support as first-class objects** - zero-config detection, visual binding UI, haptic feedback, and cross-platform parity from MicroPython to web.
 
+### Satellite Domains
+- **l8r.co** - Scheduling services as cartridges - "cartridgize" appointments, reminders, and time capsules
+- **unwanted.ad** - Auction site for "misfit toys" using TOSS cartridges per listing
+- **artsy.sale** - Art dealer auction platform
+- **coins.rip** - Crypto swing trade visualization and playbook cartridges
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
