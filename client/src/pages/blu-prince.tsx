@@ -26,6 +26,7 @@ import type { Toss3DAsset } from "@/lib/toss";
 import { Progress } from "@/components/ui/progress";
 import { Asset3DPreview } from "@/components/Asset3DPreview";
 import { QRIconButton } from "@/components/QRCodePopup";
+import bluPrinceLogo from "@assets/generated_images/blue-skinned_prince-style_rocker_logo.png";
 
 const STORAGE_KEY = "blu-prince-cartridge";
 
@@ -226,6 +227,7 @@ function CartridgeBezel({
   onExport,
   onInspect,
   onShareClick,
+  onTitleChange,
 }: { 
   title: string; 
   version: string;
@@ -241,7 +243,41 @@ function CartridgeBezel({
   onExport: () => void;
   onInspect: () => void;
   onShareClick: () => void;
+  onTitleChange: (newTitle: string) => void;
 }) {
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState(title);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setEditedTitle(title);
+  }, [title]);
+
+  useEffect(() => {
+    if (isEditingTitle && titleInputRef.current) {
+      titleInputRef.current.focus();
+      titleInputRef.current.select();
+    }
+  }, [isEditingTitle]);
+
+  const handleTitleSubmit = () => {
+    const trimmed = editedTitle.trim();
+    if (trimmed && trimmed !== title) {
+      onTitleChange(trimmed);
+    } else {
+      setEditedTitle(title);
+    }
+    setIsEditingTitle(false);
+  };
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleTitleSubmit();
+    } else if (e.key === 'Escape') {
+      setEditedTitle(title);
+      setIsEditingTitle(false);
+    }
+  };
   return (
     <div className="relative">
       <div 
@@ -309,16 +345,16 @@ function CartridgeBezel({
               <Link href="/">
                 <motion.div 
                   className="relative cursor-pointer"
-                  whileHover={{ scale: 1.02 }}
+                  whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <div className="absolute -inset-1 bg-gradient-to-r from-purple-600/30 to-cyan-600/30 rounded-lg blur-sm" />
-                  <div className="relative bg-gradient-to-br from-[#4a1c6b] via-[#2d1b4e] to-[#1a0f2e] rounded-lg p-3 border border-purple-500/30">
-                    <div className="absolute inset-0 bg-gradient-to-t from-transparent to-white/5 rounded-lg" />
-                    <div className="relative text-center">
-                      <div className="font-pixel text-[10px] text-purple-300 tracking-widest">BLU</div>
-                      <div className="font-pixel text-xs text-white tracking-tight">PRINCE</div>
-                    </div>
+                  <div className="absolute -inset-1 bg-gradient-to-r from-purple-600/40 to-cyan-600/40 rounded-full blur-md" />
+                  <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-purple-500/50 shadow-lg shadow-purple-500/30">
+                    <img 
+                      src={bluPrinceLogo} 
+                      alt="Blu-Prince"
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                 </motion.div>
               </Link>
@@ -332,7 +368,27 @@ function CartridgeBezel({
                     <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_6px_#22c55e]" />
                     <div>
                       <div className="text-xs font-mono text-white font-bold tracking-wide flex items-center gap-2">
-                        {title}
+                        {isEditingTitle ? (
+                          <input
+                            ref={titleInputRef}
+                            type="text"
+                            value={editedTitle}
+                            onChange={(e) => setEditedTitle(e.target.value)}
+                            onBlur={handleTitleSubmit}
+                            onKeyDown={handleTitleKeyDown}
+                            className="bg-transparent border-b border-cyan-400 outline-none text-cyan-300 font-mono text-xs w-32"
+                            data-testid="input-cartridge-title"
+                          />
+                        ) : (
+                          <span 
+                            onClick={() => setIsEditingTitle(true)}
+                            className="cursor-pointer hover:text-cyan-300 transition-colors"
+                            title="Click to edit title"
+                            data-testid="text-cartridge-title"
+                          >
+                            {title}
+                          </span>
+                        )}
                         <QRIconButton tngliId={tngliId} title={title} size="sm" />
                       </div>
                       <div className="flex items-center gap-2 mt-0.5">
@@ -936,6 +992,23 @@ export default function BluPrince() {
         onExport={handleExport}
         onInspect={() => setShowJson(true)}
         onShareClick={() => setShowShareDialog(true)}
+        onTitleChange={(newTitle) => {
+          const updatedFile: TossFile = {
+            ...file,
+            manifest: {
+              ...file.manifest,
+              meta: {
+                ...file.manifest.meta,
+                title: newTitle
+              }
+            }
+          };
+          setFile(updatedFile);
+          if (collaboration.isJoined) {
+            collaboration.sendFullState(updatedFile);
+          }
+          toast({ title: "Title Updated", description: `Cartridge renamed to "${newTitle}"` });
+        }}
       />
 
       <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
