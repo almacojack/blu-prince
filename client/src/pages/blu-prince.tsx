@@ -5,7 +5,7 @@ import {
   Save, Settings, Plus, Zap, 
   ChevronDown, ZoomIn, ZoomOut, MousePointer2,
   ArrowRight, FileJson, Download, Cloud, CloudOff, Users, Share2,
-  Upload, Box, Trash2, Eye
+  Upload, Box, Trash2, Eye, Pencil
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -303,6 +303,9 @@ export default function BluPrince() {
   const [importProgress, setImportProgress] = useState<ImportProgress | null>(null);
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
   const [showAssetPreview, setShowAssetPreview] = useState(false);
+  const [zoom, setZoom] = useState(1);
+  const [showStateSettings, setShowStateSettings] = useState(false);
+  const [editingStateName, setEditingStateName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -406,6 +409,105 @@ export default function BluPrince() {
     a.download = `${file.manifest.tngli_id}.toss.json`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleNodeDragEnd = useCallback((nodeId: string, info: { point: { x: number; y: number } }) => {
+    if (!canvasRef.current) return;
+    
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = (info.point.x - rect.left) / zoom;
+    const y = (info.point.y - rect.top) / zoom;
+    
+    const updatedNodes = nodes.map(n => 
+      n.id === nodeId ? { ...n, x: Math.max(0, x - 80), y: Math.max(0, y - 40) } : n
+    );
+    
+    const updatedFile: TossFile = {
+      ...file,
+      _editor: {
+        ...file._editor!,
+        nodes: updatedNodes
+      }
+    };
+    
+    setFile(updatedFile);
+    
+    if (collaboration.isJoined) {
+      collaboration.sendFullState(updatedFile);
+    }
+  }, [nodes, file, collaboration, zoom]);
+
+  const handleZoomIn = () => setZoom(z => Math.min(z + 0.1, 2));
+  const handleZoomOut = () => setZoom(z => Math.max(z - 0.1, 0.5));
+  const handleZoomReset = () => setZoom(1);
+
+  const handleCanvasWheel = useCallback((e: React.WheelEvent) => {
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.1 : 0.1;
+      setZoom(z => Math.min(Math.max(z + delta, 0.5), 2));
+    }
+  }, []);
+
+  const handleRenameState = (oldId: string, newName: string) => {
+    if (!newName.trim() || newName === oldId) {
+      setEditingStateName(null);
+      return;
+    }
+    
+    const newId = newName.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+    if (!newId) {
+      toast({ title: "Invalid name", description: "State name must contain valid characters", variant: "destructive" });
+      setEditingStateName(null);
+      return;
+    }
+    
+    const stateData = file.logic.states[oldId];
+    if (!stateData) return;
+    
+    if (newId !== oldId && file.logic.states[newId]) {
+      toast({ title: "Name exists", description: `A state named "${newId}" already exists`, variant: "destructive" });
+      setEditingStateName(null);
+      return;
+    }
+    
+    const newStates = { ...file.logic.states };
+    delete newStates[oldId];
+    newStates[newId] = { ...stateData, id: newId };
+    
+    Object.values(newStates).forEach(state => {
+      state.transitions = state.transitions.map(t => 
+        t.target === oldId ? { ...t, target: newId } : t
+      );
+    });
+    
+    const updatedNodes = nodes.map(n => 
+      n.id === oldId ? { ...n, id: newId } : n
+    );
+    
+    const updatedFile: TossFile = {
+      ...file,
+      logic: {
+        ...file.logic,
+        initial: file.logic.initial === oldId ? newId : file.logic.initial,
+        states: newStates
+      },
+      _editor: {
+        ...file._editor!,
+        nodes: updatedNodes
+      }
+    };
+    
+    setFile(updatedFile);
+    setEditingStateName(null);
+    
+    if (selectedNodeId === oldId) {
+      setSelectedNodeId(newId);
+    }
+    
+    if (collaboration.isJoined) {
+      collaboration.sendFullState(updatedFile);
+    }
   };
 
   const handleAddNode = (type: TossState['type']) => {
@@ -529,12 +631,11 @@ export default function BluPrince() {
     const edges: Array<{from: string, to: string}> = [];
     Object.values(file.logic.states).forEach(state => {
       state.transitions.forEach(trans => {
-        edges.push({ from: state.id, to: trans.target });
+        if (trans.target && file.logic.states[trans.target]) {
+          edges.push({ from: state.id, to: trans.target });
+        }
       });
     });
-    if (edges.length === 0 && nodes.length > 1) {
-       return [{ from: nodes[0].id, to: nodes[1]?.id }];
-    }
     return edges;
   };
 
@@ -672,6 +773,104 @@ export default function BluPrince() {
         open={showAssetPreview}
         onOpenChange={setShowAssetPreview}
       />
+
+      <Dialog open={showStateSettings} onOpenChange={setShowStateSettings}>
+        <DialogContent className="max-w-md bg-[#111] border-white/20">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings className="w-5 h-5 text-cyan-400" />
+              State Settings
+            </DialogTitle>
+            <DialogDescription>
+              Configure properties for the selected state.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {activeNode && (
+            <div className="space-y-4 mt-4">
+              <div>
+                <label className="text-[10px] uppercase text-muted-foreground font-bold mb-2 block">State Name</label>
+                <div className="flex gap-2">
+                  <Input
+                    defaultValue={activeNode.id}
+                    className="bg-black/50 border-white/10 text-white font-mono text-sm"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleRenameState(activeNode.id, e.currentTarget.value);
+                        setShowStateSettings(false);
+                      }
+                    }}
+                    data-testid="input-state-name-settings"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-cyan-500/30 text-cyan-400"
+                    onClick={(e) => {
+                      const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                      if (input) {
+                        handleRenameState(activeNode.id, input.value);
+                        setShowStateSettings(false);
+                      }
+                    }}
+                    data-testid="button-rename-state"
+                  >
+                    Rename
+                  </Button>
+                </div>
+              </div>
+              
+              <div>
+                <label className="text-[10px] uppercase text-muted-foreground font-bold mb-2 block">State Type</label>
+                <select 
+                  value={activeNode.type}
+                  onChange={(e) => {
+                    setFile(prev => ({
+                      ...prev,
+                      logic: {
+                        ...prev.logic,
+                        states: {
+                          ...prev.logic.states,
+                          [activeNode.id]: { ...activeNode, type: e.target.value as any }
+                        }
+                      }
+                    }));
+                  }}
+                  className="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-xs font-mono text-white"
+                  data-testid="select-state-type-settings"
+                >
+                  <option value="initial">Initial</option>
+                  <option value="state">State</option>
+                  <option value="compound">Compound</option>
+                  <option value="final">Final</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="text-[10px] uppercase text-muted-foreground font-bold mb-2 block">
+                  Transitions ({activeNode.transitions.length})
+                </label>
+                {activeNode.transitions.length > 0 ? (
+                  <div className="space-y-2">
+                    {activeNode.transitions.map((t, idx) => (
+                      <div key={idx} className="flex items-center gap-2 p-2 rounded bg-white/5 text-xs">
+                        <Zap className="w-3 h-3 text-yellow-500" />
+                        <span className="text-muted-foreground">{t.event || 'auto'}</span>
+                        <ArrowRight className="w-3 h-3 text-muted-foreground" />
+                        <span className="text-cyan-400 font-mono">{t.target}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-xs text-muted-foreground p-2 bg-white/5 rounded">
+                    No transitions defined
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <div className="flex flex-1 overflow-hidden">
         <div className="w-64 border-r border-white/10 bg-black/20 flex flex-col">
@@ -844,6 +1043,7 @@ export default function BluPrince() {
           ref={canvasRef}
           className="flex-1 relative bg-[#0c0c10] overflow-hidden"
           onMouseMove={handleCanvasMouseMove}
+          onWheel={handleCanvasWheel}
         >
           <AnimatePresence>
             {collaboration.otherUsers.map((user) => (
@@ -860,78 +1060,125 @@ export default function BluPrince() {
           
           <div className="absolute bottom-4 left-4 flex gap-2">
              <div className="flex bg-black/50 backdrop-blur rounded-lg border border-white/10 p-1">
-               <Button variant="ghost" size="icon" className="h-8 w-8"><ZoomOut className="w-4 h-4" /></Button>
-               <Button variant="ghost" size="icon" className="h-8 w-8"><span className="text-xs">100%</span></Button>
-               <Button variant="ghost" size="icon" className="h-8 w-8"><ZoomIn className="w-4 h-4" /></Button>
+               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleZoomOut} data-testid="button-zoom-out"><ZoomOut className="w-4 h-4" /></Button>
+               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleZoomReset} data-testid="button-zoom-reset"><span className="text-xs">{Math.round(zoom * 100)}%</span></Button>
+               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleZoomIn} data-testid="button-zoom-in"><ZoomIn className="w-4 h-4" /></Button>
              </div>
           </div>
 
-          <div className="absolute inset-0 pointer-events-none">
-            <svg className="w-full h-full">
-               <defs>
-                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="28" refY="3.5" orient="auto">
-                  <polygon points="0 0, 10 3.5, 0 7" fill="#666" />
-                </marker>
-              </defs>
-              {getTransitions().map((edge, i) => {
-                const fromNode = nodes.find(n => n.id === edge.from);
-                const toNode = nodes.find(n => n.id === edge.to);
-                if (!fromNode || !toNode) return null;
+          <div 
+            className="absolute inset-0 origin-top-left"
+            style={{ transform: `scale(${zoom})` }}
+          >
+            <div className="absolute inset-0 pointer-events-none">
+              <svg className="w-full h-full" style={{ overflow: 'visible' }}>
+                 <defs>
+                  <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#666" />
+                  </marker>
+                </defs>
+                {getTransitions().map((edge, i) => {
+                  const fromNode = nodes.find(n => n.id === edge.from);
+                  const toNode = nodes.find(n => n.id === edge.to);
+                  if (!fromNode || !toNode) return null;
 
+                  const x1 = fromNode.x + 160;
+                  const y1 = fromNode.y + 40;
+                  const x2 = toNode.x;
+                  const y2 = toNode.y + 40;
+
+                  return (
+                    <motion.line 
+                      key={`${edge.from}-${edge.to}-${i}`}
+                      initial={{ pathLength: 0, opacity: 0 }}
+                      animate={{ pathLength: 1, opacity: 1 }}
+                      transition={{ duration: 0.5 }}
+                      x1={x1}
+                      y1={y1} 
+                      x2={x2}
+                      y2={y2}
+                      stroke="#666" 
+                      strokeWidth="2"
+                      markerEnd="url(#arrowhead)"
+                    />
+                  );
+                })}
+              </svg>
+            </div>
+
+            <div className="relative w-full h-full">
+              {nodes.map((node) => {
+                const stateData = file.logic.states[node.id];
+                const isEditing = editingStateName === node.id;
                 return (
-                  <motion.line 
-                    key={i}
-                    initial={{ pathLength: 0, opacity: 0 }}
-                    animate={{ pathLength: 1, opacity: 1 }}
-                    transition={{ duration: 1, delay: 0.5 + (i * 0.2) }}
-                    x1={fromNode.x + 80}
-                    y1={fromNode.y + 24} 
-                    x2={toNode.x}
-                    y2={toNode.y + 24}
-                    stroke="#444" 
-                    strokeWidth="2"
-                    markerEnd="url(#arrowhead)"
-                  />
+                  <motion.div
+                    key={node.id}
+                    drag
+                    dragMomentum={false}
+                    onDragEnd={(_, info) => handleNodeDragEnd(node.id, info)}
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    whileHover={{ scale: 1.02 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                    style={{ left: node.x, top: node.y }}
+                    className={`absolute w-40 p-0 rounded-lg border border-white/10 bg-[#1a1b23] shadow-xl cursor-pointer overflow-hidden ${selectedNodeId === node.id ? 'ring-2 ring-primary' : ''}`}
+                    onClick={() => setSelectedNodeId(node.id)}
+                    data-testid={`state-node-${node.id}`}
+                  >
+                    <div className={`h-1 ${node.color || 'bg-primary'}`} />
+                    <div className="p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        {isEditing ? (
+                          <input
+                            autoFocus
+                            defaultValue={stateData?.id || ''}
+                            className="text-xs font-bold font-mono text-white bg-black/50 border border-white/20 rounded px-1 w-[90px]"
+                            onClick={(e) => e.stopPropagation()}
+                            onBlur={(e) => handleRenameState(node.id, e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                handleRenameState(node.id, e.currentTarget.value);
+                              } else if (e.key === 'Escape') {
+                                setEditingStateName(null);
+                              }
+                            }}
+                            data-testid={`input-rename-state-${node.id}`}
+                          />
+                        ) : (
+                          <span 
+                            className="text-xs font-bold font-mono text-white truncate max-w-[90px] cursor-text"
+                            onDoubleClick={(e) => {
+                              e.stopPropagation();
+                              setEditingStateName(node.id);
+                            }}
+                            title="Double-click to rename"
+                          >
+                            {stateData?.id.toUpperCase()}
+                          </span>
+                        )}
+                        <button
+                          className="p-1 rounded hover:bg-white/10 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedNodeId(node.id);
+                            setShowStateSettings(true);
+                          }}
+                          data-testid={`button-settings-${node.id}`}
+                        >
+                          <Settings className="w-3 h-3 text-muted-foreground hover:text-white" />
+                        </button>
+                      </div>
+                      <div className="text-[10px] text-muted-foreground font-mono">
+                        TYPE: {stateData?.type.toUpperCase()}
+                      </div>
+                    </div>
+                    
+                    <div className="absolute left-0 top-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-white/20 border border-black hover:bg-primary transition-colors" />
+                    <div className="absolute right-0 top-1/2 translate-x-1/2 w-2 h-2 rounded-full bg-white/20 border border-black hover:bg-primary transition-colors" />
+                  </motion.div>
                 );
               })}
-            </svg>
-          </div>
-
-          <div className="relative w-full h-full p-10">
-            {nodes.map((node) => {
-              const stateData = file.logic.states[node.id];
-              return (
-                <motion.div
-                  key={node.id}
-                  drag
-                  dragMomentum={false}
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  whileHover={{ scale: 1.05 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  style={{ left: node.x, top: node.y }}
-                  className={`absolute w-40 p-0 rounded-lg border border-white/10 bg-[#1a1b23] shadow-xl cursor-pointer overflow-hidden ${selectedNodeId === node.id ? 'ring-2 ring-primary' : ''}`}
-                  onClick={() => setSelectedNodeId(node.id)}
-                  data-testid={`state-node-${node.id}`}
-                >
-                  <div className={`h-1 ${node.color || 'bg-primary'}`} />
-                  <div className="p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold font-mono text-white truncate max-w-[100px]">
-                        {stateData?.id.toUpperCase()}
-                      </span>
-                      <Settings className="w-3 h-3 text-muted-foreground hover:text-white" />
-                    </div>
-                    <div className="text-[10px] text-muted-foreground font-mono">
-                      TYPE: {stateData?.type.toUpperCase()}
-                    </div>
-                  </div>
-                  
-                  <div className="absolute left-0 top-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-white/20 border border-black hover:bg-primary transition-colors" />
-                  <div className="absolute right-0 top-1/2 translate-x-1/2 w-2 h-2 rounded-full bg-white/20 border border-black hover:bg-primary transition-colors" />
-                </motion.div>
-              );
-            })}
+            </div>
           </div>
         </div>
 
@@ -944,10 +1191,51 @@ export default function BluPrince() {
             {activeNode ? (
               <div className="space-y-6">
                 <div>
-                  <label className="text-[10px] uppercase text-muted-foreground font-bold mb-2 block">State ID</label>
-                  <div className="text-xs font-mono text-white p-2 bg-black/40 rounded border border-white/10 select-all">
-                    {activeNode.id}
-                  </div>
+                  <label className="text-[10px] uppercase text-muted-foreground font-bold mb-2 block flex items-center justify-between">
+                    State ID
+                    <button
+                      className="text-cyan-400 hover:text-cyan-300 transition-colors"
+                      onClick={() => setEditingStateName(activeNode.id)}
+                      data-testid="button-edit-state-id"
+                    >
+                      <Pencil className="w-3 h-3" />
+                    </button>
+                  </label>
+                  {editingStateName === activeNode.id ? (
+                    <div className="flex gap-2">
+                      <Input
+                        autoFocus
+                        defaultValue={activeNode.id}
+                        className="text-xs font-mono bg-black/40 border-white/10 text-white"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            handleRenameState(activeNode.id, e.currentTarget.value);
+                          } else if (e.key === 'Escape') {
+                            setEditingStateName(null);
+                          }
+                        }}
+                        data-testid="input-edit-state-id"
+                      />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs border-cyan-500/30 text-cyan-400"
+                        onClick={(e) => {
+                          const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                          if (input) {
+                            handleRenameState(activeNode.id, input.value);
+                          }
+                        }}
+                        data-testid="button-save-state-id"
+                      >
+                        Save
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="text-xs font-mono text-white p-2 bg-black/40 rounded border border-white/10 select-all">
+                      {activeNode.id}
+                    </div>
+                  )}
                 </div>
                 
                 <div>
