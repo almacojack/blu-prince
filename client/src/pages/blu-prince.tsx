@@ -1541,7 +1541,7 @@ export default function BluPrince() {
               onPrev={chiptune.prevTrack}
               onMuteToggle={chiptune.toggleMute}
               onClose={() => setShowWinAmp(false)}
-              initialPosition={{ x: typeof window !== 'undefined' ? window.innerWidth - 280 : 500, y: 80 }}
+              initialPosition={{ x: typeof window !== 'undefined' ? Math.floor(window.innerWidth / 2) - 130 : 400, y: typeof window !== 'undefined' ? Math.floor(window.innerHeight / 2) - 100 : 200 }}
               tracks={chiptune.trackList}
               currentTrackIndex={chiptune.currentTrack}
               onSelectTrack={chiptune.selectTrack}
