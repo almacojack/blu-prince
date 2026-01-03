@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Home from "@/pages/home";
 import BluPrince from "@/pages/blu-prince";
+import BluPrinceEditor from "@/pages/editor";
 import Unwanted from "@/pages/unwanted";
 import Artsy from "@/pages/artsy";
 import Coins from "@/pages/coins";
@@ -16,6 +17,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/blu-prince" component={BluPrince} />
+      <Route path="/editor" component={BluPrinceEditor} />
       <Route path="/unwanted" component={Unwanted} />
       <Route path="/artsy" component={Artsy} />
       <Route path="/coins" component={Coins} />

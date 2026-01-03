@@ -107,16 +107,16 @@ export default function Home() {
             </p>
 
             <div className="flex flex-wrap gap-4">
-              <Link href="/runtime">
+              <Link href="/editor">
                 <Button size="lg" className="bg-secondary hover:bg-secondary/90 text-black font-mono h-12 cursor-pointer border-2 border-transparent hover:border-white/20 transition-all">
                   <Gamepad2 className="mr-2 h-4 w-4" />
-                  LAUNCH SIMULATOR
+                  OPEN EDITOR
                 </Button>
               </Link>
-              <Link href="/blu-prince">
+              <Link href="/runtime">
                 <Button size="lg" className="bg-primary/10 hover:bg-primary/20 text-primary font-mono h-12 cursor-pointer border border-primary/50">
                   <Terminal className="mr-2 h-4 w-4" />
-                  DESIGN BLUEPRINT
+                  LAUNCH SIMULATOR
                 </Button>
               </Link>
             </div>

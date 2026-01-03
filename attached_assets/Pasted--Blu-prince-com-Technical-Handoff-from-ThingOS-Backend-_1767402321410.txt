@@ -1,0 +1,427 @@
+# Blu-prince.com Technical Handoff from ThingOS Backend
+
+**Date**: January 2025  
+**Status**: ThingOS backend FINALIZED - this is the binding contract  
+**Critical Priority**: GAME CONTROLLERS ARE THE KILLER FEATURE
+
+---
+
+## THE CORE VISION: Game Controllers First
+
+> **This entire system lives or dies by how delightful it is to use game controllers.**
+
+Blu-prince must treat game controllers as **first-class objects** with premium UX. Whether users are:
+- DIY makers with custom MicroPython gamepads (Pico W, ESP32)
+- Gamers with store-bought Xbox/PlayStation/Nintendo controllers
+- Simulator enthusiasts with flight sticks and steering wheels
+- Business owners wanting touch/gesture input on kiosks
+
+**The foundation is input devices at the microcontroller and USB level.** If we nail this, everything else is details.
+
+### Controller Philosophy
+
+1. **Zero-config detection** - Plug in any gamepad, it just works
+2. **Visual binding UI** - Press button on controller, click action in editor = bound
+3. **Haptic feedback preview** - Feel the vibration pattern while editing
+4. **Cross-platform parity** - Same controller config works on Web, Desktop, Mobile, MicroPython
+5. **DIY-friendly** - Custom button matrices, analog inputs, rotary encoders all supported
+
+---
+
+## ThingOS Platform API Contract
+
+### Base URL
+```
+Production: https://thingos.org/platform/v1
+Staging:    https://test.thingos.org/platform/v1
+```
+
+### Authentication
+All Platform API calls require API key in header:
+```
+X-API-Key: your-service-account-key
+```
+
+### Available Scopes
+| Scope | Access |
+|-------|--------|
+| `read:users` | User profiles and locations |
+| `read:locations` | Geographic location data |
+| `read:cartridges` | TOSS cartridge read access |
+| `write:cartridges` | Create/update cartridges |
+| `admin` | Full administrative access |
+
+---
+
+## Component Documentation API
+
+Blu-prince admin section should consume these endpoints for the component library:
+
+### Public Endpoints
+
+```
+GET  /components                    → List all 24 built-in components by category
+GET  /components/search?q={term}    → Autocomplete search
+GET  /components/categories         → Category list with counts  
+GET  /components/reserved           → Reserved tngli IDs (cannot be purchased)
+GET  /components/{tngli_id}         → Full component docs + props + examples
+GET  /components/{tngli_id}/examples → Platform-specific code examples
+```
+
+### Admin Endpoints (requires `admin` scope)
+
+```
+POST   /admin/components                    → Create new component
+PUT    /admin/components/{tngli_id}         → Update component
+DELETE /admin/components/{tngli_id}         → Delete (protected for builtins)
+POST   /admin/components/{tngli_id}/examples → Add example
+POST   /admin/components/{tngli_id}/publish  → Publish draft
+```
+
+### Response Structure
+
+```json
+{
+  "tngli_id": "plain_button",
+  "display_name": "PlainButton",
+  "category": "action",
+  "description": "Standard button with label and optional icon",
+  "platforms": ["svelte", "micropython_pico", "textual_tui", "api"],
+  "props_schema": {
+    "label": {"type": "string", "required": true},
+    "icon": {"type": "string", "required": false},
+    "variant": {"type": "string", "enum": ["primary", "secondary", "ghost"]},
+    "disabled": {"type": "boolean", "default": false}
+  },
+  "events": ["on_press", "on_release", "on_hold"],
+  "controller_bindings": ["A", "B", "X", "Y", "START", "SELECT"],
+  "examples_by_platform": {
+    "svelte": [...],
+    "micropython_pico": [...],
+    "textual_tui": [...],
+    "api": [...]
+  }
+}
+```
+
+---
+
+## The 24 Built-in Components (v1.0)
+
+All components must work on MicroPython (264KB RAM, no GPU, 60fps cap).
+
+### Layout (4)
+| Component | Purpose | Controller Hint |
+|-----------|---------|-----------------|
+| `flow_stack` | Horizontal/vertical flex container | D-pad navigation |
+| `dock_pane` | Fixed edge panels (top/bottom/left/right) | Trigger to show/hide |
+| `split_view` | Resizable two-pane layout | Bumper to switch focus |
+| `carousel_rail` | Swipeable card carousel | Left stick horizontal |
+
+### Media (3)
+| Component | Purpose | Controller Hint |
+|-----------|---------|-----------------|
+| `image_frame` | Image display with aspect handling | A to fullscreen |
+| `video_tile` | Video player with controls | A play/pause, triggers seek |
+| `audio_pad` | Audio playback trigger | Any button to play |
+
+### Text (3)
+| Component | Purpose | Controller Hint |
+|-----------|---------|-----------------|
+| `rich_text` | Formatted text with markdown | D-pad scroll |
+| `marquee_ticker` | Scrolling text banner | - |
+| `badge_pill` | Status indicator chip | - |
+
+### Input (6)
+| Component | Purpose | Controller Hint |
+|-----------|---------|-----------------|
+| `slider_rail` | Linear value slider | Left stick X/Y |
+| `dial_knob` | Rotary value control | Right stick rotation |
+| `stepper_input` | +/- numeric input | D-pad up/down |
+| `toggle_chip` | On/off switch | A to toggle |
+| `date_picker` | Date selection | D-pad + A to confirm |
+| `numeric_field` | Number entry with validation | Virtual numpad |
+
+### Action (3)
+| Component | Purpose | Controller Hint |
+|-----------|---------|-----------------|
+| `plain_button` | Text button | A/B/X/Y bindable |
+| `icon_button` | Icon-only button | Any button bindable |
+| `action_group` | Button cluster | Full face button mapping |
+
+### Commerce (3)
+| Component | Purpose | Controller Hint |
+|-----------|---------|-----------------|
+| `product_card` | Product display with price | A to add to cart |
+| `price_tag` | Currency display | - |
+| `inventory_meter` | Stock level indicator | - |
+
+### Creative (2)
+| Component | Purpose | Controller Hint |
+|-----------|---------|-----------------|
+| `particle_burst` | Particle effects (≤200 particles) | Trigger on button press |
+| `mesh_glyph` | Inline 3D object (≤500 triangles) | Right stick to rotate |
+
+---
+
+## TOSS Schema Contract
+
+TOSS (ThingOS Scene Specification) is the JSON format for cartridges.
+
+### Minimal Valid TOSS
+
+```json
+{
+  "toss_version": "1.0",
+  "meta": {
+    "title": "My Cartridge",
+    "author_platform_id": "uuid-from-thingos"
+  },
+  "items": []
+}
+```
+
+### Item Structure
+
+```json
+{
+  "id": "unique-item-id",
+  "component": "plain_button",
+  "props": {
+    "label": "Click Me"
+  },
+  "bounds": {
+    "type": "box",
+    "x": 100, "y": 50,
+    "width": 200, "height": 48
+  },
+  "controller": {
+    "focus_order": 1,
+    "bindings": {
+      "A": "on_press",
+      "B": "on_release"
+    }
+  },
+  "fsm": {
+    "initial": "idle",
+    "states": {
+      "idle": { "on_press": "active" },
+      "active": { "on_release": "idle" }
+    }
+  }
+}
+```
+
+### Controller Binding Schema
+
+```json
+{
+  "controller": {
+    "focus_order": 1,
+    "focus_group": "main-menu",
+    "bindings": {
+      "A": "on_press",
+      "B": "cancel",
+      "START": "pause",
+      "LEFT_STICK_X": "slider_value",
+      "RIGHT_TRIGGER": "accelerate",
+      "DPAD_UP": "navigate_up"
+    },
+    "haptic": {
+      "on_press": { "pattern": "click", "intensity": 0.5 },
+      "on_hold": { "pattern": "pulse", "duration_ms": 100 }
+    }
+  }
+}
+```
+
+### Standard Button Names
+
+```
+Face:      A, B, X, Y (or Cross, Circle, Square, Triangle)
+Bumpers:   LEFT_BUMPER, RIGHT_BUMPER
+Triggers:  LEFT_TRIGGER, RIGHT_TRIGGER (0.0-1.0 analog)
+Sticks:    LEFT_STICK_X, LEFT_STICK_Y, RIGHT_STICK_X, RIGHT_STICK_Y
+D-Pad:     DPAD_UP, DPAD_DOWN, DPAD_LEFT, DPAD_RIGHT
+System:    START, SELECT, HOME, SHARE
+Clicks:    LEFT_STICK_CLICK, RIGHT_STICK_CLICK
+```
+
+### Commerce Fields (for artsy.sale, unwanted.ad)
+
+```json
+{
+  "commerce": {
+    "sku": "PROD-001",
+    "price": 29.99,
+    "currency": "USD",
+    "inventory_count": 50,
+    "is_digital": false,
+    "weight_grams": 250
+  }
+}
+```
+
+---
+
+## Cartridge API
+
+### CRUD Endpoints
+
+```
+GET    /cartridges                  → List user's cartridges
+POST   /cartridges                  → Create new cartridge
+GET    /cartridges/{id}             → Get cartridge with TOSS
+PUT    /cartridges/{id}             → Update cartridge
+DELETE /cartridges/{id}             → Delete cartridge
+GET    /cartridges/{id}/versions    → Version history
+POST   /cartridges/{id}/versions    → Save new version (auto-save)
+POST   /cartridges/{id}/publish     → Publish current draft
+```
+
+### Nearby Query (for location-based cartridges)
+
+```
+GET /cartridges/nearby?lat=37.7749&lng=-122.4194&radius_km=10
+```
+
+### Multi-User Presence
+
+```
+GET /cartridges/{id}/presence → Active users with positions
+PUT /cartridges/{id}/state    → Update user's state (position, inventory)
+```
+
+---
+
+## Platform Targets
+
+Blu-prince must generate/export to these platforms:
+
+| Platform | Runtime | Constraints |
+|----------|---------|-------------|
+| **Web** | Svelte 5 + Three.js | Full feature set |
+| **Desktop** | Electron | Native gamepad API |
+| **Mobile** | Capacitor/Ionic | Touch + Bluetooth controllers |
+| **MicroPython** | Pico W / ESP32 / Tulip CC | 264KB RAM, 60fps, simple shapes |
+| **Terminal** | Textual (Python TUI) | ASCII art, keyboard input |
+
+### MicroPython Constraints
+
+```python
+MAX_ITEMS = 50
+MAX_PARTICLES = 200
+MAX_MESH_TRIANGLES = 500
+MAX_TEXTURE_SIZE = 128  # pixels
+FRAME_BUDGET_MS = 16    # 60fps target
+```
+
+---
+
+## Editor Requirements for Blu-prince
+
+### Controller Configuration Panel
+
+1. **Device List** - Show connected controllers with names/types
+2. **Button Mapper** - Visual controller diagram, click to bind
+3. **Haptic Designer** - Pattern editor with live preview
+4. **Test Mode** - Press buttons, see bindings highlight in editor
+5. **Profile System** - Save/load controller configurations
+
+### Focus Navigation System
+
+1. **Visual focus ring** - Clear indicator of selected element
+2. **Focus order editor** - Drag to reorder, number display
+3. **Focus groups** - Named groups for modal/menu isolation
+4. **Wrap behavior** - Configure what happens at list ends
+
+### Component Library Panel
+
+1. **Fetch from ThingOS** - Use `/platform/v1/components` API
+2. **Search/filter** - By category, platform compatibility
+3. **Drag to canvas** - Insert component at cursor
+4. **Props inspector** - Edit props with validation
+5. **Code preview** - Show generated code for current platform
+
+### Export Pipeline
+
+1. **Platform selector** - Choose target (Web/Desktop/Mobile/MicroPython/TUI)
+2. **Validation** - Check constraints (memory, feature support)
+3. **Bundle generation** - Platform-specific output
+4. **Controller manifest** - Export bindings for platform-native handling
+
+---
+
+## API Key Setup for Blu-prince
+
+Request a service account from ThingOS admin:
+
+```bash
+# On ThingOS backend
+python backend/manage_api_keys.py create \
+  --name "blu-prince-production" \
+  --scopes "read:users,read:locations,read:cartridges,write:cartridges"
+```
+
+Store in Blu-prince environment:
+```
+THINGOS_API_KEY=your-generated-key
+THINGOS_API_URL=https://thingos.org/platform/v1
+```
+
+---
+
+## Critical Success Metrics
+
+### Controller UX Goals
+
+| Metric | Target |
+|--------|--------|
+| Time to first button bind | < 5 seconds |
+| Controller detection latency | < 100ms |
+| Input-to-visual latency | < 16ms (1 frame) |
+| Haptic preview accuracy | 95% match to runtime |
+| Cross-platform binding compatibility | 100% |
+
+### Editor UX Goals
+
+| Metric | Target |
+|--------|--------|
+| Component drag to canvas | < 1 second |
+| Property change to preview | < 100ms |
+| Export to platform | < 10 seconds |
+| Cartridge save (auto) | Every 30 seconds |
+
+---
+
+## Files to Reference
+
+These files are the authoritative source in the ThingOS repo:
+
+| File | Purpose |
+|------|---------|
+| `TOSS_SCHEMA.md` | Complete item/cartridge format |
+| `BLUPRINCE_COMPONENTS_V1.md` | All 24 components with props |
+| `ARTSY_UNWANTED_DEVOPS.md` | Commerce site deployment |
+| `BLU_PRINCE_INTEGRATION.md` | API integration guide |
+| `PLATFORM.md` | Platform API documentation |
+| `backend/component_routes.py` | Component API implementation |
+| `backend/platform_routes.py` | Cartridge API implementation |
+| `backend/models.py` | Database schema reference |
+
+---
+
+## Summary: The Contract
+
+1. **ThingOS backend is FROZEN** - No more changes to API contract
+2. **Game controllers are THE feature** - Not an afterthought
+3. **24 built-in components** - All MicroPython-compatible
+4. **TOSS format is stable** - Version 1.0 locked
+5. **4 platform targets** - Web, Desktop, MicroPython, TUI
+6. **Commerce ready** - SKU/currency fields for artsy.sale, unwanted.ad
+
+**Build the editor that makes using a gamepad feel magical.**
+
+---
+
+*This document is the binding contract between ThingOS and Blu-prince. Any API changes require versioning (v2) and backwards compatibility.*
