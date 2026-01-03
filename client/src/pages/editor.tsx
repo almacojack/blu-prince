@@ -20,10 +20,11 @@ import {
   Triangle, Settings, Layers, Zap, Save, Upload, CheckCircle, XCircle,
   Plus, Trash2, ArrowRight, GitBranch, X, Gamepad2, Vibrate,
   Pentagon, Hexagon, Diamond, Cone, FileImage, Eye, EyeOff,
-  Palette, Move, RotateCw, Maximize2, Database, Wrench, Users, Share2, Copy, FolderOpen, Droplets
+  Palette, Move, RotateCw, Maximize2, Database, Wrench, Users, Share2, Copy, FolderOpen, Droplets, Atom
 } from "lucide-react";
 import { DockablePanel } from "@/components/DockablePanel";
-import { ToolsPanel, type PhysicsTool, type ForceConfig, type EnvironmentalForce } from "@/components/ToolsPanel";
+import { ToolsPanel, type PhysicsTool } from "@/components/ToolsPanel";
+import { EnvironmentalForcesPanel, DEFAULT_FORCES, type ForceConfig, type EnvironmentalForce } from "@/components/EnvironmentalForcesPanel";
 import { ControllerMappingsPanel } from "@/components/ControllerMappingsPanel";
 import { WaterContainer } from "@/components/WaterContainer";
 import { WaterControlPanel, createDefaultWaterContainer, type WaterContainerConfig } from "@/components/WaterControlPanel";
@@ -1688,14 +1689,7 @@ export default function BluPrinceEditor() {
   const [toolPower, setToolPower] = useState(100);
   const [magnetPolarity, setMagnetPolarity] = useState<'attract' | 'repel'>('attract');
   const [magnetizedObjects, setMagnetizedObjects] = useState<Set<string>>(new Set());
-  const [environmentalForces, setEnvironmentalForces] = useState<ForceConfig[]>([
-    { type: 'FIRE', intensity: 1200, enabled: false },
-    { type: 'ICE', intensity: 77, enabled: false },
-    { type: 'WIND', intensity: 25, enabled: false },
-    { type: 'WATER', intensity: 100, enabled: false },
-    { type: 'VACUUM', intensity: 1, enabled: false },
-    { type: 'NUKE', intensity: 1, enabled: false },
-  ]);
+  const [environmentalForces, setEnvironmentalForces] = useState<ForceConfig[]>(DEFAULT_FORCES);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [collaborationEnabled, setCollaborationEnabled] = useState(false);
   const [gestureState, setGestureState] = useState<GestureState>(createGestureState());
@@ -2474,7 +2468,19 @@ export default function BluPrinceEditor() {
             onToolPowerChange={setToolPower}
             magnetPolarity={magnetPolarity}
             onMagnetPolarityChange={setMagnetPolarity}
-            environmentalForces={environmentalForces}
+          />
+        </DockablePanel>
+
+        {/* Forces Panel */}
+        <DockablePanel
+          id="forces"
+          title="Forces"
+          icon={<Atom className="w-4 h-4" />}
+          defaultDocked={true}
+          defaultCollapsed={true}
+        >
+          <EnvironmentalForcesPanel
+            forces={environmentalForces}
             onForceToggle={handleForceToggle}
             onForceIntensityChange={handleForceIntensityChange}
           />
