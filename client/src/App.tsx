@@ -5,6 +5,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CartridgeProvider } from "@/contexts/cartridge-context";
 import { UiScaleProvider } from "@/contexts/UiScaleContext";
+import { TutorialProvider } from "@/contexts/TutorialContext";
+import { TutorialOverlay } from "@/components/TutorialOverlay";
 import Home from "@/pages/home";
 import BluPrince from "@/pages/blu-prince";
 import BluPrinceEditor from "@/pages/editor";
@@ -42,13 +44,16 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <UiScaleProvider>
         <CartridgeProvider>
-          <TooltipProvider>
-            <div className="min-h-screen bg-background text-foreground antialiased selection:bg-primary/20">
-              <div className="scanline" />
-              <Router />
-              <Toaster />
-            </div>
-          </TooltipProvider>
+          <TutorialProvider>
+            <TooltipProvider>
+              <div className="min-h-screen bg-background text-foreground antialiased selection:bg-primary/20">
+                <div className="scanline" />
+                <Router />
+                <Toaster />
+                <TutorialOverlay />
+              </div>
+            </TooltipProvider>
+          </TutorialProvider>
         </CartridgeProvider>
       </UiScaleProvider>
     </QueryClientProvider>

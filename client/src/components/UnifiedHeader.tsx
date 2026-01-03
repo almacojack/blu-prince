@@ -42,6 +42,9 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { TossCartridge } from "@/lib/toss-v1";
+import { TutorialMenu } from "@/components/TutorialMenu";
+import { useTutorial } from "@/contexts/TutorialContext";
+import { GraduationCap } from "lucide-react";
 
 interface CartridgeBadgeProps {
   cartridge?: TossCartridge | null;
@@ -396,6 +399,21 @@ export function UnifiedHeader({
       category: "help",
       action: () => setLocation("/library?load=help")
     },
+    {
+      id: "start-tutorial",
+      label: "Start Tutorial",
+      description: "Interactive guided tour of the editor",
+      icon: <GraduationCap className="w-4 h-4" />,
+      shortcut: "T",
+      category: "help",
+      action: () => {
+        setCommandPaletteOpen(false);
+        setTimeout(() => {
+          const event = new CustomEvent("open-tutorial-menu");
+          window.dispatchEvent(event);
+        }, 100);
+      }
+    },
     ...extraCommands
   ];
   
@@ -606,6 +624,8 @@ export function UnifiedHeader({
         onOpenChange={setCommandPaletteOpen}
         commands={baseCommands}
       />
+      
+      <TutorialMenu />
     </>
   );
 }
