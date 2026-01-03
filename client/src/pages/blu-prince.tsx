@@ -1,21 +1,93 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Link } from "wouter";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   Save, Settings, Plus, Zap, 
   ChevronDown, ZoomIn, ZoomOut, MousePointer2,
-  ArrowRight, FileJson, Download, WifiOff, Cloud, CloudOff
+  ArrowRight, FileJson, Download, Cloud, CloudOff, Users, Share2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { TossFile, createNewTossFile, TossState } from "@/lib/toss";
 import { saveCartridge } from "@/lib/api";
+import { useCollaboration, CollabUser } from "@/hooks/use-collaboration";
+import { useAuth } from "@/hooks/use-auth";
 
 const STORAGE_KEY = "blu-prince-cartridge";
+
+function CollaboratorAvatars({ users, myColor }: { users: CollabUser[]; myColor: string }) {
+  if (users.length === 0) return null;
+  
+  return (
+    <div className="flex items-center gap-1">
+      <Users className="w-3 h-3 text-gray-400 mr-1" />
+      <div className="flex -space-x-2">
+        {users.slice(0, 5).map((user) => (
+          <motion.div
+            key={user.id}
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            className="w-6 h-6 rounded-full border-2 border-gray-900 flex items-center justify-center text-[8px] font-bold text-white"
+            style={{ backgroundColor: user.color }}
+            title={user.name || user.id.slice(0, 8)}
+          >
+            {(user.name || user.id).slice(0, 2).toUpperCase()}
+          </motion.div>
+        ))}
+        {users.length > 5 && (
+          <div className="w-6 h-6 rounded-full border-2 border-gray-900 bg-gray-700 flex items-center justify-center text-[8px] font-bold text-white">
+            +{users.length - 5}
+          </div>
+        )}
+      </div>
+      <div 
+        className="w-6 h-6 rounded-full border-2 border-gray-900 flex items-center justify-center text-[8px] font-bold text-white ml-1"
+        style={{ backgroundColor: myColor }}
+        title="You"
+      >
+        ME
+      </div>
+    </div>
+  );
+}
+
+function RemoteCursor({ user }: { user: CollabUser }) {
+  if (!user.cursor) return null;
+  
+  return (
+    <motion.div
+      className="absolute pointer-events-none z-50"
+      initial={{ opacity: 0 }}
+      animate={{ 
+        opacity: 1,
+        x: user.cursor.x,
+        y: user.cursor.y,
+      }}
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+    >
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path 
+          d="M5 3L19 12L12 13L9 20L5 3Z" 
+          fill={user.color} 
+          stroke="white" 
+          strokeWidth="1"
+        />
+      </svg>
+      <div 
+        className="absolute left-5 top-4 px-2 py-0.5 rounded text-[10px] font-mono text-white whitespace-nowrap"
+        style={{ backgroundColor: user.color }}
+      >
+        {user.name || user.id.slice(0, 8)}
+      </div>
+    </motion.div>
+  );
+}
 
 function CartridgeBezel({ 
   title, 
@@ -23,18 +95,28 @@ function CartridgeBezel({
   isOnline, 
   isSaving,
   hasLocalChanges,
+  collaborators,
+  myColor,
+  isCollabConnected,
+  roomId,
   onSave,
   onExport,
   onInspect,
+  onShareClick,
 }: { 
   title: string; 
   version: string; 
   isOnline: boolean;
   isSaving: boolean;
   hasLocalChanges: boolean;
+  collaborators: CollabUser[];
+  myColor: string;
+  isCollabConnected: boolean;
+  roomId: string | null;
   onSave: () => void;
   onExport: () => void;
   onInspect: () => void;
+  onShareClick: () => void;
 }) {
   return (
     <div className="relative">
@@ -110,8 +192,24 @@ function CartridgeBezel({
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 mr-2">
+            <div className="flex items-center gap-3">
+              <AnimatePresence>
+                <CollaboratorAvatars users={collaborators} myColor={myColor} />
+              </AnimatePresence>
+              
+              {isCollabConnected && roomId && (
+                <Badge 
+                  variant="outline" 
+                  className="text-[8px] h-5 px-2 border-green-500/50 text-green-400 bg-green-500/10 gap-1"
+                >
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                  LIVE
+                </Badge>
+              )}
+              
+              <div className="h-6 w-px bg-white/10" />
+              
+              <div className="flex items-center gap-1">
                 {isOnline ? (
                   <Cloud className="w-3 h-3 text-green-400" />
                 ) : (
@@ -121,6 +219,17 @@ function CartridgeBezel({
                   {isOnline ? "ONLINE" : "OFFLINE"}
                 </span>
               </div>
+              
+              <Button 
+                size="sm" 
+                variant="ghost" 
+                className="gap-2 text-gray-400 hover:text-cyan-400 hover:bg-cyan-500/10" 
+                onClick={onShareClick}
+                data-testid="button-share"
+              >
+                <Share2 className="w-4 h-4" />
+                <span className="hidden sm:inline text-xs">Share</span>
+              </Button>
               
               <Button 
                 size="sm" 
@@ -162,6 +271,9 @@ function CartridgeBezel({
 }
 
 export default function BluPrince() {
+  const { user, isAuthenticated } = useAuth();
+  const canvasRef = useRef<HTMLDivElement>(null);
+  
   const [file, setFile] = useState<TossFile>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -176,10 +288,42 @@ export default function BluPrince() {
   
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [showJson, setShowJson] = useState(false);
+  const [showShareDialog, setShowShareDialog] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [hasLocalChanges, setHasLocalChanges] = useState(false);
+  const [collabRoomId, setCollabRoomId] = useState<string>(() => file.manifest.tngli_id);
+  const [shareLink, setShareLink] = useState("");
   const { toast } = useToast();
+
+  const collaboration = useCollaboration<TossFile>({
+    roomId: collabRoomId,
+    userId: user?.id,
+    userName: user?.username || user?.firstName,
+    initialState: file,
+    autoConnect: isAuthenticated && isOnline,
+    onStateChange: (newState, fromUserId) => {
+      if (fromUserId !== user?.id) {
+        setFile(newState);
+        toast({
+          title: "Remote Update",
+          description: `Changes received from collaborator`,
+        });
+      }
+    },
+    onUserJoin: (collabUser) => {
+      toast({
+        title: "Collaborator Joined",
+        description: `${collabUser.name || collabUser.id.slice(0, 8)} joined the session`,
+      });
+    },
+    onUserLeave: (userId) => {
+      toast({
+        title: "Collaborator Left",
+        description: `A collaborator left the session`,
+      });
+    },
+  });
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -200,6 +344,19 @@ export default function BluPrince() {
       console.warn("Failed to save cartridge to localStorage:", e);
     }
   }, [file]);
+
+  useEffect(() => {
+    setShareLink(`${window.location.origin}/blu-prince?room=${collabRoomId}`);
+  }, [collabRoomId]);
+
+  const handleCanvasMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!canvasRef.current || !collaboration.isJoined) return;
+    const rect = canvasRef.current.getBoundingClientRect();
+    collaboration.sendCursor({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    });
+  }, [collaboration]);
 
   const nodes = file._editor?.nodes || [];
 
@@ -250,12 +407,12 @@ export default function BluPrince() {
       color: type === 'initial' ? 'bg-green-500' : type === 'final' ? 'bg-muted-foreground' : 'bg-primary'
     };
 
-    setFile(prev => ({
-      ...prev,
+    const updatedFile: TossFile = {
+      ...file,
       logic: {
-        ...prev.logic,
+        ...file.logic,
         states: {
-          ...prev.logic.states,
+          ...file.logic.states,
           [newId]: {
             id: newId,
             type: type,
@@ -264,10 +421,24 @@ export default function BluPrince() {
         }
       },
       _editor: {
-        ...prev._editor!,
-        nodes: [...prev._editor!.nodes, newNode]
+        ...file._editor!,
+        nodes: [...file._editor!.nodes, newNode]
       }
-    }));
+    };
+    
+    setFile(updatedFile);
+    
+    if (collaboration.isJoined) {
+      collaboration.sendFullState(updatedFile);
+    }
+  };
+  
+  const copyShareLink = () => {
+    navigator.clipboard.writeText(shareLink);
+    toast({
+      title: "Link Copied",
+      description: "Share this link with collaborators",
+    });
   };
 
   const getTransitions = () => {
@@ -293,10 +464,108 @@ export default function BluPrince() {
         isOnline={isOnline}
         isSaving={isSaving}
         hasLocalChanges={hasLocalChanges}
+        collaborators={collaboration.otherUsers}
+        myColor={collaboration.myColor}
+        isCollabConnected={collaboration.isJoined}
+        roomId={collaboration.roomId}
         onSave={handleSave}
         onExport={handleExport}
         onInspect={() => setShowJson(true)}
+        onShareClick={() => setShowShareDialog(true)}
       />
+
+      <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+        <DialogContent className="max-w-md bg-[#111] border-white/20">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Share2 className="w-5 h-5 text-cyan-400" />
+              Share & Collaborate
+            </DialogTitle>
+            <DialogDescription>
+              Invite others to edit this statechart in real-time. Anyone with the link can join.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 mt-4">
+            {!isAuthenticated ? (
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 text-center">
+                <p className="text-sm text-yellow-400 mb-3">Sign in to enable real-time collaboration</p>
+                <a href="/api/login">
+                  <Button size="sm" className="bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 border border-yellow-500/30">
+                    Sign In
+                  </Button>
+                </a>
+              </div>
+            ) : (
+              <>
+                <div>
+                  <label className="text-[10px] uppercase text-muted-foreground font-bold mb-2 block">Room ID</label>
+                  <Input
+                    value={collabRoomId}
+                    onChange={(e) => setCollabRoomId(e.target.value)}
+                    className="bg-black/50 border-white/10 text-white font-mono text-sm"
+                    data-testid="input-room-id"
+                  />
+                </div>
+                
+                <div>
+                  <label className="text-[10px] uppercase text-muted-foreground font-bold mb-2 block">Share Link</label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={shareLink}
+                      readOnly
+                      className="bg-black/50 border-white/10 text-cyan-400 font-mono text-xs"
+                      data-testid="input-share-link"
+                    />
+                    <Button 
+                      onClick={copyShareLink}
+                      className="bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/30"
+                      data-testid="button-copy-link"
+                    >
+                      Copy
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="bg-black/30 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs text-muted-foreground">Status</span>
+                    <Badge 
+                      variant="outline" 
+                      className={`text-[10px] ${collaboration.isJoined ? "border-green-500/50 text-green-400" : "border-gray-500/50 text-gray-400"}`}
+                    >
+                      {collaboration.isJoined ? "Connected" : "Disconnected"}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">Collaborators</span>
+                    <span className="text-xs text-white font-mono">{collaboration.users.length}</span>
+                  </div>
+                </div>
+                
+                {collaboration.otherUsers.length > 0 && (
+                  <div>
+                    <label className="text-[10px] uppercase text-muted-foreground font-bold mb-2 block">Active Users</label>
+                    <div className="space-y-2">
+                      {collaboration.otherUsers.map((u) => (
+                        <div key={u.id} className="flex items-center gap-2 p-2 rounded bg-white/5">
+                          <div 
+                            className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
+                            style={{ backgroundColor: u.color }}
+                          >
+                            {(u.name || u.id).slice(0, 2).toUpperCase()}
+                          </div>
+                          <span className="text-xs text-white">{u.name || u.id.slice(0, 12)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={showJson} onOpenChange={setShowJson}>
         <DialogContent className="max-w-3xl max-h-[80vh] bg-[#111] border-white/20">
@@ -351,7 +620,17 @@ export default function BluPrince() {
           </div>
         </div>
 
-        <div className="flex-1 relative bg-[#0c0c10] overflow-hidden">
+        <div 
+          ref={canvasRef}
+          className="flex-1 relative bg-[#0c0c10] overflow-hidden"
+          onMouseMove={handleCanvasMouseMove}
+        >
+          <AnimatePresence>
+            {collaboration.otherUsers.map((user) => (
+              <RemoteCursor key={user.id} user={user} />
+            ))}
+          </AnimatePresence>
+          
           <div className="absolute inset-0 opacity-[0.03]" 
                style={{ 
                  backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)',
