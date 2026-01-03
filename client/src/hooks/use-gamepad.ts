@@ -34,7 +34,7 @@ export interface GamepadInput {
   rightStickY: number;
 }
 
-const DEFAULT_INPUT: GamepadInput = {
+export const defaultInput: GamepadInput = {
   dpadUp: false,
   dpadDown: false,
   dpadLeft: false,
@@ -98,7 +98,7 @@ export function useGamepad(options: UseGamepadOptions = {}) {
   
   const [gamepads, setGamepads] = useState<(GamepadState | null)[]>([]);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  const [input, setInput] = useState<GamepadInput>(DEFAULT_INPUT);
+  const [input, setInput] = useState<GamepadInput>(defaultInput);
   const [isSupported] = useState(() => typeof navigator !== "undefined" && "getGamepads" in navigator);
   
   const animFrameRef = useRef<number>(0);
@@ -169,7 +169,7 @@ export function useGamepad(options: UseGamepadOptions = {}) {
       console.log("Gamepad disconnected:", e.gamepad.id);
       if (activeIndex === e.gamepad.index) {
         setActiveIndex(null);
-        setInput(DEFAULT_INPUT);
+        setInput(defaultInput);
       }
     };
 
