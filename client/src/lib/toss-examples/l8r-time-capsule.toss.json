@@ -158,10 +158,26 @@
     "layout": "timeline",
     "components": [
       {
+        "type": "timeline",
+        "id": "schedule_timeline",
+        "position": "left",
+        "orientation": "vertical",
+        "shows": "scheduled_items",
+        "style": "steampunk",
+        "features": {
+          "zoom_controls": true,
+          "click_to_select": true,
+          "show_categories": true,
+          "animate_entries": true
+        }
+      },
+      {
         "type": "timeline_marquee",
         "position": "top",
         "shows": "scheduled_items",
-        "style": "brass-ticker"
+        "style": "brass-ticker",
+        "orientation": "horizontal",
+        "scroll_speed": "slow"
       },
       {
         "type": "countdown_display",
@@ -171,9 +187,23 @@
       },
       {
         "type": "item_card",
-        "position": "bottom",
+        "position": "bottom-right",
         "shows": "scheduled_items[current_item_index]",
-        "style": "brass-plate"
+        "style": "brass-plate",
+        "features": {
+          "show_location_map": true,
+          "show_timezone": true
+        }
+      },
+      {
+        "type": "spacetime_picker",
+        "id": "when_where_picker",
+        "theme": "steampunk",
+        "features": {
+          "location_enabled": true,
+          "past_disabled": true,
+          "timezone_selector": true
+        }
       }
     ]
   },

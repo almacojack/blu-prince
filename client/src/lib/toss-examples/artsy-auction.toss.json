@@ -1,0 +1,283 @@
+{
+  "toss_version": "1.0",
+  "manifest": {
+    "id": "artsy-auction-001",
+    "tngli_id": "artsy_auc_001",
+    "title": "Art Gallery Auction",
+    "author": "artsy.sale",
+    "version": "1.0.0",
+    "description": "Elegant art auction with timeline-based bidding history and catalog navigation",
+    "tenant": "artsy",
+    "tags": ["auction", "art", "gallery", "bidding", "timeline"],
+    "thumbnail": "gallery-rose.png"
+  },
+  "memory": {
+    "current_lot": {
+      "type": "object",
+      "default": {
+        "id": "",
+        "title": "",
+        "artist": "",
+        "medium": "",
+        "dimensions": "",
+        "year": "",
+        "estimate_low": 0,
+        "estimate_high": 0,
+        "current_bid": 0,
+        "reserve_met": false,
+        "image_url": ""
+      }
+    },
+    "bid_history": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "id": "string",
+        "amount": "number",
+        "bidder_paddle": "string",
+        "timestamp": "datetime"
+      }
+    },
+    "catalog": {
+      "type": "array",
+      "default": []
+    },
+    "current_lot_index": {
+      "type": "number",
+      "default": 0
+    },
+    "my_paddle": {
+      "type": "string",
+      "default": ""
+    },
+    "my_max_bid": {
+      "type": "number",
+      "default": 0
+    },
+    "auction_end_time": {
+      "type": "datetime",
+      "default": null
+    }
+  },
+  "fsm": {
+    "initial": "browsing",
+    "states": {
+      "browsing": {
+        "description": "Viewing the auction catalog before bidding opens",
+        "on": {
+          "SELECT_LOT": {
+            "actions": ["selectLot"]
+          },
+          "NAVIGATE_NEXT": {
+            "actions": ["nextLot"]
+          },
+          "NAVIGATE_PREV": {
+            "actions": ["prevLot"]
+          },
+          "AUCTION_START": "live_bidding",
+          "SET_MAX_BID": "setting_limit"
+        }
+      },
+      "setting_limit": {
+        "description": "User is setting their maximum automatic bid",
+        "on": {
+          "CONFIRM_LIMIT": {
+            "target": "browsing",
+            "actions": ["saveMaxBid"]
+          },
+          "CANCEL": "browsing"
+        }
+      },
+      "live_bidding": {
+        "description": "Active auction in progress",
+        "entry": ["startBidTimer"],
+        "on": {
+          "NEW_BID": {
+            "actions": ["recordBid", "checkAutoBid", "refreshTimeline"]
+          },
+          "PLACE_BID": {
+            "actions": ["submitBid"]
+          },
+          "LOT_SOLD": {
+            "target": "lot_complete",
+            "actions": ["markSold", "playGavelSound"]
+          },
+          "LOT_PASSED": {
+            "target": "lot_complete",
+            "actions": ["markPassed"]
+          },
+          "NAVIGATE_NEXT": {
+            "actions": ["nextLot"]
+          }
+        }
+      },
+      "lot_complete": {
+        "description": "Current lot has been sold or passed",
+        "entry": ["hapticNotify"],
+        "on": {
+          "NEXT_LOT": {
+            "target": "live_bidding",
+            "actions": ["nextLot", "clearBidHistory"]
+          },
+          "VIEW_RESULTS": "results"
+        }
+      },
+      "results": {
+        "description": "Viewing auction results and purchase summary",
+        "on": {
+          "BACK_TO_CATALOG": "browsing",
+          "CHECKOUT": "checkout"
+        }
+      },
+      "checkout": {
+        "description": "Processing payment for won lots",
+        "on": {
+          "PAYMENT_COMPLETE": {
+            "target": "complete",
+            "actions": ["confirmPayment"]
+          },
+          "CANCEL": "results"
+        }
+      },
+      "complete": {
+        "description": "Auction participation complete",
+        "on": {
+          "NEW_AUCTION": {
+            "target": "browsing",
+            "actions": ["resetAuction"]
+          }
+        }
+      }
+    }
+  },
+  "actions": {
+    "selectLot": {
+      "type": "context_update",
+      "target": "current_lot",
+      "source": "event.lot"
+    },
+    "nextLot": {
+      "type": "context_update",
+      "target": "current_lot_index",
+      "expression": "Math.min(context.current_lot_index + 1, context.catalog.length - 1)"
+    },
+    "prevLot": {
+      "type": "context_update",
+      "target": "current_lot_index",
+      "expression": "Math.max(context.current_lot_index - 1, 0)"
+    },
+    "recordBid": {
+      "type": "context_update",
+      "target": "bid_history",
+      "mode": "prepend",
+      "source": "event.bid"
+    },
+    "refreshTimeline": {
+      "type": "ui_update",
+      "component": "bid_timeline",
+      "trigger": "scroll_to_top"
+    },
+    "submitBid": {
+      "type": "api_call",
+      "endpoint": "/api/bids",
+      "method": "POST",
+      "body": {
+        "lot_id": "context.current_lot.id",
+        "amount": "event.amount",
+        "paddle": "context.my_paddle"
+      }
+    },
+    "playGavelSound": { "type": "audio", "asset": "gavel.mp3" },
+    "hapticNotify": { "type": "haptic", "pattern": "notification" }
+  },
+  "controller_mappings": {
+    "default": {
+      "A": { "event": "PLACE_BID", "label": "Bid" },
+      "B": { "event": "SET_MAX_BID", "label": "Auto-Bid" },
+      "X": { "event": "VIEW_RESULTS", "label": "Results" },
+      "Y": { "event": "CHECKOUT", "label": "Checkout" },
+      "LEFT_STICK_LEFT": { "event": "NAVIGATE_PREV" },
+      "LEFT_STICK_RIGHT": { "event": "NAVIGATE_NEXT" },
+      "LEFT_TRIGGER": { "event": "BID_DOWN", "analog": true, "label": "Bid -" },
+      "RIGHT_TRIGGER": { "event": "BID_UP", "analog": true, "label": "Bid +" }
+    }
+  },
+  "time_controls": {
+    "timers": [
+      {
+        "id": "lot_countdown",
+        "type": "countdown",
+        "source": "context.auction_end_time",
+        "on_complete": "LOT_SOLD",
+        "warning_at_seconds": [30, 10, 5]
+      }
+    ],
+    "clock": {
+      "visible": true,
+      "format": "12h",
+      "show_auction_time": true
+    }
+  },
+  "ui": {
+    "theme": "artsy-gallery",
+    "layout": "auction",
+    "components": [
+      {
+        "type": "timeline",
+        "id": "bid_timeline",
+        "position": "right",
+        "orientation": "vertical",
+        "shows": "bid_history",
+        "style": "artsy",
+        "features": {
+          "show_paddle": true,
+          "show_timestamp": true,
+          "animate_new_bids": true,
+          "highlight_my_bids": true
+        }
+      },
+      {
+        "type": "lot_display",
+        "position": "center",
+        "shows": "current_lot",
+        "style": "gallery-frame",
+        "features": {
+          "zoom_on_hover": true,
+          "show_provenance": true
+        }
+      },
+      {
+        "type": "catalog_strip",
+        "position": "bottom",
+        "shows": "catalog",
+        "style": "thumbnail-carousel",
+        "orientation": "horizontal"
+      },
+      {
+        "type": "bid_panel",
+        "position": "bottom-right",
+        "shows": {
+          "current_bid": "current_lot.current_bid",
+          "estimate": ["current_lot.estimate_low", "current_lot.estimate_high"],
+          "my_max": "my_max_bid"
+        },
+        "style": "elegant-card"
+      },
+      {
+        "type": "countdown_display",
+        "position": "top-right",
+        "source": "timers.lot_countdown",
+        "style": "elegant-timer"
+      }
+    ]
+  },
+  "assets": {
+    "audio": {
+      "gavel.mp3": "base64://...",
+      "bid-accepted.mp3": "base64://..."
+    },
+    "images": {
+      "gallery-rose.png": "base64://..."
+    }
+  }
+}

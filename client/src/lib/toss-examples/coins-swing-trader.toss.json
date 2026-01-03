@@ -241,6 +241,25 @@
         "style": "holographic"
       },
       {
+        "type": "timeline",
+        "id": "trade_timeline",
+        "position": "right",
+        "orientation": "vertical",
+        "shows": "trade_events",
+        "style": "cyberpunk",
+        "features": {
+          "show_pnl_color": true,
+          "group_by_session": true,
+          "click_to_replay": true
+        },
+        "event_types": {
+          "entry": { "icon": "arrow-up", "color": "cyan" },
+          "exit": { "icon": "arrow-down", "color": "magenta" },
+          "stop": { "icon": "x-circle", "color": "red" },
+          "target": { "icon": "check-circle", "color": "green" }
+        }
+      },
+      {
         "type": "swing_arc_chart",
         "position": "center",
         "shows": {
@@ -251,6 +270,17 @@
           "current": "current_price"
         },
         "style": "neon-glow"
+      },
+      {
+        "type": "timeline_strip",
+        "position": "bottom-center",
+        "orientation": "horizontal",
+        "shows": "price_history",
+        "style": "cyberpunk",
+        "features": {
+          "mini_chart": true,
+          "scrub_to_navigate": true
+        }
       },
       {
         "type": "trade_card",
