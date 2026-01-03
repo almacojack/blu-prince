@@ -17,11 +17,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   ArrowLeft, Play, Pause, RotateCcw, Box, Circle, 
   Triangle, Settings, Layers, Zap, Save, Upload, CheckCircle, XCircle,
-  Plus, Trash2, ArrowRight, GitBranch, X
+  Plus, Trash2, ArrowRight, GitBranch, X, Gamepad2, Vibrate
 } from "lucide-react";
 import { 
-  TossCartridge, TossItem, EditorMode, UserAssertion, ItemFSM,
-  createNewCartridge, createThing, DEFAULT_PHYSICS 
+  TossCartridge, TossItem, EditorMode, UserAssertion, ItemFSM, ControllerBinding,
+  createNewCartridge, createThing, DEFAULT_PHYSICS, CONTROLLER_BUTTONS
 } from "@/lib/toss-v1";
 import { useToast } from "@/hooks/use-toast";
 
@@ -647,6 +647,269 @@ function AssertionsPanel({ cartridge, onAddAssertion, onRemoveAssertion, testSta
   );
 }
 
+// Controller Binding Panel
+interface ControllerPanelProps {
+  item: TossItem;
+  onUpdate: (controller: ControllerBinding) => void;
+  onClose: () => void;
+}
+
+// Hook to detect gamepads
+function useGamepads() {
+  const [gamepads, setGamepads] = useState<Gamepad[]>([]);
+  const [pressedButtons, setPressedButtons] = useState<Set<number>>(new Set());
+
+  useEffect(() => {
+    const updateGamepads = () => {
+      const pads = navigator.getGamepads();
+      const connected = Array.from(pads).filter((g): g is Gamepad => g !== null);
+      setGamepads(connected);
+      
+      // Check for pressed buttons
+      const pressed = new Set<number>();
+      connected.forEach(pad => {
+        pad.buttons.forEach((btn, idx) => {
+          if (btn.pressed) pressed.add(idx);
+        });
+      });
+      setPressedButtons(pressed);
+    };
+
+    const handleConnect = () => updateGamepads();
+    const handleDisconnect = () => updateGamepads();
+
+    window.addEventListener('gamepadconnected', handleConnect);
+    window.addEventListener('gamepaddisconnected', handleDisconnect);
+    
+    const interval = setInterval(updateGamepads, 100);
+    
+    return () => {
+      window.removeEventListener('gamepadconnected', handleConnect);
+      window.removeEventListener('gamepaddisconnected', handleDisconnect);
+      clearInterval(interval);
+    };
+  }, []);
+
+  return { gamepads, pressedButtons };
+}
+
+// Map button index to name
+const BUTTON_INDEX_MAP: Record<number, string> = {
+  0: "A", 1: "B", 2: "X", 3: "Y",
+  4: "LEFT_BUMPER", 5: "RIGHT_BUMPER",
+  6: "LEFT_TRIGGER", 7: "RIGHT_TRIGGER",
+  8: "SELECT", 9: "START",
+  10: "LEFT_STICK_CLICK", 11: "RIGHT_STICK_CLICK",
+  12: "DPAD_UP", 13: "DPAD_DOWN", 14: "DPAD_LEFT", 15: "DPAD_RIGHT",
+  16: "HOME",
+};
+
+function ControllerPanel({ item, onUpdate, onClose }: ControllerPanelProps) {
+  const [controller, setController] = useState<ControllerBinding>(
+    item.controller || { bindings: {} }
+  );
+  const [waitingForButton, setWaitingForButton] = useState<string | null>(null);
+  const { gamepads, pressedButtons } = useGamepads();
+
+  // Re-sync when item changes
+  useEffect(() => {
+    setController(item.controller || { bindings: {} });
+    setWaitingForButton(null);
+  }, [item.id]);
+
+  // Capture button press when waiting
+  useEffect(() => {
+    if (waitingForButton && pressedButtons.size > 0) {
+      const buttonIdx = Array.from(pressedButtons)[0];
+      const buttonName = BUTTON_INDEX_MAP[buttonIdx] || `BUTTON_${buttonIdx}`;
+      
+      const updated: ControllerBinding = {
+        ...controller,
+        bindings: { ...controller.bindings, [buttonName]: waitingForButton }
+      };
+      setController(updated);
+      onUpdate(updated);
+      setWaitingForButton(null);
+    }
+  }, [pressedButtons, waitingForButton, controller, onUpdate]);
+
+  // Get available FSM events from the item
+  const availableEvents: string[] = [];
+  if (item.fsm) {
+    Object.values(item.fsm.states).forEach(transitions => {
+      Object.keys(transitions).forEach(event => {
+        if (!availableEvents.includes(event)) {
+          availableEvents.push(event);
+        }
+      });
+    });
+  }
+  // Add common events
+  ["on_press", "on_release", "on_hover", "on_focus"].forEach(e => {
+    if (!availableEvents.includes(e)) availableEvents.push(e);
+  });
+
+  const removeBinding = (button: string) => {
+    const { [button]: _, ...rest } = controller.bindings;
+    const updated = { ...controller, bindings: rest };
+    setController(updated);
+    onUpdate(updated);
+  };
+
+  const triggerHaptic = () => {
+    const pad = gamepads[0];
+    if (pad?.vibrationActuator) {
+      (pad.vibrationActuator as any).playEffect?.("dual-rumble", {
+        startDelay: 0,
+        duration: 200,
+        weakMagnitude: 0.5,
+        strongMagnitude: 1.0,
+      });
+    }
+  };
+
+  return (
+    <div className="absolute right-4 top-20 bottom-20 w-80 bg-black/90 backdrop-blur border border-white/10 rounded-lg overflow-hidden flex flex-col z-50">
+      <div className="flex items-center justify-between p-3 border-b border-white/10">
+        <div className="flex items-center gap-2">
+          <Gamepad2 className="w-4 h-4 text-secondary" />
+          <span className="font-mono text-sm text-white">Controller</span>
+        </div>
+        <Button size="icon" variant="ghost" onClick={onClose} className="w-6 h-6">
+          <X className="w-4 h-4" />
+        </Button>
+      </div>
+
+      <ScrollArea className="flex-1 p-3">
+        {/* Gamepad Status */}
+        <div className="mb-4 p-2 bg-white/5 rounded">
+          <Label className="text-xs text-muted-foreground mb-2 block">Connected Controllers</Label>
+          {gamepads.length === 0 ? (
+            <div className="text-xs text-orange-400 flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-orange-400 animate-pulse" />
+              No controller detected - connect a gamepad
+            </div>
+          ) : (
+            gamepads.map((pad, idx) => (
+              <div key={idx} className="text-xs text-green-400 flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-green-400" />
+                {pad.id.split('(')[0].trim()}
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Haptic Test */}
+        {gamepads.length > 0 && (
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={triggerHaptic}
+            className="w-full mb-4 text-xs"
+            data-testid="button-haptic-test"
+          >
+            <Vibrate className="w-3 h-3 mr-2" /> Test Haptic Feedback
+          </Button>
+        )}
+
+        {/* Current Bindings */}
+        <div className="mb-4">
+          <Label className="text-xs text-muted-foreground mb-2 block">Button Bindings</Label>
+          <div className="space-y-1">
+            {Object.entries(controller.bindings).length === 0 ? (
+              <div className="text-xs text-muted-foreground italic p-2 bg-white/5 rounded">
+                No bindings yet. Click "Bind" and press a button.
+              </div>
+            ) : (
+              Object.entries(controller.bindings).map(([button, event]) => (
+                <div key={button} className="flex items-center justify-between p-2 bg-white/5 rounded">
+                  <div className="flex items-center gap-2 text-xs font-mono">
+                    <Badge variant="secondary" className="text-[10px]">{button}</Badge>
+                    <ArrowRight className="w-3 h-3 text-muted-foreground" />
+                    <span className="text-yellow-400">{event}</span>
+                  </div>
+                  <Button 
+                    size="icon"
+                    variant="ghost"
+                    className="w-5 h-5 text-muted-foreground hover:text-red-400"
+                    onClick={() => removeBinding(button)}
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Add Binding */}
+        <div className="p-2 bg-white/5 rounded space-y-2">
+          <Label className="text-xs text-muted-foreground block">Add New Binding</Label>
+          
+          {waitingForButton ? (
+            <div className="p-4 border-2 border-dashed border-secondary rounded text-center">
+              <div className="text-secondary text-sm mb-1 animate-pulse">Press a button on your controller...</div>
+              <div className="text-xs text-muted-foreground">Binding to: {waitingForButton}</div>
+              <Button 
+                size="sm" 
+                variant="ghost" 
+                onClick={() => setWaitingForButton(null)}
+                className="mt-2 text-xs"
+              >
+                Cancel
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2">
+              {availableEvents.map(event => (
+                <Button
+                  key={event}
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setWaitingForButton(event)}
+                  className="text-[10px] h-7"
+                  disabled={gamepads.length === 0}
+                  data-testid={`button-bind-${event}`}
+                >
+                  <Plus className="w-3 h-3 mr-1" /> {event}
+                </Button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Manual binding for when no controller */}
+        {gamepads.length === 0 && (
+          <div className="mt-4 p-2 bg-white/5 rounded">
+            <Label className="text-xs text-muted-foreground mb-2 block">Manual Binding (No Controller)</Label>
+            <div className="flex flex-wrap gap-1">
+              {["A", "B", "X", "Y", "DPAD_UP", "DPAD_DOWN"].map(btn => (
+                <Badge 
+                  key={btn}
+                  variant="outline" 
+                  className="text-[9px] cursor-pointer hover:bg-primary/20"
+                  onClick={() => {
+                    if (availableEvents.length > 0) {
+                      const updated: ControllerBinding = {
+                        ...controller,
+                        bindings: { ...controller.bindings, [btn]: availableEvents[0] }
+                      };
+                      setController(updated);
+                      onUpdate(updated);
+                    }
+                  }}
+                >
+                  {btn}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+      </ScrollArea>
+    </div>
+  );
+}
+
 // Runtime state tracker - tracks current FSM state for each item during simulation
 const runtimeStateMap = new Map<string, string>();
 
@@ -750,6 +1013,7 @@ export default function BluPrinceEditor() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [testStatus, setTestStatus] = useState<"pending" | "running" | "pass" | "fail">("pending");
   const [showFSMEditor, setShowFSMEditor] = useState(false);
+  const [showController, setShowController] = useState(false);
   const { toast } = useToast();
 
   const mode = cartridge._editor?.mode || "DESIGN";
@@ -792,6 +1056,17 @@ export default function BluPrinceEditor() {
     }));
     setTestStatus("pending");
   }, []);
+
+  // Update item controller bindings
+  const updateItemController = useCallback((controller: ControllerBinding) => {
+    if (!selectedId) return;
+    setCartridge(prev => ({
+      ...prev,
+      items: prev.items.map(item => 
+        item.id === selectedId ? { ...item, controller } : item
+      )
+    }));
+  }, [selectedId]);
 
   // Handle transform updates from physics simulation
   const handleTransformUpdate = useCallback((id: string, position: { x: number; y: number; z: number }) => {
@@ -940,15 +1215,26 @@ export default function BluPrinceEditor() {
             <RotateCcw className="w-4 h-4" />
           </Button>
           {selectedItem && (
-            <Button 
-              size="sm" 
-              variant={showFSMEditor ? "default" : "ghost"}
-              onClick={() => setShowFSMEditor(!showFSMEditor)}
-              className={showFSMEditor ? "bg-primary text-white" : "text-primary"}
-              data-testid="button-fsm-editor"
-            >
-              <GitBranch className="w-4 h-4 mr-1" /> FSM
-            </Button>
+            <>
+              <Button 
+                size="sm" 
+                variant={showFSMEditor ? "default" : "ghost"}
+                onClick={() => { setShowFSMEditor(!showFSMEditor); setShowController(false); }}
+                className={showFSMEditor ? "bg-primary text-white" : "text-primary"}
+                data-testid="button-fsm-editor"
+              >
+                <GitBranch className="w-4 h-4 mr-1" /> FSM
+              </Button>
+              <Button 
+                size="sm" 
+                variant={showController ? "default" : "ghost"}
+                onClick={() => { setShowController(!showController); setShowFSMEditor(false); }}
+                className={showController ? "bg-secondary text-black" : "text-secondary"}
+                data-testid="button-controller"
+              >
+                <Gamepad2 className="w-4 h-4 mr-1" /> Controller
+              </Button>
+            </>
           )}
           <Separator orientation="vertical" className="h-6" />
           <Button size="sm" className="bg-primary/20 text-primary border border-primary/50">
@@ -966,6 +1252,15 @@ export default function BluPrinceEditor() {
           item={selectedItem}
           onUpdate={updateItemFSM}
           onClose={() => setShowFSMEditor(false)}
+        />
+      )}
+
+      {/* Controller Binding Panel */}
+      {showController && selectedItem && (
+        <ControllerPanel 
+          item={selectedItem}
+          onUpdate={updateItemController}
+          onClose={() => setShowController(false)}
         />
       )}
 
