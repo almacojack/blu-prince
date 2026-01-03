@@ -23,6 +23,7 @@ import { createThumbnailFromData } from "@/lib/asset-loader";
 import type { Toss3DAsset } from "@/lib/toss";
 import { Progress } from "@/components/ui/progress";
 import { Asset3DPreview } from "@/components/Asset3DPreview";
+import { QRIconButton } from "@/components/QRCodePopup";
 
 const STORAGE_KEY = "blu-prince-cartridge";
 
@@ -97,7 +98,8 @@ function RemoteCursor({ user }: { user: CollabUser }) {
 
 function CartridgeBezel({ 
   title, 
-  version, 
+  version,
+  tngliId,
   isOnline, 
   isSaving,
   hasLocalChanges,
@@ -111,7 +113,8 @@ function CartridgeBezel({
   onShareClick,
 }: { 
   title: string; 
-  version: string; 
+  version: string;
+  tngliId: string;
   isOnline: boolean;
   isSaving: boolean;
   hasLocalChanges: boolean;
@@ -173,8 +176,9 @@ function CartridgeBezel({
                   <div className="flex items-center gap-3">
                     <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_6px_#22c55e]" />
                     <div>
-                      <div className="text-xs font-mono text-white font-bold tracking-wide">
+                      <div className="text-xs font-mono text-white font-bold tracking-wide flex items-center gap-2">
                         {title}
+                        <QRIconButton tngliId={tngliId} title={title} size="sm" />
                       </div>
                       <div className="flex items-center gap-2 mt-0.5">
                         <Badge 
@@ -666,6 +670,7 @@ export default function BluPrince() {
       <CartridgeBezel 
         title={file.manifest.meta.title}
         version={file.manifest.meta.version}
+        tngliId={file.manifest.tngli_id}
         isOnline={isOnline}
         isSaving={isSaving}
         hasLocalChanges={hasLocalChanges}

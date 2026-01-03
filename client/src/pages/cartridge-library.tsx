@@ -41,6 +41,7 @@ import { TossCartridge, CartridgePreview, createNewCartridge } from "@/lib/toss-
 import { Link, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { QRIconButton, TngliLink } from "@/components/QRCodePopup";
 
 interface StoredCartridge {
   id: string;
@@ -55,6 +56,7 @@ interface StoredCartridge {
 
 interface CartridgeCardData {
   id: string;
+  tngliId: string;
   title: string;
   itemCount: number;
   assetCount: number;
@@ -365,6 +367,7 @@ export default function CartridgeLibrary() {
   const cartridgeCards: CartridgeCardData[] = useMemo(() => 
     cartridges.map(c => ({
       id: c.id,
+      tngliId: c.tngli_id,
       title: c.title,
       itemCount: c.toss_file?.items?.length || 0,
       assetCount: c.toss_file?.assets?.models?.length || 0,
@@ -558,9 +561,16 @@ export default function CartridgeLibrary() {
                   data-testid={`card-cartridge-${cartridge.id}`}
                 >
                   <div 
-                    className="w-full h-24 rounded-lg mb-3"
+                    className="w-full h-24 rounded-lg mb-3 relative"
                     style={{ backgroundColor: cartridge.color }}
-                  />
+                  >
+                    <QRIconButton 
+                      tngliId={cartridge.tngliId} 
+                      title={cartridge.title}
+                      size="sm"
+                      className="absolute top-2 right-2 bg-black/50 hover:bg-black/70"
+                    />
+                  </div>
                   <h3 className="font-semibold text-sm mb-1">{cartridge.title}</h3>
                   <p className="text-xs text-zinc-400 mb-2">
                     {cartridge.itemCount} items | {cartridge.assetCount} assets
@@ -600,6 +610,16 @@ export default function CartridgeLibrary() {
                   className="w-full h-32 rounded-lg"
                   style={{ backgroundColor: selectedCartridge.toss_file?.preview?.primaryColor || "#7c3aed" }}
                 />
+
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs text-zinc-500">Quick Access:</span>
+                  <TngliLink 
+                    tngliId={selectedCartridge.tngli_id} 
+                    title={selectedCartridge.title}
+                    showFull={false}
+                    size="sm"
+                  />
+                </div>
 
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
