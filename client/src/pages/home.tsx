@@ -1,11 +1,9 @@
-import { useState } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { ArrowRight, Gamepad2, Users, Briefcase, Terminal, Layers, Hexagon, Code, Cpu, LogOut, User, Flame, Snowflake, Droplets, Wind, Zap, Box } from "lucide-react";
+import { ArrowRight, Gamepad2, Users, Briefcase, Terminal, Layers, Hexagon, Code, Cpu, Flame, Snowflake, Droplets, Wind, Zap, Box } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/hooks/use-auth";
 import { SimulatorDisplay } from "@/components/SimulatorDisplay";
 
 const colorMap: Record<string, { bg: string, text: string, border: string, glow: string }> = {
@@ -56,66 +54,11 @@ const EcosystemCard = ({ title, description, icon: Icon, colorKey, domain, statu
 };
 
 export default function Home() {
-  const { user, isLoading, isAuthenticated, logout } = useAuth();
-  
   return (
     <div className="relative min-h-screen overflow-hidden">
       {/* Background Gradients */}
       <div className="absolute top-0 left-0 w-full h-[500px] bg-primary/20 blur-[120px] rounded-full -translate-y-1/2 pointer-events-none" />
       <div className="absolute bottom-0 right-0 w-full h-[500px] bg-secondary/10 blur-[120px] rounded-full translate-y-1/2 pointer-events-none" />
-
-      {/* Navigation */}
-      <nav className="relative z-10 container mx-auto px-6 py-6 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-primary/20 rounded border border-primary/50 flex items-center justify-center">
-            <Gamepad2 className="text-primary" />
-          </div>
-          <div>
-            <h1 className="font-pixel text-lg tracking-tight text-white">TingOs</h1>
-            <p className="text-[10px] font-mono text-muted-foreground tracking-widest uppercase">The Universal Engine</p>
-          </div>
-        </div>
-        <div className="hidden md:flex gap-8 font-mono text-sm text-muted-foreground">
-          <a href="#" className="hover:text-primary transition-colors">GAME ENGINE</a>
-          <a href="#" className="hover:text-primary transition-colors">MULTIPLAYER</a>
-          <a href="#" className="hover:text-primary transition-colors">BPM</a>
-        </div>
-        {isLoading ? (
-          <Button variant="outline" className="font-mono text-xs border-primary/50 text-primary" disabled>
-            Loading...
-          </Button>
-        ) : isAuthenticated ? (
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              {user?.profileImageUrl ? (
-                <img src={user.profileImageUrl} alt="" className="w-8 h-8 rounded-full border border-primary/50" />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                  <User className="w-4 h-4 text-primary" />
-                </div>
-              )}
-              <span className="text-xs font-mono text-white hidden md:inline">
-                {user?.firstName || user?.email?.split("@")[0] || "User"}
-              </span>
-            </div>
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => logout()}
-              className="font-mono text-xs text-muted-foreground hover:text-red-400"
-              data-testid="button-logout"
-            >
-              <LogOut className="w-4 h-4" />
-            </Button>
-          </div>
-        ) : (
-          <a href="/api/login">
-            <Button variant="outline" className="font-mono text-xs border-primary/50 text-primary hover:bg-primary/10" data-testid="button-login">
-              Sign In
-            </Button>
-          </a>
-        )}
-      </nav>
 
       {/* Hero Section */}
       <section className="relative z-10 container mx-auto px-6 pt-12 pb-12">

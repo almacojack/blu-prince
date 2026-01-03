@@ -1,21 +1,19 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { 
   Home, 
   Palette, 
   FolderOpen, 
   Gamepad2, 
-  HelpCircle,
   Command,
   Maximize,
   Minimize,
-  Zap,
-  Box,
-  GitBranch,
+  User,
+  LogOut,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
 
 interface NavNode {
   id: string;
@@ -74,6 +72,7 @@ export function NeonPathNav({
 }: NeonPathNavProps) {
   const [location] = useLocation();
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
+  const { user, isLoading, isAuthenticated, logout } = useAuth();
   
   const activeIndex = NAV_NODES.findIndex(n => {
     if (n.path === "/") return location === "/";
@@ -136,12 +135,12 @@ export function NeonPathNav({
             whileTap={{ scale: 0.95 }}
           >
             <div className="relative">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/50">
-                <Zap className="w-6 h-6 text-white" />
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-blue-500/50">
+                <Gamepad2 className="w-6 h-6 text-white" />
               </div>
-              <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 blur-md opacity-50 group-hover:opacity-75 transition-opacity" />
+              <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-400 blur-md opacity-50 group-hover:opacity-75 transition-opacity" />
             </div>
-            <span className="font-pixel text-xl text-white tracking-wider hidden sm:block drop-shadow-[0_0_10px_rgba(124,58,237,0.8)]">
+            <span className="font-pixel text-xl text-white tracking-wider hidden sm:block drop-shadow-[0_0_10px_rgba(59,130,246,0.8)]">
               TINGOS
             </span>
           </motion.div>
@@ -235,6 +234,48 @@ export function NeonPathNav({
               <Maximize className="w-5 h-5" />
             )}
           </motion.button>
+
+          {isLoading ? (
+            <div className="w-11 h-11 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
+              <div className="w-5 h-5 border-2 border-blue-400/30 border-t-blue-400 rounded-full animate-spin" />
+            </div>
+          ) : isAuthenticated ? (
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-white/5 border border-white/10">
+                {user?.profileImageUrl ? (
+                  <img src={user.profileImageUrl} alt="" className="w-7 h-7 rounded-full border border-blue-400/50" />
+                ) : (
+                  <div className="w-7 h-7 rounded-full bg-blue-500/20 flex items-center justify-center">
+                    <User className="w-4 h-4 text-blue-400" />
+                  </div>
+                )}
+                <span className="text-xs font-mono text-white hidden md:inline max-w-20 truncate">
+                  {user?.firstName || user?.email?.split("@")[0] || "User"}
+                </span>
+              </div>
+              <motion.button 
+                onClick={() => logout()}
+                className="flex items-center justify-center w-11 h-11 rounded-lg bg-white/5 border border-white/10 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/50 transition-all touch-manipulation"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                data-testid="button-logout"
+                title="Sign Out"
+              >
+                <LogOut className="w-5 h-5" />
+              </motion.button>
+            </div>
+          ) : (
+            <a href="/api/login">
+              <motion.button 
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-500/20 border border-blue-400/50 text-blue-400 hover:bg-blue-500/30 hover:text-white transition-all min-h-11 touch-manipulation font-mono text-xs"
+                whileHover={{ scale: 1.05, boxShadow: "0 0 20px rgba(59,130,246,0.4)" }}
+                whileTap={{ scale: 0.95 }}
+                data-testid="button-login"
+              >
+                Sign In
+              </motion.button>
+            </a>
+          )}
         </div>
       </div>
     </nav>
