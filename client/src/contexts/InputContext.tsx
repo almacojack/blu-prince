@@ -116,12 +116,21 @@ export function InputProvider({ children }: { children: ReactNode }) {
       for (const [actionId, binding] of Array.from(bindings.entries())) {
         const idx = newBindings.findIndex(b => b.actionId === actionId);
         if (idx >= 0) {
-          // Add gamepad binding if not already present
-          const existingGamepad = newBindings[idx].bindings.filter(b => b.device !== 'gamepad');
-          newBindings[idx] = {
-            ...newBindings[idx],
-            bindings: [...existingGamepad, binding]
-          };
+          // Merge with existing gamepad bindings, avoiding duplicates
+          const existingBindings = newBindings[idx].bindings;
+          const normalizedNew = `gp:${binding.type}:${binding.index}:${binding.axisDirection || ''}`;
+          const isDuplicate = existingBindings.some(b => {
+            if (b.device !== 'gamepad') return false;
+            const gb = b as GamepadBinding;
+            return `gp:${gb.type}:${gb.index}:${gb.axisDirection || ''}` === normalizedNew;
+          });
+          
+          if (!isDuplicate) {
+            newBindings[idx] = {
+              ...newBindings[idx],
+              bindings: [...existingBindings, binding]
+            };
+          }
         }
       }
       

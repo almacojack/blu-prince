@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -243,7 +243,7 @@ function ControllerPanel() {
   const [showWizard, setShowWizard] = useState(false);
   const [connectedGamepads, setConnectedGamepads] = useState<string[]>([]);
 
-  useState(() => {
+  useEffect(() => {
     const checkGamepads = () => {
       const gamepads = navigator.getGamepads();
       const connected = Array.from(gamepads)
@@ -255,7 +255,7 @@ function ControllerPanel() {
     checkGamepads();
     const interval = setInterval(checkGamepads, 1000);
     return () => clearInterval(interval);
-  });
+  }, []);
 
   const handleComplete = (bindings: Map<string, GamepadBinding>) => {
     applyControllerBindings(bindings);
