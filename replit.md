@@ -46,8 +46,21 @@ The cartridge format contains:
 - **Manifest** - ID, tngli_id, metadata (title, author, version)
 - **FSM Logic** - States, transitions, guards, actions
 - **Memory Schema** - Typed context variables with defaults
-- **Assets** - Referenced media files
+- **Assets** - Referenced media files (images, audio, etc.)
+- **3D Assets** - Embedded 3D models with format-specific storage:
+  - glTF: JSON string format
+  - GLB/STL: Base64-encoded binary
+  - OBJ: Text string format
+  - Three.js JSON: Native JSON format
+  - Metadata: vertex/face counts, bounding box, printability info
 - **Editor Metadata** - Node positions for visual editor (stripped at runtime)
+
+### 3D Asset Pipeline
+- **Import Formats**: glTF, GLB, OBJ, STL, Three.js JSON (from Three.js Editor)
+- **Asset Importer** (`client/src/lib/asset-importer.ts`): Parses files, extracts geometry metadata
+- **Asset Loader** (`client/src/lib/asset-loader.ts`): Reconstructs Three.js objects from TOSS storage
+- **Asset3DPreview**: React Three Fiber component with orbit controls for previewing assets
+- **3D Printing Support**: Printability metadata (volume, surface area, watertight check) for STL files
 
 ### Runtime Engine
 - **Framework-agnostic** TypeScript class (`TingOsEngine`) 

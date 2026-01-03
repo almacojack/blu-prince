@@ -124,3 +124,102 @@ export function createThumbnailFromData(thumbnail?: string): string | null {
   if (!thumbnail) return null;
   return `data:image/png;base64,${thumbnail}`;
 }
+
+export async function exportAsSTL(asset: Toss3DAsset): Promise<Blob | null> {
+  const result = await loadAsset(asset);
+  if (!result.success || !result.object3D) return null;
+  
+  const geometries: THREE.BufferGeometry[] = [];
+  
+  result.object3D.traverse((child) => {
+    if (child instanceof THREE.Mesh && child.geometry) {
+      const clonedGeometry = child.geometry.clone();
+      child.updateMatrixWorld();
+      clonedGeometry.applyMatrix4(child.matrixWorld);
+      geometries.push(clonedGeometry);
+    }
+  });
+  
+  if (geometries.length === 0) return null;
+  
+  let mergedGeometry: THREE.BufferGeometry;
+  if (geometries.length === 1) {
+    mergedGeometry = geometries[0];
+  } else {
+    const { mergeGeometries } = await import('three/addons/utils/BufferGeometryUtils.js');
+    const merged = mergeGeometries(geometries, false);
+    if (!merged) return null;
+    mergedGeometry = merged;
+  }
+  
+  const stlData = generateSTLBinary(mergedGeometry);
+  return new Blob([stlData], { type: 'application/octet-stream' });
+}
+
+function generateSTLBinary(geometry: THREE.BufferGeometry): ArrayBuffer {
+  const positionAttr = geometry.getAttribute('position');
+  const indexAttr = geometry.getIndex();
+  
+  let triangleCount: number;
+  if (indexAttr) {
+    triangleCount = indexAttr.count / 3;
+  } else {
+    triangleCount = positionAttr.count / 3;
+  }
+  
+  const bufferSize = 84 + triangleCount * 50;
+  const buffer = new ArrayBuffer(bufferSize);
+  const dv = new DataView(buffer);
+  
+  let offset = 80;
+  dv.setUint32(offset, triangleCount, true);
+  offset += 4;
+  
+  const v1 = new THREE.Vector3();
+  const v2 = new THREE.Vector3();
+  const v3 = new THREE.Vector3();
+  const normal = new THREE.Vector3();
+  const edge1 = new THREE.Vector3();
+  const edge2 = new THREE.Vector3();
+  
+  for (let i = 0; i < triangleCount; i++) {
+    let i1: number, i2: number, i3: number;
+    if (indexAttr) {
+      i1 = indexAttr.getX(i * 3);
+      i2 = indexAttr.getX(i * 3 + 1);
+      i3 = indexAttr.getX(i * 3 + 2);
+    } else {
+      i1 = i * 3;
+      i2 = i * 3 + 1;
+      i3 = i * 3 + 2;
+    }
+    
+    v1.fromBufferAttribute(positionAttr, i1);
+    v2.fromBufferAttribute(positionAttr, i2);
+    v3.fromBufferAttribute(positionAttr, i3);
+    
+    edge1.subVectors(v2, v1);
+    edge2.subVectors(v3, v1);
+    normal.crossVectors(edge1, edge2).normalize();
+    
+    dv.setFloat32(offset, normal.x, true); offset += 4;
+    dv.setFloat32(offset, normal.y, true); offset += 4;
+    dv.setFloat32(offset, normal.z, true); offset += 4;
+    
+    dv.setFloat32(offset, v1.x, true); offset += 4;
+    dv.setFloat32(offset, v1.y, true); offset += 4;
+    dv.setFloat32(offset, v1.z, true); offset += 4;
+    
+    dv.setFloat32(offset, v2.x, true); offset += 4;
+    dv.setFloat32(offset, v2.y, true); offset += 4;
+    dv.setFloat32(offset, v2.z, true); offset += 4;
+    
+    dv.setFloat32(offset, v3.x, true); offset += 4;
+    dv.setFloat32(offset, v3.y, true); offset += 4;
+    dv.setFloat32(offset, v3.z, true); offset += 4;
+    
+    dv.setUint16(offset, 0, true); offset += 2;
+  }
+  
+  return buffer;
+}

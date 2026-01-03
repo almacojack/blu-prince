@@ -2,7 +2,7 @@ import { useRef, useEffect, useState, Suspense } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, Center, Environment, Grid } from '@react-three/drei';
 import * as THREE from 'three';
-import { loadAsset } from '@/lib/asset-loader';
+import { loadAsset, exportAsSTL } from '@/lib/asset-loader';
 import type { Toss3DAsset } from '@/lib/toss';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +13,6 @@ interface Asset3DPreviewProps {
   asset: Toss3DAsset | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onExportSTL?: (asset: Toss3DAsset) => void;
 }
 
 function LoadedModel({ asset }: { asset: Toss3DAsset }) {
@@ -83,7 +82,30 @@ function SceneSetup() {
   return null;
 }
 
-export function Asset3DPreview({ asset, open, onOpenChange, onExportSTL }: Asset3DPreviewProps) {
+export function Asset3DPreview({ asset, open, onOpenChange }: Asset3DPreviewProps) {
+  const [exporting, setExporting] = useState(false);
+  
+  const handleExportSTL = async () => {
+    if (!asset) return;
+    setExporting(true);
+    try {
+      const blob = await exportAsSTL(asset);
+      if (blob) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${asset.metadata.name.replace(/\.[^.]+$/, '')}.stl`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    } catch (error) {
+      console.error('STL export failed:', error);
+    } finally {
+      setExporting(false);
+    }
+  };
   if (!asset) return null;
   
   const { metadata } = asset;
@@ -185,18 +207,17 @@ export function Asset3DPreview({ asset, open, onOpenChange, onExportSTL }: Asset
                 </div>
               </div>
               
-              {onExportSTL && (
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="gap-2 border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10"
-                  onClick={() => onExportSTL(asset)}
-                  data-testid="button-export-stl"
-                >
-                  <Download className="w-4 h-4" />
-                  Export STL
-                </Button>
-              )}
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="gap-2 border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10"
+                onClick={handleExportSTL}
+                disabled={exporting}
+                data-testid="button-export-stl"
+              >
+                <Download className="w-4 h-4" />
+                {exporting ? 'Exporting...' : 'Export STL'}
+              </Button>
             </div>
           </div>
         )}
