@@ -23,6 +23,7 @@ import Coins from "@/pages/coins";
 import RuntimeSimulator from "@/pages/runtime";
 import StatechartEditor from "@/pages/statechart";
 import DataTables from "@/pages/data-tables";
+import VaultDashboard from "@/pages/vault";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -39,6 +40,7 @@ function Router() {
       <Route path="/runtime" component={RuntimeSimulator} />
       <Route path="/statechart" component={StatechartEditor} />
       <Route path="/data-tables" component={DataTables} />
+      <Route path="/vault" component={VaultDashboard} />
       <Route component={NotFound} />
     </Switch>
   );
