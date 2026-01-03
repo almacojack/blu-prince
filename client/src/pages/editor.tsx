@@ -51,6 +51,55 @@ function GroundZero() {
   );
 }
 
+// Magnet Force Manager - applies forces between magnetized objects
+interface MagnetForceManagerProps {
+  magnetizedObjects: Set<string>;
+  rigidBodyRegistry: React.MutableRefObject<Map<string, RapierRigidBody>>;
+  polarity: 'attract' | 'repel';
+  power: number;
+}
+
+function MagnetForceManager({ magnetizedObjects, rigidBodyRegistry, polarity, power }: MagnetForceManagerProps) {
+  useFrame((_, delta) => {
+    if (magnetizedObjects.size < 2) return;
+    
+    const magnetIds = Array.from(magnetizedObjects);
+    const baseForceMagnitude = (power / 100) * 15;
+    
+    for (let i = 0; i < magnetIds.length; i++) {
+      for (let j = i + 1; j < magnetIds.length; j++) {
+        const bodyA = rigidBodyRegistry.current.get(magnetIds[i]);
+        const bodyB = rigidBodyRegistry.current.get(magnetIds[j]);
+        
+        if (!bodyA || !bodyB) continue;
+        
+        const posA = bodyA.translation();
+        const posB = bodyB.translation();
+        
+        const dx = posB.x - posA.x;
+        const dy = posB.y - posA.y;
+        const dz = posB.z - posA.z;
+        const distSq = dx * dx + dy * dy + dz * dz;
+        
+        if (distSq < 0.25 || distSq > 100) continue;
+        
+        const dist = Math.sqrt(distSq);
+        const forceMag = (baseForceMagnitude / distSq) * delta;
+        const nx = dx / dist;
+        const ny = dy / dist;
+        const nz = dz / dist;
+        
+        const sign = polarity === 'attract' ? 1 : -1;
+        
+        bodyA.applyImpulse({ x: nx * forceMag * sign, y: ny * forceMag * sign, z: nz * forceMag * sign }, true);
+        bodyB.applyImpulse({ x: -nx * forceMag * sign, y: -ny * forceMag * sign, z: -nz * forceMag * sign }, true);
+      }
+    }
+  });
+  
+  return null;
+}
+
 // A physics-enabled Thing that squashes on impact using refs (no setState in useFrame)
 interface PhysicsThingProps {
   item: TossItem;
@@ -60,11 +109,28 @@ interface PhysicsThingProps {
   mode: EditorMode;
   activeTool?: PhysicsTool;
   toolPower?: number;
+  isMagnetized?: boolean;
+  onToggleMagnet?: () => void;
+  onRegisterBody?: (id: string, body: RapierRigidBody | null) => void;
 }
 
-function PhysicsThing({ item, isSelected, onSelect, onTransformUpdate, mode, activeTool = 'select', toolPower = 100 }: PhysicsThingProps) {
+function PhysicsThing({ 
+  item, isSelected, onSelect, onTransformUpdate, mode, 
+  activeTool = 'select', toolPower = 100,
+  isMagnetized = false, onToggleMagnet, onRegisterBody
+}: PhysicsThingProps) {
   const meshRef = useRef<THREE.Mesh>(null);
   const rigidBodyRef = useRef<RapierRigidBody>(null);
+  
+  useEffect(() => {
+    if (onRegisterBody) {
+      if (rigidBodyRef.current) {
+        onRegisterBody(item.id, rigidBodyRef.current);
+      }
+      return () => onRegisterBody(item.id, null);
+    }
+  }, [item.id, onRegisterBody]);
+  
   const hasLandedRef = useRef(false);
   const squashRef = useRef({ x: 1, y: 1, z: 1 });
   const lastPositionRef = useRef({ x: 0, y: 0, z: 0 });
@@ -93,6 +159,11 @@ function PhysicsThing({ item, isSelected, onSelect, onTransformUpdate, mode, act
   const handlePointerDown = (e: any) => {
     e.stopPropagation();
     onSelect();
+    
+    if (activeTool === 'magnet' && onToggleMagnet) {
+      onToggleMagnet();
+      return;
+    }
     
     if (isPhysicsTool && rigidBodyRef.current) {
       const point = e.point as THREE.Vector3;
@@ -212,7 +283,8 @@ function PhysicsThing({ item, isSelected, onSelect, onTransformUpdate, mode, act
     }
   };
 
-  const color = item.material?.color || "#7c3aed";
+  const baseColor = item.material?.color || "#7c3aed";
+  const color = isMagnetized ? "#ff6b00" : baseColor;
   const position: [number, number, number] = [
     item.transform.position.x, 
     item.transform.position.y, 
@@ -1526,6 +1598,17 @@ export default function BluPrinceEditor() {
   const [activeTool, setActiveTool] = useState<PhysicsTool>('select');
   const [toolPower, setToolPower] = useState(100);
   const [magnetPolarity, setMagnetPolarity] = useState<'attract' | 'repel'>('attract');
+  const [magnetizedObjects, setMagnetizedObjects] = useState<Set<string>>(new Set());
+  const rigidBodyRegistry = useRef<Map<string, RapierRigidBody>>(new Map());
+  
+  const handleRegisterBody = useCallback((id: string, body: RapierRigidBody | null) => {
+    if (body) {
+      rigidBodyRegistry.current.set(id, body);
+    } else {
+      rigidBodyRegistry.current.delete(id);
+    }
+  }, []);
+  
   const [gestureState, setGestureState] = useState<GestureState>(createGestureState());
   const { toast } = useToast();
 
@@ -2097,8 +2180,28 @@ export default function BluPrinceEditor() {
                   mode={mode}
                   activeTool={activeTool}
                   toolPower={toolPower}
+                  isMagnetized={magnetizedObjects.has(item.id)}
+                  onToggleMagnet={() => {
+                    setMagnetizedObjects(prev => {
+                      const next = new Set(prev);
+                      if (next.has(item.id)) {
+                        next.delete(item.id);
+                      } else {
+                        next.add(item.id);
+                      }
+                      return next;
+                    });
+                  }}
+                  onRegisterBody={handleRegisterBody}
                 />
               ))}
+            
+            <MagnetForceManager
+              magnetizedObjects={magnetizedObjects}
+              rigidBodyRegistry={rigidBodyRegistry}
+              polarity={magnetPolarity}
+              power={toolPower}
+            />
           </Physics>
         </Suspense>
 
