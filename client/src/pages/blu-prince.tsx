@@ -411,6 +411,26 @@ export default function BluPrince() {
     URL.revokeObjectURL(url);
   };
 
+  const handleNodeDrag = useCallback((nodeId: string, info: { point: { x: number; y: number } }) => {
+    if (!canvasRef.current) return;
+    
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = (info.point.x - rect.left) / zoom;
+    const y = (info.point.y - rect.top) / zoom;
+    
+    const updatedNodes = nodes.map(n => 
+      n.id === nodeId ? { ...n, x: Math.max(0, x - 80), y: Math.max(0, y - 40) } : n
+    );
+    
+    setFile(prev => ({
+      ...prev,
+      _editor: {
+        ...prev._editor!,
+        nodes: updatedNodes
+      }
+    }));
+  }, [nodes, zoom]);
+
   const handleNodeDragEnd = useCallback((nodeId: string, info: { point: { x: number; y: number } }) => {
     if (!canvasRef.current) return;
     
@@ -1072,9 +1092,12 @@ export default function BluPrince() {
           >
             <div className="absolute inset-0 pointer-events-none">
               <svg className="w-full h-full" style={{ overflow: 'visible' }}>
-                 <defs>
-                  <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
-                    <polygon points="0 0, 10 3.5, 0 7" fill="#666" />
+                <defs>
+                  <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#8b5cf6" />
+                  </marker>
+                  <marker id="arrowhead-selected" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#22c55e" />
                   </marker>
                 </defs>
                 {getTransitions().map((edge, i) => {
@@ -1082,25 +1105,71 @@ export default function BluPrince() {
                   const toNode = nodes.find(n => n.id === edge.to);
                   if (!fromNode || !toNode) return null;
 
-                  const x1 = fromNode.x + 160;
-                  const y1 = fromNode.y + 40;
-                  const x2 = toNode.x;
-                  const y2 = toNode.y + 40;
+                  const nodeWidth = 160;
+                  const nodeHeight = 80;
+                  
+                  const fromCenterX = fromNode.x + nodeWidth / 2;
+                  const fromCenterY = fromNode.y + nodeHeight / 2;
+                  const toCenterX = toNode.x + nodeWidth / 2;
+                  const toCenterY = toNode.y + nodeHeight / 2;
+                  
+                  const dx = toCenterX - fromCenterX;
+                  const dy = toCenterY - fromCenterY;
+                  const distance = Math.sqrt(dx * dx + dy * dy);
+                  
+                  if (distance < 10) return null;
+                  
+                  const angle = Math.atan2(dy, dx);
+                  const padding = 8;
+                  
+                  const x1 = fromCenterX + Math.cos(angle) * (nodeWidth / 2 + padding);
+                  const y1 = fromCenterY + Math.sin(angle) * (nodeHeight / 2 - 10);
+                  const x2 = toCenterX - Math.cos(angle) * (nodeWidth / 2 + padding + 5);
+                  const y2 = toCenterY - Math.sin(angle) * (nodeHeight / 2 - 10);
+                  
+                  const midX = (x1 + x2) / 2;
+                  const midY = (y1 + y2) / 2;
+                  const perpX = -dy / distance;
+                  const perpY = dx / distance;
+                  const curveOffset = Math.min(30, distance * 0.15);
+                  const controlX = midX + perpX * curveOffset;
+                  const controlY = midY + perpY * curveOffset;
+                  
+                  const isFromSelected = edge.from === selectedNodeId;
+                  const isToSelected = edge.to === selectedNodeId;
+                  const isHighlighted = isFromSelected || isToSelected;
+                  
+                  const pathD = `M ${x1} ${y1} Q ${controlX} ${controlY} ${x2} ${y2}`;
+                  
+                  const transition = file.logic.states[edge.from]?.transitions.find(t => t.target === edge.to);
+                  const eventLabel = transition?.event || 'auto';
 
                   return (
-                    <motion.line 
-                      key={`${edge.from}-${edge.to}-${i}`}
-                      initial={{ pathLength: 0, opacity: 0 }}
-                      animate={{ pathLength: 1, opacity: 1 }}
-                      transition={{ duration: 0.5 }}
-                      x1={x1}
-                      y1={y1} 
-                      x2={x2}
-                      y2={y2}
-                      stroke="#666" 
-                      strokeWidth="2"
-                      markerEnd="url(#arrowhead)"
-                    />
+                    <g key={`${edge.from}-${edge.to}-${i}`}>
+                      <path
+                        d={pathD}
+                        fill="none"
+                        stroke={isHighlighted ? "#22c55e" : "#8b5cf6"}
+                        strokeWidth={isHighlighted ? 3 : 2}
+                        strokeOpacity={isHighlighted ? 1 : 0.7}
+                        markerEnd={isHighlighted ? "url(#arrowhead-selected)" : "url(#arrowhead)"}
+                        style={{ transition: 'stroke 0.2s, stroke-width 0.2s' }}
+                      />
+                      <text
+                        x={controlX}
+                        y={controlY - 8}
+                        fill={isHighlighted ? "#4ade80" : "#a78bfa"}
+                        fontSize="10"
+                        fontFamily="monospace"
+                        textAnchor="middle"
+                        style={{ 
+                          pointerEvents: 'none',
+                          textShadow: '0 0 4px rgba(0,0,0,0.8), 0 0 8px rgba(0,0,0,0.6)'
+                        }}
+                      >
+                        {eventLabel}
+                      </text>
+                    </g>
                   );
                 })}
               </svg>
@@ -1115,10 +1184,12 @@ export default function BluPrince() {
                     key={node.id}
                     drag
                     dragMomentum={false}
+                    onDrag={(_, info) => handleNodeDrag(node.id, info)}
                     onDragEnd={(_, info) => handleNodeDragEnd(node.id, info)}
                     initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
+                    animate={{ scale: 1, opacity: 1, x: 0, y: 0 }}
                     whileHover={{ scale: 1.02 }}
+                    whileDrag={{ scale: 1.05, zIndex: 100 }}
                     transition={{ type: "spring", stiffness: 300, damping: 20 }}
                     style={{ left: node.x, top: node.y }}
                     className={`absolute w-40 p-0 rounded-lg border border-white/10 bg-[#1a1b23] shadow-xl cursor-pointer overflow-hidden ${selectedNodeId === node.id ? 'ring-2 ring-primary' : ''}`}

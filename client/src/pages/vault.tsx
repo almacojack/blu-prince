@@ -16,6 +16,8 @@ import {
   ChevronRight,
   Sparkles,
   Crown,
+  Clock,
+  MapPin,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,6 +40,7 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { SpacetimePicker, type SpacetimeValue } from "@/components/SpacetimePicker";
 import type { World, Cartridge } from "@shared/schema";
 
 const visibilityIcons = {
@@ -102,7 +105,30 @@ function WorldCard({ world, onDelete }: { world: World; onDelete: () => void }) 
           )}
         </CardHeader>
         
-        <CardContent className="pt-0">
+        <CardContent className="pt-0 space-y-2">
+          {(world.spacetime_datetime || world.spacetime_location) && (
+            <div className="flex items-center gap-2 text-[10px] text-amber-400 bg-amber-500/10 rounded px-2 py-1">
+              {world.spacetime_datetime && (
+                <>
+                  <Clock className="w-3 h-3" />
+                  <span>{new Date(world.spacetime_datetime).toLocaleDateString()}</span>
+                </>
+              )}
+              {world.spacetime_location && (
+                <>
+                  <MapPin className="w-3 h-3" />
+                  <span>
+                    {(() => {
+                      try {
+                        const loc = JSON.parse(world.spacetime_location);
+                        return `${loc.lat?.toFixed(1)}, ${loc.lng?.toFixed(1)}`;
+                      } catch { return "Set"; }
+                    })()}
+                  </span>
+                </>
+              )}
+            </div>
+          )}
           <div className="flex items-center justify-between">
             <span className="text-xs text-zinc-500 font-mono">
               /{world.slug}
@@ -135,6 +161,8 @@ function CreateWorldDialog({ onCreated }: { onCreated: () => void }) {
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
   const [visibility, setVisibility] = useState("private");
+  const [spacetimeOpen, setSpacetimeOpen] = useState(false);
+  const [spacetime, setSpacetime] = useState<SpacetimeValue | null>(null);
   const { toast } = useToast();
   
   const createMutation = useMutation({
@@ -147,6 +175,9 @@ function CreateWorldDialog({ onCreated }: { onCreated: () => void }) {
           slug: slug || title.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""),
           description,
           visibility,
+          spacetime_datetime: spacetime?.datetime?.toISOString() || null,
+          spacetime_timezone: spacetime?.timezone || null,
+          spacetime_location: spacetime?.location ? JSON.stringify(spacetime.location) : null,
         }),
       });
       if (!res.ok) throw new Error("Failed to create world");
@@ -158,6 +189,7 @@ function CreateWorldDialog({ onCreated }: { onCreated: () => void }) {
       setTitle("");
       setSlug("");
       setDescription("");
+      setSpacetime(null);
       onCreated();
     },
     onError: () => {
@@ -259,6 +291,62 @@ function CreateWorldDialog({ onCreated }: { onCreated: () => void }) {
                 </SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Spacetime Anchor Section */}
+          <div className="space-y-2 pt-2 border-t border-zinc-700">
+            <div className="flex items-center justify-between">
+              <Label className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-amber-400" />
+                Spacetime Anchor
+              </Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-6 text-xs text-amber-400 hover:text-amber-300"
+                onClick={() => setSpacetimeOpen(true)}
+                data-testid="button-open-spacetime"
+              >
+                {spacetime ? "Change" : "Set When & Where"}
+              </Button>
+            </div>
+            
+            <p className="text-xs text-zinc-500">
+              Set when and where this world exists in time and space.
+            </p>
+            
+            {spacetime && (
+              <div className="flex items-center gap-2 text-xs text-amber-400 bg-amber-500/10 rounded p-2">
+                <Clock className="w-3 h-3" />
+                <span>{spacetime.datetime?.toLocaleString()}</span>
+                {spacetime.location && (
+                  <>
+                    <MapPin className="w-3 h-3 ml-2" />
+                    <span>{spacetime.location.lat.toFixed(2)}, {spacetime.location.lng.toFixed(2)}</span>
+                  </>
+                )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-5 px-1 ml-auto text-red-400 hover:text-red-300"
+                  onClick={() => setSpacetime(null)}
+                  data-testid="button-clear-spacetime"
+                >
+                  Clear
+                </Button>
+              </div>
+            )}
+            
+            <SpacetimePicker
+              open={spacetimeOpen}
+              onOpenChange={setSpacetimeOpen}
+              value={spacetime || undefined}
+              onSelect={setSpacetime}
+              theme="steampunk"
+              allowPast={true}
+            />
           </div>
           
           <Button 

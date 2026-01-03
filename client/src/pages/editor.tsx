@@ -1689,8 +1689,11 @@ export default function BluPrinceEditor() {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [collaborationEnabled, setCollaborationEnabled] = useState(false);
   const [gestureState, setGestureState] = useState<GestureState>(createGestureState());
+  const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
+  const [importProgress, setImportProgress] = useState<{ percent: number; stage: string; message: string } | null>(null);
   const rigidBodyRegistry = useRef<Map<string, RapierRigidBody>>(new Map());
   const editorRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const roomId = useMemo(() => {
     return `editor-${cartridge.meta?.title?.replace(/\s+/g, '-').toLowerCase() || 'default'}`;
@@ -1828,6 +1831,99 @@ export default function BluPrinceEditor() {
       },
     }));
   }, [updateCartridgeWithSync]);
+
+  // Handle 3D asset import
+  const handleImport3DAsset = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
+    const fileToImport = files[0];
+    const fileName = fileToImport.name;
+    const ext = fileName.split('.').pop()?.toLowerCase() || '';
+    
+    const allowedFormats = ['gltf', 'glb', 'obj', 'stl', 'json'];
+    if (!allowedFormats.includes(ext)) {
+      toast({
+        title: "Invalid Format",
+        description: `Only ${allowedFormats.join(', ').toUpperCase()} files are supported`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setImportProgress({ percent: 10, stage: 'Reading file', message: 'Loading...' });
+    
+    try {
+      const buffer = await fileToImport.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      let binary = '';
+      for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      const base64 = btoa(binary);
+      
+      setImportProgress({ percent: 50, stage: 'Processing', message: 'Parsing...' });
+      
+      const newAsset = {
+        id: `asset_${Date.now()}`,
+        type: 'model' as const,
+        metadata: {
+          name: fileName.replace(/\.[^.]+$/, ''),
+          format: ext as any,
+          fileSize: buffer.byteLength,
+          importedAt: new Date().toISOString(),
+          originalFilename: fileName,
+        },
+        data: base64,
+      };
+      
+      setImportProgress({ percent: 90, stage: 'Saving', message: 'Adding to cartridge...' });
+      
+      updateCartridgeWithSync(prev => ({
+        ...prev,
+        assets: {
+          ...prev.assets,
+          models: [...(prev.assets?.models || []), newAsset],
+        },
+      }));
+      
+      toast({
+        title: "3D Asset Imported",
+        description: `${newAsset.metadata.name} (${ext.toUpperCase()}) added`,
+      });
+    } catch (error) {
+      toast({
+        title: "Import Failed",
+        description: String(error),
+        variant: "destructive",
+      });
+    } finally {
+      setImportProgress(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  }, [updateCartridgeWithSync, toast]);
+
+  // Handle 3D asset deletion
+  const handleDeleteAsset = useCallback((assetId: string) => {
+    updateCartridgeWithSync(prev => ({
+      ...prev,
+      assets: {
+        ...prev.assets,
+        models: (prev.assets?.models || []).filter(a => a.id !== assetId),
+      },
+    }));
+    
+    if (selectedAssetId === assetId) {
+      setSelectedAssetId(null);
+    }
+    
+    toast({
+      title: "Asset Deleted",
+      description: "3D asset removed from cartridge",
+    });
+  }, [updateCartridgeWithSync, selectedAssetId, toast]);
 
   // Handle transform updates from physics simulation
   const handleTransformUpdate = useCallback((id: string, position: { x: number; y: number; z: number }) => {
@@ -2329,6 +2425,106 @@ export default function BluPrinceEditor() {
             magnetPolarity={magnetPolarity}
             onMagnetPolarityChange={setMagnetPolarity}
           />
+        </DockablePanel>
+
+        {/* Files Panel */}
+        <DockablePanel
+          id="files"
+          title="Files"
+          icon={<FolderOpen className="w-4 h-4" />}
+          defaultDocked={true}
+          defaultCollapsed={true}
+        >
+          <div className="p-2 space-y-3">
+            <div className="text-[10px] uppercase text-muted-foreground font-bold">3D Assets</div>
+            
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".gltf,.glb,.obj,.stl,.json"
+              onChange={handleImport3DAsset}
+              className="hidden"
+              data-testid="input-3d-asset-file"
+            />
+            
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full text-xs justify-start border-dashed border-white/20 hover:border-cyan-500/50 hover:bg-cyan-500/10 hover:text-cyan-400"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={!!importProgress}
+              data-testid="button-import-3d-asset"
+            >
+              <Upload className="w-3 h-3 mr-2" /> 
+              {importProgress ? importProgress.message : "Import 3D Model"}
+            </Button>
+            
+            {importProgress && (
+              <div className="mb-2">
+                <div className="h-1 bg-white/10 rounded overflow-hidden">
+                  <div 
+                    className="h-full bg-cyan-500 transition-all"
+                    style={{ width: `${importProgress.percent}%` }}
+                  />
+                </div>
+                <span className="text-[9px] text-muted-foreground mt-1 block">{importProgress.stage}</span>
+              </div>
+            )}
+            
+            <ScrollArea className="h-[200px]">
+              <div className="space-y-1">
+                {(!cartridge.assets?.models || cartridge.assets.models.length === 0) ? (
+                  <div className="text-center py-4 text-muted-foreground">
+                    <Box className="w-6 h-6 mx-auto mb-2 opacity-30" />
+                    <p className="text-[10px]">No 3D assets</p>
+                    <p className="text-[9px] opacity-60">glTF, GLB, OBJ, STL</p>
+                  </div>
+                ) : (
+                  cartridge.assets.models.map((asset) => (
+                    <div
+                      key={asset.id}
+                      className={`group relative p-2 rounded border transition-colors cursor-pointer ${
+                        selectedAssetId === asset.id 
+                          ? 'border-cyan-500/50 bg-cyan-500/10' 
+                          : 'border-white/10 bg-white/5 hover:border-white/20'
+                      }`}
+                      onClick={() => setSelectedAssetId(asset.id)}
+                      data-testid={`asset-${asset.id}`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Box className="w-4 h-4 text-muted-foreground" />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[10px] font-mono text-white truncate">
+                            {asset.metadata.name}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Badge variant="outline" className="text-[8px] h-3 px-1 border-purple-500/50 text-purple-400">
+                              {asset.metadata.format.toUpperCase()}
+                            </Badge>
+                            <span className="text-[8px] text-muted-foreground">
+                              {(asset.metadata.fileSize / 1024).toFixed(0)}KB
+                            </span>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-5 w-5 opacity-0 group-hover:opacity-100 hover:bg-red-500/20 hover:text-red-400"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteAsset(asset.id);
+                          }}
+                          data-testid={`delete-asset-${asset.id}`}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </ScrollArea>
+          </div>
         </DockablePanel>
       </div>
 
