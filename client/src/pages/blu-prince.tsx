@@ -7,6 +7,7 @@ import {
   ArrowRight, FileJson, Download, Cloud, CloudOff, Users, Share2,
   Upload, Box, Trash2, Eye, Pencil, Music2, VolumeX, Volume2, SkipForward
 } from "lucide-react";
+import { AtariResetKnob, AtariWoodgrainBar } from "@/components/AtariResetKnob";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -589,6 +590,21 @@ export default function BluPrince() {
   const handleZoomIn = () => setZoom(z => Math.min(z + 0.1, 2));
   const handleZoomOut = () => setZoom(z => Math.max(z - 0.1, 0.5));
   const handleZoomReset = () => setZoom(1);
+  
+  const handleFSMReset = useCallback(() => {
+    const freshFile = createNewTossFile();
+    setFile(freshFile);
+    setSelectedNodeId(null);
+    setZoom(1);
+    setEditingStateName(null);
+    toast({ 
+      title: "FSM Reset", 
+      description: "Canvas cleared. Ready for a fresh start!" 
+    });
+    if (collaboration.isJoined) {
+      collaboration.sendFullState(freshFile);
+    }
+  }, [collaboration, toast]);
 
   const handleAddTransition = () => {
     if (!selectedNodeId || !newTransitionEvent.trim() || !newTransitionTarget) {
@@ -1249,35 +1265,39 @@ export default function BluPrince() {
             ))}
           </AnimatePresence>
           
-          <div className="absolute bottom-4 left-4 flex gap-2 z-50">
-             <div className="flex bg-black/50 backdrop-blur rounded-lg border border-white/10 p-1">
-               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleZoomOut} data-testid="button-zoom-out"><ZoomOut className="w-4 h-4" /></Button>
-               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleZoomReset} data-testid="button-zoom-reset"><span className="text-xs">{Math.round(zoom * 100)}%</span></Button>
-               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleZoomIn} data-testid="button-zoom-in"><ZoomIn className="w-4 h-4" /></Button>
-             </div>
+          <div className="absolute bottom-4 left-4 flex gap-2 z-50 items-end">
+             <AtariWoodgrainBar className="flex items-center rounded-lg p-1 pr-2">
+               <AtariResetKnob onReset={handleFSMReset} />
+               <div className="h-10 w-px bg-black/30 mx-1" />
+               <div className="flex flex-col gap-0.5">
+                 <Button variant="ghost" size="icon" className="h-7 w-7 text-amber-100 hover:text-white hover:bg-black/20" onClick={handleZoomOut} data-testid="button-zoom-out"><ZoomOut className="w-3.5 h-3.5" /></Button>
+                 <Button variant="ghost" size="icon" className="h-7 w-7 text-amber-100 hover:text-white hover:bg-black/20" onClick={handleZoomIn} data-testid="button-zoom-in"><ZoomIn className="w-3.5 h-3.5" /></Button>
+               </div>
+               <Button variant="ghost" size="sm" className="h-7 px-2 text-amber-100 hover:text-white hover:bg-black/20 font-pixel text-[8px]" onClick={handleZoomReset} data-testid="button-zoom-reset">{Math.round(zoom * 100)}%</Button>
+             </AtariWoodgrainBar>
              
-             <div className="flex items-center bg-black/50 backdrop-blur rounded-lg border border-white/10 p-1 gap-1">
-               <Music2 className="w-4 h-4 text-purple-400 ml-2" />
-               <span className="text-[10px] text-purple-300 font-mono max-w-[80px] truncate">{chiptune.trackName}</span>
+             <AtariWoodgrainBar className="flex items-center rounded-lg p-2 gap-1">
+               <Music2 className="w-4 h-4 text-amber-200 ml-1" />
+               <span className="text-[9px] text-amber-100 font-pixel max-w-[70px] truncate">{chiptune.trackName}</span>
                <Button 
                  variant="ghost" 
                  size="icon" 
-                 className="h-8 w-8" 
+                 className="h-7 w-7 text-amber-100 hover:text-white hover:bg-black/20" 
                  onClick={chiptune.nextTrack}
                  data-testid="button-next-track"
                >
-                 <SkipForward className="w-4 h-4" />
+                 <SkipForward className="w-3.5 h-3.5" />
                </Button>
                <Button 
                  variant="ghost" 
                  size="icon" 
-                 className={`h-8 w-8 ${!chiptune.isMuted ? 'text-green-400' : ''}`}
+                 className={`h-7 w-7 hover:bg-black/20 ${!chiptune.isMuted ? 'text-green-400' : 'text-amber-100'}`}
                  onClick={chiptune.toggleMute}
                  data-testid="button-toggle-music"
                >
-                 {chiptune.isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                 {chiptune.isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
                </Button>
-             </div>
+             </AtariWoodgrainBar>
           </div>
 
           <div 
