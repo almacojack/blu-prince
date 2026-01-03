@@ -86,6 +86,90 @@ function AudioVisualizer({ isPlaying, width = 200, height = 40 }: AudioVisualize
   );
 }
 
+function VUMeterMini({ isPlaying }: { isPlaying: boolean }) {
+  const [level, setLevel] = useState(0);
+  const animationRef = useRef<number | null>(null);
+  const phaseRef = useRef(0);
+
+  useEffect(() => {
+    if (!isPlaying) {
+      setLevel(0);
+      return;
+    }
+
+    const animate = () => {
+      phaseRef.current += 0.08;
+      const base = 0.45 + Math.sin(phaseRef.current * 2) * 0.15;
+      const noise = Math.random() * 0.25;
+      setLevel(Math.min(1, base + noise));
+      animationRef.current = requestAnimationFrame(animate);
+    };
+
+    animationRef.current = requestAnimationFrame(animate);
+    return () => {
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    };
+  }, [isPlaying]);
+
+  const needleAngle = -45 + (level * 90);
+
+  return (
+    <div 
+      className="relative w-16 h-8 rounded overflow-hidden"
+      style={{
+        background: "linear-gradient(180deg, #d4a574 0%, #8b7355 100%)",
+        boxShadow: "inset 1px 1px 3px rgba(0,0,0,0.4), 0 2px 4px rgba(0,0,0,0.3)",
+      }}
+    >
+      <svg viewBox="0 0 64 32" className="absolute inset-0 w-full h-full">
+        <path
+          d="M 56 28 A 24 24 0 0 0 42 8"
+          fill="none"
+          stroke="#8b0000"
+          strokeWidth="4"
+          opacity="0.3"
+        />
+        {[0, 0.25, 0.5, 0.75, 1].map((pos, i) => {
+          const angle = -45 + (pos * 90);
+          const rad = (angle * Math.PI) / 180;
+          const x1 = 32 + Math.cos(rad) * 18;
+          const y1 = 28 + Math.sin(rad) * 18;
+          const x2 = 32 + Math.cos(rad) * 22;
+          const y2 = 28 + Math.sin(rad) * 22;
+          return (
+            <line
+              key={i}
+              x1={x1} y1={y1} x2={x2} y2={y2}
+              stroke={pos >= 0.85 ? "#8b0000" : "#4a3219"}
+              strokeWidth={1}
+            />
+          );
+        })}
+        <text x="32" y="18" textAnchor="middle" fill="#4a3219" fontSize="5" fontFamily="serif" fontStyle="italic">VU</text>
+        <circle cx="32" cy="28" r="2" fill="#2a1a0a" />
+      </svg>
+      <motion.div
+        className="absolute bottom-1 left-1/2"
+        style={{
+          width: "1px",
+          height: "55%",
+          background: "#1a0f05",
+          transformOrigin: "bottom center",
+          marginLeft: "-0.5px",
+        }}
+        animate={{ rotate: needleAngle }}
+        transition={{ type: "spring", stiffness: 300, damping: 20 }}
+      />
+      <div 
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: "linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 50%)",
+        }}
+      />
+    </div>
+  );
+}
+
 interface WinAmpPanelProps {
   trackName: string;
   isPlaying: boolean;
@@ -235,7 +319,10 @@ export function WinAmpPanel({
                 <div className="text-[10px] text-green-400 font-mono truncate mb-1 px-1">
                   {trackName}
                 </div>
-                <AudioVisualizer isPlaying={isPlaying && !isMuted} width={216} height={32} />
+                <div className="flex gap-2 items-end">
+                  <AudioVisualizer isPlaying={isPlaying && !isMuted} width={140} height={32} />
+                  <VUMeterMini isPlaying={isPlaying && !isMuted} />
+                </div>
               </div>
 
               <div className="flex items-center justify-center gap-1">
