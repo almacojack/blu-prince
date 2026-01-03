@@ -1433,12 +1433,13 @@ export default function BluPrince() {
               <AtariDockedPanel
                 title="Audio"
                 onPopOut={() => setFloatingPanels(p => ({ ...p, audio: true }))}
+                className="min-w-[200px]"
                 data-testid="panel-audio"
               >
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1">
-                    <Music2 className="w-3 h-3 text-amber-200" />
-                    <span className="text-[7px] text-amber-100 font-pixel truncate max-w-[45px]">{chiptune.trackName}</span>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <Music2 className="w-4 h-4 text-amber-200" />
+                    <span className="text-[9px] text-amber-100 font-pixel truncate max-w-[100px]">{chiptune.trackName}</span>
                   </div>
                   <Button 
                     variant="ghost" 
