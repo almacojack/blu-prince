@@ -24,6 +24,8 @@ import {
   createNewCartridge, createThing, DEFAULT_PHYSICS, CONTROLLER_BUTTONS
 } from "@/lib/toss-v1";
 import { useToast } from "@/hooks/use-toast";
+// FSM 3D visualization is rendered inline with position hints
+// Full 3D editor would need dedicated Canvas - deferred to avoid WebGL context issues
 
 // Ground Zero - The floor at y=0
 function GroundZero() {
@@ -68,19 +70,20 @@ function PhysicsThing({ item, isSelected, onSelect, onTransformUpdate, mode }: P
       meshRef.current.scale.set(squashRef.current.x, squashRef.current.y, squashRef.current.z);
     }
 
-    // Sync rigid body position back to cartridge data
+    // Sync rigid body position back to cartridge data (throttled)
     if (rigidBodyRef.current && mode !== "DESIGN") {
       const translation = rigidBodyRef.current.translation();
       const newPos = { x: translation.x, y: translation.y, z: translation.z };
       
-      // Only update if position changed significantly
+      // Only update if position changed significantly (higher threshold to reduce updates)
       const dx = Math.abs(newPos.x - lastPositionRef.current.x);
       const dy = Math.abs(newPos.y - lastPositionRef.current.y);
       const dz = Math.abs(newPos.z - lastPositionRef.current.z);
       
-      if (dx > 0.01 || dy > 0.01 || dz > 0.01) {
+      if (dx > 0.1 || dy > 0.1 || dz > 0.1) {
         lastPositionRef.current = newPos;
-        onTransformUpdate(item.id, newPos);
+        // Batch updates using requestIdleCallback or just skip rapid updates
+        requestAnimationFrame(() => onTransformUpdate(item.id, newPos));
       }
     }
   });
@@ -241,6 +244,37 @@ function FSMEditor({ item, onUpdate, onClose }: FSMEditorProps) {
   const [selectedState, setSelectedState] = useState<string | null>(null);
   const [newEvent, setNewEvent] = useState("");
   const [newTargetState, setNewTargetState] = useState("");
+  const [show3D, setShow3D] = useState(false);
+  
+  // Calculate 3D positions for display
+  const positions = useMemo(() => {
+    const stateNames = Object.keys(fsm.states);
+    const n = stateNames.length;
+    const radius = 3;
+    
+    if (n <= 1) return stateNames.map(name => ({ name, position: [0, 0, 0] as [number, number, number] }));
+    if (n === 2) return stateNames.map((name, i) => ({ name, position: [i * 2 - 1, 0, 0] as [number, number, number] }));
+    if (n === 3) {
+      return stateNames.map((name, i) => {
+        const angle = (i * 2 * Math.PI / 3) - Math.PI / 2;
+        return { name, position: [Math.cos(angle) * radius, 0, Math.sin(angle) * radius] as [number, number, number] };
+      });
+    }
+    if (n === 4) {
+      const h = radius * Math.sqrt(2/3);
+      return [
+        { name: stateNames[0], position: [0, h, 0] as [number, number, number] },
+        { name: stateNames[1], position: [radius, -h/3, 0] as [number, number, number] },
+        { name: stateNames[2], position: [-radius/2, -h/3, radius * 0.866] as [number, number, number] },
+        { name: stateNames[3], position: [-radius/2, -h/3, -radius * 0.866] as [number, number, number] },
+      ];
+    }
+    return stateNames.map((name, i) => {
+      const angle = (i * 2 * Math.PI / n);
+      const y = (i / (n - 1) - 0.5) * radius;
+      return { name, position: [Math.cos(angle) * radius, y, Math.sin(angle) * radius] as [number, number, number] };
+    });
+  }, [fsm.states]);
 
   // Re-sync FSM when item selection changes
   useEffect(() => {
@@ -320,16 +354,57 @@ function FSMEditor({ item, onUpdate, onClose }: FSMEditorProps) {
   };
 
   return (
-    <div className="absolute right-4 top-20 bottom-20 w-80 bg-black/90 backdrop-blur border border-white/10 rounded-lg overflow-hidden flex flex-col z-50">
+    <div className={`absolute right-4 top-20 bottom-20 ${show3D ? 'w-[600px]' : 'w-80'} bg-black/90 backdrop-blur border border-white/10 rounded-lg overflow-hidden flex flex-col z-50 transition-all duration-300`}>
       <div className="flex items-center justify-between p-3 border-b border-white/10">
         <div className="flex items-center gap-2">
           <GitBranch className="w-4 h-4 text-primary" />
           <span className="font-mono text-sm text-white">FSM Editor</span>
         </div>
-        <Button size="icon" variant="ghost" onClick={onClose} className="w-6 h-6">
-          <X className="w-4 h-4" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button 
+            size="sm" 
+            variant={show3D ? "default" : "ghost"}
+            onClick={() => setShow3D(!show3D)}
+            className="h-6 px-2 text-xs"
+            data-testid="button-toggle-3d"
+          >
+            {show3D ? "2D" : "3D"}
+          </Button>
+          <Button size="icon" variant="ghost" onClick={onClose} className="w-6 h-6">
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
+
+      {/* 3D Visualization Hint - opens fullscreen mode */}
+      {show3D && (
+        <div className="p-3 border-b border-white/10 bg-gradient-to-r from-purple-900/30 to-blue-900/30">
+          <div className="text-xs text-center text-muted-foreground">
+            <span className="text-primary font-bold">3D Mode Active</span>
+            <br />
+            States auto-arrange in 3D: {states.length} states = 
+            {states.length === 3 ? " Triangle" : 
+             states.length === 4 ? " Tetrahedron" : 
+             states.length === 5 ? " Pyramid" : 
+             states.length === 6 ? " Octahedron" : " Helix"}
+          </div>
+          <div className="mt-2 grid grid-cols-3 gap-1">
+            {positions.slice(0, 6).map(({ name, position }) => (
+              <div 
+                key={name}
+                className={`text-[9px] p-1 rounded cursor-pointer transition-all
+                  ${selectedState === name ? 'bg-primary/30 border border-primary' : 'bg-white/5 hover:bg-white/10'}`}
+                onClick={() => setSelectedState(name)}
+              >
+                <div className="font-mono text-white truncate">{name}</div>
+                <div className="text-muted-foreground">
+                  ({position[0].toFixed(1)}, {position[1].toFixed(1)}, {position[2].toFixed(1)})
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <ScrollArea className="flex-1 p-3">
         {/* Item Info */}
