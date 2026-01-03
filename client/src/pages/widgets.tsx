@@ -8,19 +8,34 @@ import { GeigerCounter } from "@/components/GeigerCounter";
 import { NixieDisplay, MagicEyeTube, TubeArray, VacuumTube } from "@/components/VacuumTubeDisplay";
 import { VUMeter, StereoVUMeter } from "@/components/VUMeter";
 import QRCodeLib from "qrcode";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Palette } from "lucide-react";
+
+const QR_PRESETS = [
+  { name: "Classic", dark: "#000000", light: "#ffffff" },
+  { name: "Cyberpunk", dark: "#a855f7", light: "#0a0a14" },
+  { name: "Terminal", dark: "#22c55e", light: "#0d1117" },
+  { name: "Blueprint", dark: "#1e40af", light: "#dbeafe" },
+  { name: "Sunset", dark: "#ea580c", light: "#fef3c7" },
+  { name: "Vapor", dark: "#ec4899", light: "#fdf4ff" },
+  { name: "Gold Leaf", dark: "#854d0e", light: "#fef9c3" },
+  { name: "Steampunk", dark: "#78350f", light: "#d4a574" },
+];
 
 function WidgetQRCode({ tngliId, title }: { tngliId: string; title: string }) {
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
+  const [darkColor, setDarkColor] = useState("#000000");
+  const [lightColor, setLightColor] = useState("#ffffff");
   const url = `https://tng.li?id=${tngliId}`;
 
   useEffect(() => {
     QRCodeLib.toDataURL(url, {
       width: 200,
       margin: 2,
-      color: { dark: "#a855f7", light: "#0a0a14" },
+      color: { dark: darkColor, light: lightColor },
       errorCorrectionLevel: "H",
     }).then(setQrDataUrl).catch(console.error);
-  }, [url]);
+  }, [url, darkColor, lightColor]);
 
   const handleDownload = () => {
     if (!qrDataUrl) return;
@@ -30,19 +45,100 @@ function WidgetQRCode({ tngliId, title }: { tngliId: string; title: string }) {
     link.click();
   };
 
+  const applyPreset = (preset: typeof QR_PRESETS[0]) => {
+    setDarkColor(preset.dark);
+    setLightColor(preset.light);
+  };
+
   return (
     <div className="flex flex-col items-center gap-2 p-4 rounded-lg bg-black/40 border border-purple-500/20">
-      <div className="text-xs text-purple-400 font-mono flex items-center gap-1">
-        <QrCode className="w-3 h-3" />
-        {tngliId}
+      <div className="flex items-center justify-between w-full">
+        <div className="text-xs text-purple-400 font-mono flex items-center gap-1">
+          <QrCode className="w-3 h-3" />
+          {tngliId}
+        </div>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="sm" className="h-6 w-6 p-0" data-testid="button-qr-colors">
+              <Palette className="w-3.5 h-3.5 text-purple-400" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-72 bg-gray-900 border-purple-500/30" align="end">
+            <div className="space-y-3">
+              <div className="text-xs font-semibold text-white">QR Colors</div>
+              
+              <div className="grid grid-cols-4 gap-1.5">
+                {QR_PRESETS.map((preset) => (
+                  <button
+                    key={preset.name}
+                    onClick={() => applyPreset(preset)}
+                    className="group relative h-8 rounded border border-gray-700 hover:border-purple-500 transition-colors overflow-hidden"
+                    title={preset.name}
+                    data-testid={`button-preset-${preset.name.toLowerCase().replace(' ', '-')}`}
+                  >
+                    <div className="absolute inset-0 flex">
+                      <div className="w-1/2 h-full" style={{ backgroundColor: preset.light }} />
+                      <div className="w-1/2 h-full" style={{ backgroundColor: preset.dark }} />
+                    </div>
+                    <span className="absolute inset-0 flex items-center justify-center text-[8px] font-bold opacity-0 group-hover:opacity-100 bg-black/60 text-white transition-opacity">
+                      {preset.name}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="text-[10px] text-gray-400 block mb-1">Foreground</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={darkColor}
+                      onChange={(e) => setDarkColor(e.target.value)}
+                      className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent"
+                      data-testid="input-qr-dark-color"
+                    />
+                    <input
+                      type="text"
+                      value={darkColor}
+                      onChange={(e) => setDarkColor(e.target.value)}
+                      className="flex-1 text-xs font-mono bg-black/50 border border-gray-700 rounded px-2 py-1 text-white uppercase"
+                      data-testid="input-qr-dark-hex"
+                    />
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <label className="text-[10px] text-gray-400 block mb-1">Background</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={lightColor}
+                      onChange={(e) => setLightColor(e.target.value)}
+                      className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent"
+                      data-testid="input-qr-light-color"
+                    />
+                    <input
+                      type="text"
+                      value={lightColor}
+                      onChange={(e) => setLightColor(e.target.value)}
+                      className="flex-1 text-xs font-mono bg-black/50 border border-gray-700 rounded px-2 py-1 text-white uppercase"
+                      data-testid="input-qr-light-hex"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
+      
       {qrDataUrl && (
         <img src={qrDataUrl} alt={`QR for ${title}`} className="rounded-lg" style={{ width: 200, height: 200 }} />
       )}
       <div className="text-[10px] text-gray-500 font-mono text-center break-all max-w-[200px]">
         {url}
       </div>
-      <Button variant="ghost" size="sm" className="text-xs text-purple-400" onClick={handleDownload}>
+      <Button variant="ghost" size="sm" className="text-xs text-purple-400" onClick={handleDownload} data-testid="button-download-qr">
         <Download className="w-3 h-3 mr-1" /> Download QR
       </Button>
     </div>
