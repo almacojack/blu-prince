@@ -1,7 +1,9 @@
 import { useState, useRef, useCallback, ReactNode } from "react";
-import { motion, useDragControls, useMotionValue } from "framer-motion";
+import { motion, useDragControls, useMotionValue, animate } from "framer-motion";
 import { GripVertical, Minimize2, Maximize2, X, Move } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { calculateSnap, bounceTransition } from "@/lib/magnetic-snap";
+import { SnapFlash } from "@/components/SnapFlash";
 
 // Compact docked panel for flow layouts (non-draggable)
 export function AtariDockedPanel({
@@ -121,27 +123,6 @@ interface AtariDockPanelProps {
   "data-testid"?: string;
 }
 
-const SNAP_THRESHOLD = 20;
-
-function snapToEdges(
-  posX: number,
-  posY: number,
-  width: number,
-  height: number,
-  containerWidth: number,
-  containerHeight: number
-): { x: number; y: number } {
-  let snappedX = posX;
-  let snappedY = posY;
-
-  if (Math.abs(posX) < SNAP_THRESHOLD) snappedX = 0;
-  if (Math.abs(posY) < SNAP_THRESHOLD) snappedY = 0;
-  if (Math.abs(posX + width - containerWidth) < SNAP_THRESHOLD) snappedX = containerWidth - width;
-  if (Math.abs(posY + height - containerHeight) < SNAP_THRESHOLD) snappedY = containerHeight - height;
-
-  return { x: snappedX, y: snappedY };
-}
-
 export function AtariDockPanel({
   title,
   children,
@@ -160,12 +141,13 @@ export function AtariDockPanel({
   const [size, setSize] = useState(initialSize);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
+  const [snapLines, setSnapLines] = useState<{ x: number | null; y: number | null }>({ x: null, y: null });
   const dragControls = useDragControls();
   const panelRef = useRef<HTMLDivElement>(null);
   const resizeStartRef = useRef({ x: 0, y: 0, width: 0, height: 0 });
   
-  const x = useMotionValue(initialPosition.x);
-  const y = useMotionValue(initialPosition.y);
+  const motionX = useMotionValue(initialPosition.x);
+  const motionY = useMotionValue(initialPosition.y);
 
   const handleDragEnd = useCallback(() => {
     if (!panelRef.current) return;
@@ -173,18 +155,23 @@ export function AtariDockPanel({
     const containerWidth = window.innerWidth;
     const containerHeight = window.innerHeight;
     
-    const snapped = snapToEdges(
-      x.get(),
-      y.get(),
+    const snap = calculateSnap(
+      motionX.get(),
+      motionY.get(),
       size.width,
       size.height,
       containerWidth,
       containerHeight
     );
     
-    x.set(snapped.x);
-    y.set(snapped.y);
-  }, [x, y, size.width, size.height]);
+    if (snap.snappedX || snap.snappedY) {
+      setSnapLines({ x: snap.snapLineX, y: snap.snapLineY });
+      setTimeout(() => setSnapLines({ x: null, y: null }), 50);
+    }
+    
+    animate(motionX, snap.x, bounceTransition);
+    animate(motionY, snap.y, bounceTransition);
+  }, [motionX, motionY, size.width, size.height]);
 
   const handleResizeStart = useCallback((e: React.PointerEvent) => {
     e.preventDefault();
@@ -217,22 +204,29 @@ export function AtariDockPanel({
   }, [size, minWidth, minHeight, maxWidth, maxHeight]);
 
   return (
-    <motion.div
-      ref={panelRef}
-      className={`absolute z-50 select-none ${className}`}
-      style={{
-        x,
-        y,
-        width: size.width,
-      }}
-      drag
-      dragControls={dragControls}
-      dragListener={false}
-      dragMomentum={false}
-      dragElastic={0}
-      onDragEnd={handleDragEnd}
-      data-testid={testId}
-    >
+    <>
+      <SnapFlash 
+        snapLineX={snapLines.x} 
+        snapLineY={snapLines.y} 
+        containerWidth={typeof window !== 'undefined' ? window.innerWidth : 1920}
+        containerHeight={typeof window !== 'undefined' ? window.innerHeight : 1080}
+      />
+      <motion.div
+        ref={panelRef}
+        className={`absolute z-50 select-none ${className}`}
+        style={{
+          x: motionX,
+          y: motionY,
+          width: size.width,
+        }}
+        drag
+        dragControls={dragControls}
+        dragListener={false}
+        dragMomentum={false}
+        dragElastic={0}
+        onDragEnd={handleDragEnd}
+        data-testid={testId}
+      >
       <div className="relative overflow-hidden rounded-lg shadow-2xl">
         <div 
           className="absolute inset-0 rounded-lg overflow-hidden"
@@ -379,6 +373,7 @@ export function AtariDockPanel({
         )}
       </div>
     </motion.div>
+    </>
   );
 }
 

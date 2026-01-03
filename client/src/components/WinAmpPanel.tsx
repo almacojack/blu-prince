@@ -1,28 +1,9 @@
-import { ReactNode, useState, useRef, useEffect, useCallback } from "react";
-import { motion, useDragControls, useMotionValue } from "framer-motion";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { motion, useDragControls, useMotionValue, animate } from "framer-motion";
 import { GripVertical, X, Music2, SkipForward, SkipBack, Play, Pause, Volume2, VolumeX, List, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-const SNAP_THRESHOLD = 20;
-
-function snapToEdges(
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  containerWidth: number,
-  containerHeight: number
-): { x: number; y: number } {
-  let snappedX = x;
-  let snappedY = y;
-
-  if (Math.abs(x) < SNAP_THRESHOLD) snappedX = 0;
-  if (Math.abs(y) < SNAP_THRESHOLD) snappedY = 0;
-  if (Math.abs(x + width - containerWidth) < SNAP_THRESHOLD) snappedX = containerWidth - width;
-  if (Math.abs(y + height - containerHeight) < SNAP_THRESHOLD) snappedY = containerHeight - height;
-
-  return { x: snappedX, y: snappedY };
-}
+import { calculateSnap, bounceTransition } from "@/lib/magnetic-snap";
+import { SnapFlash } from "@/components/SnapFlash";
 
 interface AudioVisualizerProps {
   isPlaying: boolean;
@@ -138,9 +119,10 @@ export function WinAmpPanel({
 }: WinAmpPanelProps) {
   const [showPlaylist, setShowPlaylist] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [snapLines, setSnapLines] = useState<{ x: number | null; y: number | null }>({ x: null, y: null });
   const dragControls = useDragControls();
-  const x = useMotionValue(initialPosition.x);
-  const y = useMotionValue(initialPosition.y);
+  const motionX = useMotionValue(initialPosition.x);
+  const motionY = useMotionValue(initialPosition.y);
   const constraintsRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -151,21 +133,32 @@ export function WinAmpPanel({
     const containerWidth = window.innerWidth;
     const containerHeight = window.innerHeight;
     
-    const snapped = snapToEdges(
-      x.get(),
-      y.get(),
+    const snap = calculateSnap(
+      motionX.get(),
+      motionY.get(),
       rect.width,
       rect.height,
       containerWidth,
       containerHeight
     );
     
-    x.set(snapped.x);
-    y.set(snapped.y);
-  }, [x, y]);
+    if (snap.snappedX || snap.snappedY) {
+      setSnapLines({ x: snap.snapLineX, y: snap.snapLineY });
+      setTimeout(() => setSnapLines({ x: null, y: null }), 50);
+    }
+    
+    animate(motionX, snap.x, bounceTransition);
+    animate(motionY, snap.y, bounceTransition);
+  }, [motionX, motionY]);
 
   return (
     <>
+      <SnapFlash 
+        snapLineX={snapLines.x} 
+        snapLineY={snapLines.y} 
+        containerWidth={typeof window !== 'undefined' ? window.innerWidth : 1920}
+        containerHeight={typeof window !== 'undefined' ? window.innerHeight : 1080}
+      />
       <div ref={constraintsRef} className="fixed inset-0 pointer-events-none" />
       <motion.div
         ref={panelRef}
@@ -175,7 +168,7 @@ export function WinAmpPanel({
         dragElastic={0}
         dragConstraints={constraintsRef}
         onDragEnd={handleDragEnd}
-        style={{ x, y }}
+        style={{ x: motionX, y: motionY }}
         className="fixed z-50 pointer-events-auto"
         data-testid={testId}
       >
