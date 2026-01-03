@@ -10,6 +10,7 @@ import Unwanted from "@/pages/unwanted";
 import Artsy from "@/pages/artsy";
 import Coins from "@/pages/coins";
 import RuntimeSimulator from "@/pages/runtime";
+import StatechartEditor from "@/pages/statechart";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -22,6 +23,7 @@ function Router() {
       <Route path="/artsy" component={Artsy} />
       <Route path="/coins" component={Coins} />
       <Route path="/runtime" component={RuntimeSimulator} />
+      <Route path="/statechart" component={StatechartEditor} />
       <Route component={NotFound} />
     </Switch>
   );

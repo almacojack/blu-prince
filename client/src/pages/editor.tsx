@@ -1300,6 +1300,16 @@ export default function BluPrinceEditor() {
               >
                 <GitBranch className="w-4 h-4 mr-1" /> FSM
               </Button>
+              <Link href="/statechart">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  className="text-purple-400 border-purple-400/50 hover:bg-purple-400/10"
+                  data-testid="button-3d-statechart"
+                >
+                  <Box className="w-4 h-4 mr-1" /> 3D View
+                </Button>
+              </Link>
               <Button 
                 size="sm" 
                 variant={showController ? "default" : "ghost"}
