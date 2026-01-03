@@ -3,15 +3,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronRight,
   ChevronDown,
-  CircleDot,
-  Square,
-  SquareStack,
-  StopCircle,
-  Zap,
   Box,
   Package,
-  FileCode,
   Layers3,
+  FileCode,
   Pencil,
   Check,
   X,
@@ -21,29 +16,27 @@ import {
   Video,
   GripVertical,
   Trash2,
+  Circle,
+  Hexagon,
+  Cylinder,
+  Triangle,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import type { TossFile, TossState, Toss3DAsset } from "@/lib/toss";
+import type { TossItem, Bounds } from "@/lib/toss-v1";
 
 interface SceneTreeProps {
-  file: TossFile;
-  selectedStateId: string | null;
-  selectedAssetId: string | null;
-  onSelectState: (id: string) => void;
-  onSelectAsset: (id: string) => void;
-  onRenameState: (oldId: string, newId: string) => void;
-  onRenameAsset: (id: string, newName: string) => void;
-  onAddState: (type: "initial" | "state" | "compound" | "final") => void;
-  onDeleteState?: (id: string) => void;
-  onDeleteAsset?: (id: string) => void;
-  onReorderStates?: (stateIds: string[]) => void;
-  onReorderAssets?: (assetIds: string[]) => void;
+  items: TossItem[];
+  selectedItemId: string | null;
+  onSelectItem: (id: string) => void;
+  onRenameItem?: (id: string, newLabel: string) => void;
+  onDeleteItem?: (id: string) => void;
+  onReorderItems?: (itemIds: string[]) => void;
 }
 
-type DragItemType = "state" | "asset" | "event";
+type DragItemType = "item" | "light" | "camera";
 
 interface DragState {
   type: DragItemType;
@@ -51,34 +44,40 @@ interface DragState {
   sourceIndex: number;
 }
 
-type StateType = "initial" | "state" | "compound" | "final";
-
-function getStateIcon(state: TossState, isInitial: boolean) {
-  if (isInitial) {
-    return <CircleDot className="w-4 h-4 text-green-400" />;
+function getBoundsIcon(bounds?: Bounds) {
+  if (!bounds) return <Box className="w-4 h-4 text-cyan-400" />;
+  
+  switch (bounds.type) {
+    case "sphere":
+      return <Circle className="w-4 h-4 text-pink-400" />;
+    case "cylinder":
+      return <Cylinder className="w-4 h-4 text-blue-400" />;
+    case "cone":
+      return <Triangle className="w-4 h-4 text-orange-400" />;
+    case "torus":
+      return <Circle className="w-4 h-4 text-purple-400" />;
+    case "tetrahedron":
+    case "octahedron":
+    case "icosahedron":
+    case "dodecahedron":
+      return <Hexagon className="w-4 h-4 text-green-400" />;
+    default:
+      return <Box className="w-4 h-4 text-cyan-400" />;
   }
-  if (state.type === "compound") {
-    return <SquareStack className="w-4 h-4 text-purple-400" />;
-  }
-  if (state.type === "final") {
-    return <StopCircle className="w-4 h-4 text-red-400" />;
-  }
-  return <Square className="w-4 h-4 text-cyan-400" />;
 }
 
-function getAssetIcon(format: string) {
-  switch (format.toLowerCase()) {
-    case "gltf":
-    case "glb":
-      return <Package className="w-4 h-4 text-orange-400" />;
-    case "obj":
-      return <Layers3 className="w-4 h-4 text-blue-400" />;
-    case "stl":
-      return <Box className="w-4 h-4 text-pink-400" />;
-    case "json":
+function getComponentIcon(component: string, bounds?: Bounds) {
+  switch (component) {
+    case "mesh_glyph":
       return <FileCode className="w-4 h-4 text-yellow-400" />;
+    case "imported_model":
+      return <Package className="w-4 h-4 text-orange-400" />;
+    case "light":
+      return <Lightbulb className="w-4 h-4 text-amber-400" />;
+    case "camera":
+      return <Camera className="w-4 h-4 text-blue-400" />;
     default:
-      return <Box className="w-4 h-4 text-gray-400" />;
+      return getBoundsIcon(bounds);
   }
 }
 
@@ -206,7 +205,7 @@ function DraggableTreeNode({
         className={cn(
           "group flex items-center gap-1 px-2 py-1.5 rounded-md cursor-pointer transition-all",
           selected
-            ? "bg-cyan-500/20 text-cyan-100"
+            ? "bg-cyan-500/20 text-cyan-100 ring-1 ring-cyan-500/50"
             : "hover:bg-white/5 text-zinc-300",
           isDragging && "opacity-50 bg-cyan-500/10 border border-dashed border-cyan-500/50",
           isDropTarget && "ring-1 ring-cyan-500/50"
@@ -358,6 +357,7 @@ interface TreeNodeProps {
   expandable?: boolean;
   defaultExpanded?: boolean;
   badge?: React.ReactNode;
+  onClick?: () => void;
 }
 
 function TreeNode({
@@ -369,6 +369,7 @@ function TreeNode({
   expandable,
   defaultExpanded = true,
   badge,
+  onClick,
 }: TreeNodeProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
 
@@ -382,6 +383,7 @@ function TreeNode({
             : "hover:bg-white/5 text-zinc-300"
         )}
         style={{ paddingLeft: `${depth * 12 + 8}px` }}
+        onClick={onClick}
         data-testid={`tree-node-${label.toLowerCase().replace(/\s+/g, "-")}`}
       >
         {expandable ? (
@@ -424,42 +426,23 @@ function TreeNode({
 }
 
 export function SceneTree({
-  file,
-  selectedStateId,
-  selectedAssetId,
-  onSelectState,
-  onSelectAsset,
-  onRenameState,
-  onRenameAsset,
-  onAddState,
-  onDeleteState,
-  onDeleteAsset,
-  onReorderStates,
-  onReorderAssets,
+  items,
+  selectedItemId,
+  onSelectItem,
+  onRenameItem,
+  onDeleteItem,
+  onReorderItems,
 }: SceneTreeProps) {
-  const [editingStateId, setEditingStateId] = useState<string | null>(null);
-  const [editingAssetId, setEditingAssetId] = useState<string | null>(null);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
 
-  const states = Object.entries(file.logic.states);
-  const assets: Toss3DAsset[] = file.assets?.models || [];
-  const initialStateId = file.logic.initial;
-
-  const handleStateRename = useCallback(
-    (oldId: string, newName: string) => {
-      onRenameState(oldId, newName);
-      setEditingStateId(null);
-    },
-    [onRenameState]
-  );
-
-  const handleAssetRename = useCallback(
+  const handleItemRename = useCallback(
     (id: string, newName: string) => {
-      onRenameAsset(id, newName);
-      setEditingAssetId(null);
+      onRenameItem?.(id, newName);
+      setEditingItemId(null);
     },
-    [onRenameAsset]
+    [onRenameItem]
   );
 
   const handleDragStart = useCallback((type: DragItemType, id: string, index: number) => {
@@ -475,10 +458,10 @@ export function SceneTree({
     setDropTargetIndex(null);
   }, []);
 
-  const handleStateDrop = useCallback((targetIndex: number) => {
-    if (!dragState || dragState.type !== "state") return;
+  const handleItemDrop = useCallback((targetIndex: number) => {
+    if (!dragState || dragState.type !== "item") return;
 
-    const stateIds = states.map(([id]) => id);
+    const itemIds = items.map((item) => item.id);
     const sourceIndex = dragState.sourceIndex;
 
     if (sourceIndex === targetIndex) {
@@ -486,156 +469,64 @@ export function SceneTree({
       return;
     }
 
-    const newOrder = [...stateIds];
+    const newOrder = [...itemIds];
     const [removed] = newOrder.splice(sourceIndex, 1);
     newOrder.splice(targetIndex, 0, removed);
 
-    onReorderStates?.(newOrder);
+    onReorderItems?.(newOrder);
     handleDragEnd();
-  }, [dragState, states, onReorderStates, handleDragEnd]);
-
-  const handleAssetDrop = useCallback((targetIndex: number) => {
-    if (!dragState || dragState.type !== "asset") return;
-
-    const assetIds = assets.map((a) => a.id);
-    const sourceIndex = dragState.sourceIndex;
-
-    if (sourceIndex === targetIndex) {
-      handleDragEnd();
-      return;
-    }
-
-    const newOrder = [...assetIds];
-    const [removed] = newOrder.splice(sourceIndex, 1);
-    newOrder.splice(targetIndex, 0, removed);
-
-    onReorderAssets?.(newOrder);
-    handleDragEnd();
-  }, [dragState, assets, onReorderAssets, handleDragEnd]);
+  }, [dragState, items, onReorderItems, handleDragEnd]);
 
   return (
     <ScrollArea className="h-full">
       <div className="p-2 space-y-1">
         <TreeNode
-          icon={<SquareStack className="w-4 h-4 text-purple-400" />}
-          label="States"
+          icon={<Layers3 className="w-4 h-4 text-cyan-400" />}
+          label="Scene Objects"
           expandable
           defaultExpanded
           badge={
             <span className="text-[10px] text-zinc-500 font-mono">
-              {states.length}
+              {items.length}
             </span>
           }
         >
-          {states.map(([id, state], index) => (
-            <DraggableTreeNode
-              key={id}
-              icon={getStateIcon(state, id === initialStateId)}
-              label={id}
-              itemId={id}
-              itemType="state"
-              index={index}
-              selected={selectedStateId === id}
-              depth={1}
-              isEditing={editingStateId === id}
-              onSelect={() => onSelectState(id)}
-              onStartEdit={() => setEditingStateId(id)}
-              onRename={(newName) => handleStateRename(id, newName)}
-              onCancelEdit={() => setEditingStateId(null)}
-              onDelete={onDeleteState ? () => onDeleteState(id) : undefined}
-              dragState={dragState}
-              dropTargetIndex={dropTargetIndex}
-              onDragStart={handleDragStart}
-              onDragOver={handleDragOver}
-              onDragEnd={handleDragEnd}
-              onDrop={handleStateDrop}
-              badge={
-                id === initialStateId ? (
-                  <span className="text-[8px] px-1 py-0.5 rounded bg-green-500/20 text-green-400 font-mono">
-                    INITIAL
-                  </span>
-                ) : state.type === "final" ? (
-                  <span className="text-[8px] px-1 py-0.5 rounded bg-red-500/20 text-red-400 font-mono">
-                    FINAL
-                  </span>
-                ) : null
-              }
-            />
-          ))}
-        </TreeNode>
-
-        <TreeNode
-          icon={<Zap className="w-4 h-4 text-yellow-400" />}
-          label="Events"
-          expandable
-          defaultExpanded
-          badge={
-            <span className="text-[10px] text-zinc-500 font-mono">
-              {Object.values(file.logic.states).reduce(
-                (acc, state) => acc + (state.transitions?.length || 0),
-                0
-              )}
-            </span>
-          }
-        >
-          {Object.entries(file.logic.states).map(([stateId, state]) =>
-            (state.transitions || []).map((t, idx) => (
-              <TreeNode
-                key={`${stateId}-${idx}`}
-                icon={<Zap className="w-3.5 h-3.5 text-yellow-500/70" />}
-                label={t.event || "auto"}
-                depth={1}
-                badge={
-                  <span className="text-[9px] text-zinc-500 font-mono">
-                    → {t.target}
-                  </span>
-                }
-              />
-            ))
-          )}
-        </TreeNode>
-
-        <TreeNode
-          icon={<Package className="w-4 h-4 text-orange-400" />}
-          label="3D Assets"
-          expandable
-          defaultExpanded
-          badge={
-            <span className="text-[10px] text-zinc-500 font-mono">
-              {assets.length}
-            </span>
-          }
-        >
-          {assets.length === 0 ? (
+          {items.length === 0 ? (
             <div className="px-4 py-3 text-center text-zinc-500 text-[10px]">
-              No 3D assets imported
+              No objects in scene
             </div>
           ) : (
-            assets.map((asset, index) => (
+            items.map((item, index) => (
               <DraggableTreeNode
-                key={asset.id}
-                icon={getAssetIcon(asset.metadata.format)}
-                label={asset.metadata.name}
-                itemId={asset.id}
-                itemType="asset"
+                key={item.id}
+                icon={getComponentIcon(item.component, item.bounds)}
+                label={item.label || item.id}
+                itemId={item.id}
+                itemType="item"
                 index={index}
-                selected={selectedAssetId === asset.id}
+                selected={selectedItemId === item.id}
                 depth={1}
-                isEditing={editingAssetId === asset.id}
-                onSelect={() => onSelectAsset(asset.id)}
-                onStartEdit={() => setEditingAssetId(asset.id)}
-                onRename={(newName) => handleAssetRename(asset.id, newName)}
-                onCancelEdit={() => setEditingAssetId(null)}
-                onDelete={onDeleteAsset ? () => onDeleteAsset(asset.id) : undefined}
+                isEditing={editingItemId === item.id}
+                onSelect={() => onSelectItem(item.id)}
+                onStartEdit={onRenameItem ? () => setEditingItemId(item.id) : undefined}
+                onRename={(newName) => handleItemRename(item.id, newName)}
+                onCancelEdit={() => setEditingItemId(null)}
+                onDelete={onDeleteItem ? () => onDeleteItem(item.id) : undefined}
                 dragState={dragState}
                 dropTargetIndex={dropTargetIndex}
                 onDragStart={handleDragStart}
                 onDragOver={handleDragOver}
                 onDragEnd={handleDragEnd}
-                onDrop={handleAssetDrop}
+                onDrop={handleItemDrop}
                 badge={
-                  <span className="text-[8px] px-1 py-0.5 rounded bg-purple-500/20 text-purple-400 font-mono uppercase">
-                    {asset.metadata.format}
+                  <span 
+                    className="text-[8px] px-1 py-0.5 rounded font-mono uppercase"
+                    style={{
+                      backgroundColor: `${item.material?.color || '#666'}20`,
+                      color: item.material?.color || '#888',
+                    }}
+                  >
+                    {item.bounds?.type || 'mesh'}
                   </span>
                 }
               />

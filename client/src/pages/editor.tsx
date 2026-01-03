@@ -1820,14 +1820,17 @@ export default function BluPrinceEditor() {
   // Update camera target when item is selected (if auto-focus is enabled)
   useEffect(() => {
     if (selectedItem && cameraSettings.autoFocus) {
-      const pos = selectedItem.transform?.position || [0, 0, 0];
+      const pos = selectedItem.transform?.position;
+      const posArray: [number, number, number] = pos 
+        ? [pos.x, pos.y, pos.z] 
+        : [0, 0, 0];
       const itemSize = Math.max(
         selectedItem.bounds?.width || 1,
         selectedItem.bounds?.height || 1,
         selectedItem.bounds?.depth || 1
       );
       setCameraTarget({
-        position: pos as [number, number, number],
+        position: posArray,
         size: itemSize,
       });
     }
@@ -1836,14 +1839,17 @@ export default function BluPrinceEditor() {
   // Handler for manual focus on selected
   const handleFocusSelected = useCallback(() => {
     if (!selectedItem) return;
-    const pos = selectedItem.transform?.position || [0, 0, 0];
+    const pos = selectedItem.transform?.position;
+    const posArray: [number, number, number] = pos 
+      ? [pos.x, pos.y, pos.z] 
+      : [0, 0, 0];
     const itemSize = Math.max(
       selectedItem.bounds?.width || 1,
       selectedItem.bounds?.height || 1,
       selectedItem.bounds?.depth || 1
     );
     setCameraTarget({
-      position: pos as [number, number, number],
+      position: posArray,
       size: itemSize,
     });
     toast({ title: "Camera Focused", description: `Looking at ${selectedItem.label || selectedItem.id}` });
@@ -2646,14 +2652,29 @@ export default function BluPrinceEditor() {
           defaultCollapsed={false}
         >
           <SceneTree
-            file={tossFile}
-            selectedStateId={selectedStateId}
-            selectedAssetId={selectedAssetId}
-            onSelectState={setSelectedStateId}
-            onSelectAsset={setSelectedAssetId}
-            onRenameState={() => {}}
-            onRenameAsset={() => {}}
-            onAddState={() => {}}
+            items={cartridge.items}
+            selectedItemId={selectedId}
+            onSelectItem={(id) => setSelectedId(id)}
+            onRenameItem={(id, newLabel) => {
+              setCartridge(prev => ({
+                ...prev,
+                items: prev.items.map(item => 
+                  item.id === id ? { ...item, label: newLabel } : item
+                )
+              }));
+            }}
+            onDeleteItem={(id) => {
+              setCartridge(prev => ({
+                ...prev,
+                items: prev.items.filter(item => item.id !== id)
+              }));
+            }}
+            onReorderItems={(newOrder) => {
+              setCartridge(prev => ({
+                ...prev,
+                items: newOrder.map(id => prev.items.find(item => item.id === id)!).filter(Boolean)
+              }));
+            }}
           />
         </DockablePanel>
 
@@ -2857,8 +2878,9 @@ export default function BluPrinceEditor() {
 
       {/* 3D Canvas */}
       <Canvas shadows camera={{ position: [8, 8, 8], fov: 50 }}>
-        <color attach="background" args={["#0a0a0f"]} />
-        <fog attach="fog" args={["#0a0a0f", 15, 40]} />
+        {/* Blueprint blue background */}
+        <color attach="background" args={["#0c1f3f"]} />
+        <fog attach="fog" args={["#0c1f3f", 20, 50]} />
         
         <ambientLight intensity={0.4} />
         <directionalLight 
@@ -2931,16 +2953,17 @@ export default function BluPrinceEditor() {
           <Environment preset="city" />
         </Suspense>
 
+        {/* Blueprint-style white gridlines */}
         <Grid 
           args={[50, 50]} 
           position={[0, 0, 0]}
           cellSize={1}
-          cellThickness={0.5}
-          cellColor="#333"
+          cellThickness={0.3}
+          cellColor="#ffffff"
           sectionSize={5}
-          sectionThickness={1}
-          sectionColor="#666"
-          fadeDistance={30}
+          sectionThickness={0.8}
+          sectionColor="#88ccff"
+          fadeDistance={40}
           fadeStrength={1}
           followCamera={false}
         />
@@ -2962,6 +2985,23 @@ export default function BluPrinceEditor() {
         />
         <Environment preset="night" />
       </Canvas>
+
+      {/* View Label HUD - Top Center */}
+      <div className="absolute top-16 left-1/2 -translate-x-1/2 z-40">
+        <div 
+          className="px-4 py-1.5 rounded-md text-xs font-mono font-bold tracking-wider uppercase"
+          style={{
+            background: 'linear-gradient(180deg, rgba(12,31,63,0.95) 0%, rgba(8,20,40,0.95) 100%)',
+            border: '1px solid rgba(136,204,255,0.4)',
+            color: '#88ccff',
+            boxShadow: '0 0 20px rgba(136,204,255,0.2), inset 0 1px 0 rgba(255,255,255,0.1)',
+            textShadow: '0 0 10px rgba(136,204,255,0.5)',
+          }}
+          data-testid="view-label-hud"
+        >
+          VIEW: {viewportAngle.toUpperCase()}
+        </div>
+      </div>
 
       {/* Viewport Angles Panel - Top Right */}
       <div className="absolute top-16 right-4 z-40 flex flex-col gap-2">
