@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertCartridgeSchema, insertWorldSchema, insertWorldCartridgeSchema } from "@shared/schema";
+import { insertCartridgeSchema, insertWorldSchema, insertWorldCartridgeSchema, insertFamousEventSchema } from "@shared/schema";
 import { z } from "zod";
 import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
 import { setupWebSocket, getChannelStats } from "./websocket";
@@ -376,6 +376,105 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     } catch (error) {
       console.error("Error exporting cartridge:", error);
       res.status(500).json({ error: "Failed to export cartridge" });
+    }
+  });
+
+  // ===========================================
+  // FAMOUS EVENTS API (for Timeline)
+  // ===========================================
+
+  // Get all famous events (filterable by tenant and category)
+  app.get("/api/events", async (req, res) => {
+    try {
+      const tenant = req.query.tenant as string | undefined;
+      const category = req.query.category as string | undefined;
+      
+      let events;
+      if (category) {
+        events = await storage.getFamousEventsByCategory(category, tenant);
+      } else {
+        events = await storage.getAllFamousEvents(tenant);
+      }
+      res.json(events);
+    } catch (error) {
+      console.error("Error fetching events:", error);
+      res.status(500).json({ error: "Failed to fetch events" });
+    }
+  });
+
+  // Get events in date range
+  app.get("/api/events/range", async (req, res) => {
+    try {
+      const start = req.query.start ? new Date(req.query.start as string) : new Date(0);
+      const end = req.query.end ? new Date(req.query.end as string) : new Date();
+      const tenant = req.query.tenant as string | undefined;
+      
+      const events = await storage.getFamousEventsByDateRange(start, end, tenant);
+      res.json(events);
+    } catch (error) {
+      console.error("Error fetching events by range:", error);
+      res.status(500).json({ error: "Failed to fetch events" });
+    }
+  });
+
+  // Get single event
+  app.get("/api/events/:id", async (req, res) => {
+    try {
+      const event = await storage.getFamousEvent(req.params.id);
+      if (!event) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+      res.json(event);
+    } catch (error) {
+      console.error("Error fetching event:", error);
+      res.status(500).json({ error: "Failed to fetch event" });
+    }
+  });
+
+  // Create new event (admin only - requires auth)
+  app.post("/api/events", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).user.id;
+      const validatedData = insertFamousEventSchema.parse({
+        ...req.body,
+        created_by: userId,
+      });
+      const event = await storage.createFamousEvent(validatedData);
+      res.status(201).json(event);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid event data", details: error.errors });
+      }
+      console.error("Error creating event:", error);
+      res.status(500).json({ error: "Failed to create event" });
+    }
+  });
+
+  // Update event (admin only)
+  app.put("/api/events/:id", requireAuth, async (req, res) => {
+    try {
+      const event = await storage.updateFamousEvent(req.params.id, req.body);
+      if (!event) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+      res.json(event);
+    } catch (error) {
+      console.error("Error updating event:", error);
+      res.status(500).json({ error: "Failed to update event" });
+    }
+  });
+
+  // Delete event (admin only)
+  app.delete("/api/events/:id", requireAuth, async (req, res) => {
+    try {
+      const success = await storage.deleteFamousEvent(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting event:", error);
+      res.status(500).json({ error: "Failed to delete event" });
     }
   });
 
