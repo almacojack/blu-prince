@@ -1,0 +1,123 @@
+{
+  "common": {
+    "back": "Back",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "download": "Download",
+    "search": "Search",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "close": "Close",
+    "settings": "Settings",
+    "language": "Language",
+    "english": "English",
+    "russian": "Russian"
+  },
+  "nav": {
+    "home": "Home",
+    "widgets": "Widgets",
+    "catalog": "Catalog",
+    "editor": "Editor",
+    "runtime": "Runtime",
+    "vault": "Vault",
+    "tutorial": "Tutorial",
+    "toggleTheme": "Toggle theme",
+    "toggleLanguage": "Toggle language"
+  },
+  "widgets": {
+    "title": "Widget Showcase",
+    "subtitle": "TingOS Component Library",
+    "heading": "Retro-Futuristic Widgets",
+    "description": "Cold War era aesthetics meet modern web technology. Each widget can be defined in TOSS format for use in cartridges - no GUI required.",
+    "tabs": {
+      "radiation": "Radiation",
+      "tubes": "Vacuum Tubes",
+      "audio": "Audio",
+      "gauges": "Gauges"
+    },
+    "geiger": {
+      "title": "Geiger Counter",
+      "description": "Authentic radiation detector with clicking audio, analog meter, and CPM readout. Perfect for Cold War era game aesthetics.",
+      "radiationLevel": "Radiation Level",
+      "safe": "Safe",
+      "caution": "Caution",
+      "danger": "Danger",
+      "classic": "Classic",
+      "military": "Military",
+      "steampunk": "Steampunk"
+    },
+    "nixie": {
+      "title": "Nixie Display",
+      "description": "Warm orange glow of nixie tube digits. Stack multiple for counters, clocks, or numeric displays.",
+      "small": "Small",
+      "medium": "Medium",
+      "large": "Large"
+    },
+    "magicEye": {
+      "title": "Magic Eye Tube",
+      "description": "Classic tuning indicator with eerie green phosphor glow. Three variants for different visual effects.",
+      "classic": "Classic",
+      "dualBar": "Dual Bar",
+      "target": "Target"
+    },
+    "tubeArray": {
+      "title": "Vacuum Tube Array",
+      "description": "Glowing vacuum tubes with animated filaments. Mix triodes, pentodes, and rectifiers for authentic amp aesthetics.",
+      "triode": "Triode",
+      "pentode": "Pentode",
+      "rectifier": "Rectifier"
+    },
+    "vuMeter": {
+      "title": "VU Meter",
+      "description": "Analog volume unit meter with bouncing needle, dB scale, and peak LED. Multiple visual styles available.",
+      "classic": "Classic",
+      "steampunk": "Steampunk",
+      "neon": "Neon"
+    },
+    "stereoVu": {
+      "title": "Stereo VU Meters",
+      "description": "Paired left/right channel meters for stereo audio visualization. Perfect for music players and audio apps."
+    },
+    "gaugesComingSoon": {
+      "title": "More Gauges Coming Soon",
+      "description": "Pressure gauges, speedometers, altimeters, and more industrial instrumentation."
+    },
+    "toss": {
+      "definition": "TOSS Definition",
+      "usingWidgets": "Using Widgets in TOSS Cartridges",
+      "widgetDefinition": "Widget Definition",
+      "widgetDefDescription": "Each widget is defined as a JSON object within your TOSS cartridge's UI section. Props can be static values or bound to context variables using mustache syntax.",
+      "eventBindings": "Event Bindings",
+      "eventBindDescription": "Widgets emit events that can trigger FSM transitions or update context. Use the bindings object to wire up interactions."
+    }
+  },
+  "qr": {
+    "colors": "QR Colors",
+    "foreground": "Foreground",
+    "background": "Background",
+    "downloadQr": "Download QR",
+    "presets": {
+      "classic": "Classic",
+      "cyberpunk": "Cyberpunk",
+      "terminal": "Terminal",
+      "blueprint": "Blueprint",
+      "sunset": "Sunset",
+      "vapor": "Vapor",
+      "goldLeaf": "Gold Leaf",
+      "steampunk": "Steampunk"
+    }
+  },
+  "tooltips": {
+    "qrColors": "Customize QR code colors",
+    "downloadQr": "Download QR code as PNG",
+    "copyCode": "Copy code to clipboard",
+    "toggleTheme": "Switch between Cyberpunk and Victorian themes",
+    "toggleLanguage": "Switch between English and Russian",
+    "radiationSlider": "Adjust radiation level to see widget response"
+  }
+}
