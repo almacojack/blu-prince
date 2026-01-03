@@ -28,6 +28,7 @@ import { EnvironmentalForcesPanel, DEFAULT_FORCES, type ForceConfig, type Enviro
 import { ThingCatalog, type CatalogEntry } from "@/components/ThingCatalog";
 import { ControllerMappingsPanel } from "@/components/ControllerMappingsPanel";
 import { WaterContainer } from "@/components/WaterContainer";
+import { BrassGearAssembly } from "@/components/BrassGear";
 import { WaterControlPanel, createDefaultWaterContainer, type WaterContainerConfig } from "@/components/WaterControlPanel";
 import {
   createGestureState, startGesture, updateGesture, endGesture,
@@ -2776,6 +2777,12 @@ export default function BluPrinceEditor() {
               />
             ))}
           </Physics>
+          
+          {/* Decorative Brass Gear Assembly */}
+          <BrassGearAssembly position={[-6, 2, -4]} />
+          
+          {/* Environment for metallic reflections */}
+          <Environment preset="city" />
         </Suspense>
 
         <Grid 

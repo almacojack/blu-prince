@@ -13,11 +13,14 @@ import {
   LogOut,
   Cog,
   FlaskConical,
+  Globe2,
+  Compass,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useFlightControls } from "@/contexts/FlightControlsContext";
 import { DEV_MODE_BANNER, getMarvinQuote } from "@shared/devMode";
 
 interface NavNode {
@@ -45,6 +48,14 @@ const NAV_NODES: NavNode[] = [
     path: "/blu-prince", 
     color: "#ec4899",
     glowColor: "drop-shadow-[0_0_12px_rgba(236,72,153,0.8)]"
+  },
+  { 
+    id: "editor3d", 
+    label: "3D WORLD", 
+    icon: <Globe2 className="w-5 h-5" />, 
+    path: "/editor", 
+    color: "#06b6d4",
+    glowColor: "drop-shadow-[0_0_12px_rgba(6,182,212,0.8)]"
   },
   { 
     id: "library", 
@@ -90,6 +101,7 @@ export function NeonPathNav({
   const [marvinQuote, setMarvinQuote] = useState<string>("");
   const { user, isLoading, isAuthenticated, logout } = useAuth();
   const { theme } = useTheme();
+  const { isVisible: flightVisible, toggleVisible: toggleFlight } = useFlightControls();
   const isVictorian = theme.variant === 'victorian';
   const isDev = isDevEnvironment();
   
@@ -292,6 +304,22 @@ export function NeonPathNav({
 
         <div className="flex items-center gap-2">
           <ThemeSwitcher variant="toggle" />
+          
+          <motion.button
+            onClick={toggleFlight}
+            className={cn(
+              "flex items-center justify-center w-11 h-11 rounded-lg border transition-all touch-manipulation",
+              flightVisible
+                ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-400"
+                : "bg-white/5 border-white/10 text-zinc-300 hover:text-white hover:bg-white/10 hover:border-cyan-500/50"
+            )}
+            whileHover={{ scale: 1.05, boxShadow: "0 0 20px rgba(6,182,212,0.3)" }}
+            whileTap={{ scale: 0.95 }}
+            data-testid="button-flight-controls"
+            title="Flight Controls (Shift+F)"
+          >
+            <Compass className="w-5 h-5" />
+          </motion.button>
           
           <motion.button
             onClick={onCommandPaletteOpen}
