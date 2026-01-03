@@ -20,11 +20,12 @@ import {
   Triangle, Settings, Layers, Zap, Save, Upload, CheckCircle, XCircle,
   Plus, Trash2, ArrowRight, GitBranch, X, Gamepad2, Vibrate,
   Pentagon, Hexagon, Diamond, Cone, FileImage, Eye, EyeOff,
-  Palette, Move, RotateCw, Maximize2, Database, Wrench, Users, Share2, Copy, FolderOpen, Droplets, Atom
+  Palette, Move, RotateCw, Maximize2, Database, Wrench, Users, Share2, Copy, FolderOpen, Droplets, Atom, BookOpen
 } from "lucide-react";
 import { DockablePanel } from "@/components/DockablePanel";
 import { ToolsPanel, type PhysicsTool } from "@/components/ToolsPanel";
 import { EnvironmentalForcesPanel, DEFAULT_FORCES, type ForceConfig, type EnvironmentalForce } from "@/components/EnvironmentalForcesPanel";
+import { ThingCatalog, type CatalogEntry } from "@/components/ThingCatalog";
 import { ControllerMappingsPanel } from "@/components/ControllerMappingsPanel";
 import { WaterContainer } from "@/components/WaterContainer";
 import { WaterControlPanel, createDefaultWaterContainer, type WaterContainerConfig } from "@/components/WaterControlPanel";
@@ -2602,6 +2603,21 @@ export default function BluPrinceEditor() {
                 )}
               </div>
             </ScrollArea>
+          </div>
+        </DockablePanel>
+
+        {/* Thing Catalog Panel */}
+        <DockablePanel
+          id="catalog"
+          title="Catalog"
+          icon={<BookOpen className="w-4 h-4" />}
+          defaultDocked={true}
+          defaultCollapsed={true}
+        >
+          <div className="h-80">
+            <ThingCatalog 
+              onSelectEntry={(entry) => console.log('Selected:', entry)}
+            />
           </div>
         </DockablePanel>
       </div>
