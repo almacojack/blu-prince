@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
+import { ThemeSwitcher } from "./ThemeSwitcher";
 
 interface NavNode {
   id: string;
@@ -206,6 +207,8 @@ export function NeonPathNav({
         </div>
 
         <div className="flex items-center gap-2">
+          <ThemeSwitcher variant="toggle" />
+          
           <motion.button
             onClick={onCommandPaletteOpen}
             className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-zinc-300 hover:text-white hover:bg-white/10 hover:border-purple-500/50 transition-all min-h-11 touch-manipulation"

@@ -87,6 +87,86 @@
   --chart-5: 340 75% 55%;
 }
 
+/* Victorian Brass Theme */
+[data-theme="victorian"] {
+  --background: 30 20% 8%;
+  --foreground: 40 20% 94%;
+  
+  --card: 30 18% 10%;
+  --card-foreground: 40 20% 94%;
+  
+  --popover: 30 18% 10%;
+  --popover-foreground: 40 20% 94%;
+  
+  --primary: 43 74% 38%;
+  --primary-foreground: 40 20% 94%;
+  
+  --secondary: 25 76% 31%;
+  --secondary-foreground: 40 20% 94%;
+  
+  --muted: 30 15% 18%;
+  --muted-foreground: 40 15% 60%;
+  
+  --accent: 30 60% 45%;
+  --accent-foreground: 40 20% 94%;
+  
+  --destructive: 0 72% 27%;
+  --destructive-foreground: 40 20% 94%;
+  
+  --border: 43 40% 20%;
+  --input: 43 40% 20%;
+  --ring: 43 74% 38%;
+  
+  --chart-1: 43 74% 45%;
+  --chart-2: 25 60% 40%;
+  --chart-3: 30 50% 50%;
+  --chart-4: 15 55% 45%;
+  --chart-5: 0 65% 40%;
+}
+
+[data-theme="victorian"] body {
+  font-family: 'Crimson Pro', Georgia, serif;
+  background-image: 
+    radial-gradient(circle at 50% 0%, hsla(43, 74%, 38%, 0.08) 0%, transparent 50%),
+    linear-gradient(rgba(184, 134, 11, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(184, 134, 11, 0.03) 1px, transparent 1px);
+  background-size: 100% 100%, 60px 60px, 60px 60px;
+}
+
+[data-theme="victorian"] h1,
+[data-theme="victorian"] h2,
+[data-theme="victorian"] h3,
+[data-theme="victorian"] h4,
+[data-theme="victorian"] h5,
+[data-theme="victorian"] h6 {
+  font-family: 'Playfair Display', Georgia, serif;
+}
+
+[data-theme="victorian"] .text-glow {
+  text-shadow: 0 0 10px hsla(43, 74%, 50%, 0.4), 0 0 20px hsla(43, 74%, 38%, 0.2);
+}
+
+[data-theme="victorian"] .border-glow {
+  box-shadow: 0 0 10px hsla(43, 60%, 30%, 0.3);
+}
+
+[data-theme="victorian"] .scanline {
+  display: none;
+}
+
+.theme-grain::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 999;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%' height='100%' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
 @layer base {
   * {
     @apply border-border;

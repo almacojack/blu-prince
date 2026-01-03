@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { CartridgeProvider } from "@/contexts/cartridge-context";
 import { UiScaleProvider } from "@/contexts/UiScaleContext";
 import { TutorialProvider } from "@/contexts/TutorialContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { TutorialOverlay } from "@/components/TutorialOverlay";
 import { TutorialMenu } from "@/components/TutorialMenu";
 import { NeonPathNav } from "@/components/NeonPathNav";
@@ -94,15 +95,17 @@ function AppContent() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <UiScaleProvider>
-        <CartridgeProvider>
-          <TutorialProvider>
-            <TooltipProvider>
-              <AppContent />
-            </TooltipProvider>
-          </TutorialProvider>
-        </CartridgeProvider>
-      </UiScaleProvider>
+      <ThemeProvider>
+        <UiScaleProvider>
+          <CartridgeProvider>
+            <TutorialProvider>
+              <TooltipProvider>
+                <AppContent />
+              </TooltipProvider>
+            </TutorialProvider>
+          </CartridgeProvider>
+        </UiScaleProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
