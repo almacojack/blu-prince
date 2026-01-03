@@ -121,6 +121,27 @@ interface AtariDockPanelProps {
   "data-testid"?: string;
 }
 
+const SNAP_THRESHOLD = 20;
+
+function snapToEdges(
+  posX: number,
+  posY: number,
+  width: number,
+  height: number,
+  containerWidth: number,
+  containerHeight: number
+): { x: number; y: number } {
+  let snappedX = posX;
+  let snappedY = posY;
+
+  if (Math.abs(posX) < SNAP_THRESHOLD) snappedX = 0;
+  if (Math.abs(posY) < SNAP_THRESHOLD) snappedY = 0;
+  if (Math.abs(posX + width - containerWidth) < SNAP_THRESHOLD) snappedX = containerWidth - width;
+  if (Math.abs(posY + height - containerHeight) < SNAP_THRESHOLD) snappedY = containerHeight - height;
+
+  return { x: snappedX, y: snappedY };
+}
+
 export function AtariDockPanel({
   title,
   children,
@@ -145,6 +166,25 @@ export function AtariDockPanel({
   
   const x = useMotionValue(initialPosition.x);
   const y = useMotionValue(initialPosition.y);
+
+  const handleDragEnd = useCallback(() => {
+    if (!panelRef.current) return;
+    
+    const containerWidth = window.innerWidth;
+    const containerHeight = window.innerHeight;
+    
+    const snapped = snapToEdges(
+      x.get(),
+      y.get(),
+      size.width,
+      size.height,
+      containerWidth,
+      containerHeight
+    );
+    
+    x.set(snapped.x);
+    y.set(snapped.y);
+  }, [x, y, size.width, size.height]);
 
   const handleResizeStart = useCallback((e: React.PointerEvent) => {
     e.preventDefault();
@@ -190,6 +230,7 @@ export function AtariDockPanel({
       dragListener={false}
       dragMomentum={false}
       dragElastic={0}
+      onDragEnd={handleDragEnd}
       data-testid={testId}
     >
       <div className="relative overflow-hidden rounded-lg shadow-2xl">

@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { AtariResetKnob } from "@/components/AtariResetKnob";
 import { AtariDockPanel, AtariDockedPanel, AtariMiniPanel, Atari5200CartridgeSlot, AtariSilverRail } from "@/components/AtariDockPanel";
+import { WinAmpPanel } from "@/components/WinAmpPanel";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -40,23 +41,31 @@ const CHIPTUNE_TRACKS = [
 function useChiptune() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(true);
+  const [isMuted, setIsMuted] = useState(false);
   const [currentTrack, setCurrentTrack] = useState(0);
   const intervalRef = useRef<number | null>(null);
   const noteIndexRef = useRef(0);
   const gainNodeRef = useRef<GainNode | null>(null);
   const currentTrackRef = useRef(currentTrack);
+  const isMutedRef = useRef(isMuted);
   
   useEffect(() => {
     currentTrackRef.current = currentTrack;
   }, [currentTrack]);
+
+  useEffect(() => {
+    isMutedRef.current = isMuted;
+    if (gainNodeRef.current) {
+      gainNodeRef.current.gain.value = isMuted ? 0 : 0.15;
+    }
+  }, [isMuted]);
   
   const initAudio = useCallback(() => {
     if (!audioContextRef.current) {
       audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
       gainNodeRef.current = audioContextRef.current.createGain();
       gainNodeRef.current.connect(audioContextRef.current.destination);
-      gainNodeRef.current.gain.value = 0.15;
+      gainNodeRef.current.gain.value = isMutedRef.current ? 0 : 0.15;
     }
     return audioContextRef.current;
   }, []);
@@ -92,7 +101,7 @@ function useChiptune() {
   
   const startPlayback = useCallback(() => {
     initAudio();
-    stopPlayback();
+    if (intervalRef.current) return;
     setIsPlaying(true);
     noteIndexRef.current = 0;
     
@@ -101,19 +110,19 @@ function useChiptune() {
       playNote(track.notes[noteIndexRef.current]);
       noteIndexRef.current = (noteIndexRef.current + 1) % track.notes.length;
     }, 200);
-  }, [initAudio, stopPlayback, playNote]);
+  }, [initAudio, playNote]);
+
+  const togglePlayback = useCallback(() => {
+    if (isPlaying) {
+      stopPlayback();
+    } else {
+      startPlayback();
+    }
+  }, [isPlaying, stopPlayback, startPlayback]);
   
   const toggleMute = useCallback(() => {
-    setIsMuted(prev => {
-      const newMuted = !prev;
-      if (newMuted) {
-        stopPlayback();
-      } else {
-        startPlayback();
-      }
-      return newMuted;
-    });
-  }, [stopPlayback, startPlayback]);
+    setIsMuted(prev => !prev);
+  }, []);
   
   const nextTrack = useCallback(() => {
     setCurrentTrack(prev => {
@@ -122,6 +131,23 @@ function useChiptune() {
       noteIndexRef.current = 0;
       return next;
     });
+  }, []);
+
+  const prevTrack = useCallback(() => {
+    setCurrentTrack(prev => {
+      const next = (prev - 1 + CHIPTUNE_TRACKS.length) % CHIPTUNE_TRACKS.length;
+      currentTrackRef.current = next;
+      noteIndexRef.current = 0;
+      return next;
+    });
+  }, []);
+
+  const selectTrack = useCallback((index: number) => {
+    if (index >= 0 && index < CHIPTUNE_TRACKS.length) {
+      setCurrentTrack(index);
+      currentTrackRef.current = index;
+      noteIndexRef.current = 0;
+    }
   }, []);
   
   useEffect(() => {
@@ -138,8 +164,12 @@ function useChiptune() {
     isMuted, 
     currentTrack, 
     trackName: CHIPTUNE_TRACKS[currentTrack].name,
+    trackList: CHIPTUNE_TRACKS.map(t => t.name),
+    togglePlayback,
     toggleMute, 
-    nextTrack 
+    nextTrack,
+    prevTrack,
+    selectTrack 
   };
 }
 
@@ -516,7 +546,8 @@ export default function BluPrince() {
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
   const [showAssetPreview, setShowAssetPreview] = useState(false);
   const [zoom, setZoom] = useState(1);
-  const [floatingPanels, setFloatingPanels] = useState<{ controls: boolean; audio: boolean }>({ controls: false, audio: false });
+  const [floatingPanels, setFloatingPanels] = useState<{ controls: boolean }>({ controls: false });
+  const [showWinAmp, setShowWinAmp] = useState(true);
   const [showStateSettings, setShowStateSettings] = useState(false);
   const [editingStateName, setEditingStateName] = useState<string | null>(null);
   const [showTransitionDialog, setShowTransitionDialog] = useState(false);
@@ -1429,42 +1460,6 @@ export default function BluPrince() {
               </AtariDockedPanel>
             )}
 
-            {!floatingPanels.audio && (
-              <AtariDockedPanel
-                title="Audio"
-                onPopOut={() => setFloatingPanels(p => ({ ...p, audio: true }))}
-                className="min-w-[200px]"
-                data-testid="panel-audio"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2">
-                    <Music2 className="w-4 h-4 text-amber-200" />
-                    <span className="text-[9px] text-amber-100 font-pixel truncate max-w-[100px]">{chiptune.trackName}</span>
-                  </div>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-6 w-6 text-amber-100 hover:text-white hover:bg-black/20 rounded-full" 
-                    onClick={chiptune.nextTrack}
-                    data-testid="button-next-track"
-                  >
-                    <SkipForward className="w-3 h-3" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className={`h-7 w-7 rounded-full hover:bg-black/20 ${!chiptune.isMuted ? 'text-green-400 bg-green-400/10' : 'text-amber-100'}`}
-                    onClick={chiptune.toggleMute}
-                    data-testid="button-toggle-music"
-                    style={{
-                      boxShadow: !chiptune.isMuted ? '0 0 8px rgba(74,222,128,0.4)' : 'none',
-                    }}
-                  >
-                    {chiptune.isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
-                  </Button>
-                </div>
-              </AtariDockedPanel>
-            )}
           </div>
 
           {/* Floating Controls Panel (when popped out) */}
@@ -1500,49 +1495,23 @@ export default function BluPrince() {
             </AtariDockPanel>
           )}
 
-          {/* Floating Audio Panel (when popped out) */}
-          {floatingPanels.audio && (
-            <AtariDockPanel
-              title="Audio"
-              initialPosition={{ x: 220, y: typeof window !== 'undefined' ? window.innerHeight - 200 : 400 }}
-              initialSize={{ width: 160, height: 120 }}
-              minWidth={140}
-              minHeight={100}
-              maxWidth={240}
-              maxHeight={160}
-              onClose={() => setFloatingPanels(p => ({ ...p, audio: false }))}
-              data-testid="panel-audio-floating"
-            >
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-center gap-2">
-                  <Music2 className="w-4 h-4 text-amber-200" />
-                  <span className="text-[9px] text-amber-100 font-pixel truncate max-w-[70px]">{chiptune.trackName}</span>
-                </div>
-                <div className="flex items-center justify-center gap-2">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-8 w-8 text-amber-100 hover:text-white hover:bg-black/20 rounded-full" 
-                    onClick={chiptune.nextTrack}
-                    data-testid="button-next-track-float"
-                  >
-                    <SkipForward className="w-4 h-4" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className={`h-10 w-10 rounded-full hover:bg-black/20 ${!chiptune.isMuted ? 'text-green-400 bg-green-400/10' : 'text-amber-100'}`}
-                    onClick={chiptune.toggleMute}
-                    data-testid="button-toggle-music-float"
-                    style={{
-                      boxShadow: !chiptune.isMuted ? '0 0 12px rgba(74,222,128,0.4)' : 'none',
-                    }}
-                  >
-                    {chiptune.isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-                  </Button>
-                </div>
-              </div>
-            </AtariDockPanel>
+          {/* WinAMP-Style Audio Player */}
+          {showWinAmp && (
+            <WinAmpPanel
+              trackName={chiptune.trackName}
+              isPlaying={chiptune.isPlaying}
+              isMuted={chiptune.isMuted}
+              onPlayPause={chiptune.togglePlayback}
+              onNext={chiptune.nextTrack}
+              onPrev={chiptune.prevTrack}
+              onMuteToggle={chiptune.toggleMute}
+              onClose={() => setShowWinAmp(false)}
+              initialPosition={{ x: typeof window !== 'undefined' ? window.innerWidth - 280 : 500, y: 80 }}
+              tracks={chiptune.trackList}
+              currentTrackIndex={chiptune.currentTrack}
+              onSelectTrack={chiptune.selectTrack}
+              data-testid="panel-winamp"
+            />
           )}
 
           <div 
