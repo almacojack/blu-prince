@@ -105,7 +105,7 @@ export function SimulatorDisplay({
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-mono text-primary">TINGOS v1.0</span>
+              <span className="text-[10px] font-mono text-primary">tingOS v1.0</span>
               <Zap className="w-3 h-3 text-primary" />
             </div>
           </div>

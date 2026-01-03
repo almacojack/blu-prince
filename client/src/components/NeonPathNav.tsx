@@ -11,10 +11,12 @@ import {
   Minimize,
   User,
   LogOut,
+  Cog,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { ThemeSwitcher } from "./ThemeSwitcher";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface NavNode {
   id: string;
@@ -74,6 +76,8 @@ export function NeonPathNav({
   const [location] = useLocation();
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const { user, isLoading, isAuthenticated, logout } = useAuth();
+  const { theme } = useTheme();
+  const isVictorian = theme.variant === 'victorian';
   
   const activeIndex = NAV_NODES.findIndex(n => {
     if (n.path === "/") return location === "/";
@@ -136,13 +140,36 @@ export function NeonPathNav({
             whileTap={{ scale: 0.95 }}
           >
             <div className="relative">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-blue-500/50">
-                <Gamepad2 className="w-6 h-6 text-white" />
+              <div className={cn(
+                "w-10 h-10 rounded-lg flex items-center justify-center shadow-lg",
+                isVictorian 
+                  ? "bg-gradient-to-br from-amber-700 to-amber-900 shadow-amber-500/30 border border-amber-600/50" 
+                  : "bg-gradient-to-br from-blue-500 to-cyan-400 shadow-blue-500/50"
+              )}>
+                {isVictorian ? (
+                  <Cog className="w-6 h-6 text-amber-200" />
+                ) : (
+                  <Gamepad2 className="w-6 h-6 text-white" />
+                )}
               </div>
-              <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-400 blur-md opacity-50 group-hover:opacity-75 transition-opacity" />
+              <div className={cn(
+                "absolute inset-0 rounded-lg blur-md opacity-50 group-hover:opacity-75 transition-opacity",
+                isVictorian 
+                  ? "bg-gradient-to-br from-amber-600 to-amber-800" 
+                  : "bg-gradient-to-br from-blue-500 to-cyan-400"
+              )} />
             </div>
-            <span className="font-pixel text-xl text-white tracking-wider hidden sm:block drop-shadow-[0_0_10px_rgba(59,130,246,0.8)]">
-              TINGOS
+            <span className={cn(
+              "text-xl hidden sm:block",
+              isVictorian 
+                ? "font-serif text-amber-100 tracking-wide" 
+                : "font-mono font-bold text-white tracking-tight drop-shadow-[0_0_10px_rgba(59,130,246,0.8)]"
+            )}>
+              {isVictorian ? (
+                <span className="italic">tingOS</span>
+              ) : (
+                <span>ting<span className="text-cyan-400">OS</span></span>
+              )}
             </span>
           </motion.div>
         </Link>

@@ -101,7 +101,7 @@ function CartridgeShelf({ position = [4, -1, -2] as [number, number, number] }) 
   );
 }
 
-function NeonSign({ text = "TINGOS", position = [-4, 2.5, -3] as [number, number, number] }) {
+function NeonSign({ text = "tingOS", position = [-4, 2.5, -3] as [number, number, number] }) {
   const lightRef = useRef<THREE.PointLight>(null);
   
   useFrame((state) => {

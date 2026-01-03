@@ -457,9 +457,9 @@ export function VirtualHandheld({ onInput, showSelector = true, className = "" }
           <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-black to-gray-900">
             {screenContent === "logo" ? (
               <div className="h-full flex flex-col items-center justify-center gap-3">
-                <div className="text-4xl font-bold tracking-wider">
-                  <span className="text-cyan-400">TING</span>
-                  <span className="text-white">OS</span>
+                <div className="text-4xl font-mono font-bold tracking-tight">
+                  <span className="text-white">ting</span>
+                  <span className="text-cyan-400">OS</span>
                 </div>
                 <div className="text-[10px] text-gray-500 font-mono">UNIVERSAL GAME ENGINE</div>
                 {!isSupported && (
