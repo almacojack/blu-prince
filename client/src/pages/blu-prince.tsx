@@ -7,7 +7,8 @@ import {
   ArrowRight, FileJson, Download, Cloud, CloudOff, Users, Share2,
   Upload, Box, Trash2, Eye, Pencil, Music2, VolumeX, Volume2, SkipForward
 } from "lucide-react";
-import { AtariResetKnob, AtariWoodgrainBar } from "@/components/AtariResetKnob";
+import { AtariResetKnob } from "@/components/AtariResetKnob";
+import { AtariDockPanel, AtariMiniPanel, Atari5200CartridgeSlot, AtariSilverRail } from "@/components/AtariDockPanel";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -243,22 +244,62 @@ function CartridgeBezel({
 }) {
   return (
     <div className="relative">
-      <div className="absolute inset-0 bg-gradient-to-b from-gray-700 to-gray-800 rounded-b-3xl" />
+      <div 
+        className="absolute inset-0 rounded-b-3xl overflow-hidden"
+        style={{
+          background: `
+            repeating-linear-gradient(
+              90deg,
+              transparent 0px,
+              transparent 18px,
+              rgba(0,0,0,0.35) 18px,
+              rgba(0,0,0,0.35) 22px
+            ),
+            linear-gradient(
+              180deg,
+              #5c3d2e 0%,
+              #8b5a3c 15%,
+              #6b4423 30%,
+              #8b5a3c 45%,
+              #5c3d2e 60%,
+              #7a4a2f 75%,
+              #5c3d2e 100%
+            )
+          `,
+          backgroundSize: '40px 100%, 100% 100%',
+        }}
+      />
       
-      <div className="relative bg-gradient-to-b from-[#2a2a35] via-[#1f1f28] to-[#18181f] border-b-4 border-gray-900 rounded-b-2xl overflow-hidden">
+      <div className="relative border-b-4 border-amber-950 rounded-b-2xl overflow-hidden">
         <div className="absolute inset-0 opacity-30">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-amber-200/30 to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 h-px bg-black/50" />
         </div>
         
+        <div 
+          className="absolute inset-0"
+          style={{
+            background: `
+              repeating-linear-gradient(
+                0deg,
+                transparent 0px,
+                transparent 2px,
+                rgba(139,90,60,0.1) 2px,
+                rgba(139,90,60,0.1) 4px
+              )
+            `,
+            mixBlendMode: 'overlay',
+          }}
+        />
+        
         <div className="absolute left-4 top-0 bottom-0 w-8 flex flex-col justify-center gap-1">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="h-1 bg-gray-800 rounded-full" />
+            <div key={i} className="h-1 bg-black/30 rounded-full" />
           ))}
         </div>
         <div className="absolute right-4 top-0 bottom-0 w-8 flex flex-col justify-center gap-1">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="h-1 bg-gray-800 rounded-full" />
+            <div key={i} className="h-1 bg-black/30 rounded-full" />
           ))}
         </div>
         
@@ -1289,40 +1330,82 @@ export default function BluPrince() {
             ))}
           </AnimatePresence>
           
-          <div className="absolute bottom-4 left-4 flex gap-2 z-50 items-end">
-             <AtariWoodgrainBar className="flex items-center rounded-lg p-1 pr-2">
-               <AtariResetKnob onReset={handleFSMReset} />
-               <div className="h-10 w-px bg-black/30 mx-1" />
-               <div className="flex flex-col gap-0.5">
-                 <Button variant="ghost" size="icon" className="h-7 w-7 text-amber-100 hover:text-white hover:bg-black/20" onClick={handleZoomOut} data-testid="button-zoom-out"><ZoomOut className="w-3.5 h-3.5" /></Button>
-                 <Button variant="ghost" size="icon" className="h-7 w-7 text-amber-100 hover:text-white hover:bg-black/20" onClick={handleZoomIn} data-testid="button-zoom-in"><ZoomIn className="w-3.5 h-3.5" /></Button>
-               </div>
-               <Button variant="ghost" size="sm" className="h-7 px-2 text-amber-100 hover:text-white hover:bg-black/20 font-pixel text-[8px]" onClick={handleZoomReset} data-testid="button-zoom-reset">{Math.round(zoom * 100)}%</Button>
-             </AtariWoodgrainBar>
-             
-             <AtariWoodgrainBar className="flex items-center rounded-lg p-2 gap-1">
-               <Music2 className="w-4 h-4 text-amber-200 ml-1" />
-               <span className="text-[9px] text-amber-100 font-pixel max-w-[70px] truncate">{chiptune.trackName}</span>
-               <Button 
-                 variant="ghost" 
-                 size="icon" 
-                 className="h-7 w-7 text-amber-100 hover:text-white hover:bg-black/20" 
-                 onClick={chiptune.nextTrack}
-                 data-testid="button-next-track"
-               >
-                 <SkipForward className="w-3.5 h-3.5" />
-               </Button>
-               <Button 
-                 variant="ghost" 
-                 size="icon" 
-                 className={`h-7 w-7 hover:bg-black/20 ${!chiptune.isMuted ? 'text-green-400' : 'text-amber-100'}`}
-                 onClick={chiptune.toggleMute}
-                 data-testid="button-toggle-music"
-               >
-                 {chiptune.isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
-               </Button>
-             </AtariWoodgrainBar>
-          </div>
+          <AtariDockPanel
+            title="Controls"
+            initialPosition={{ x: 16, y: typeof window !== 'undefined' ? window.innerHeight - 200 : 400 }}
+            initialSize={{ width: 200, height: 140 }}
+            minWidth={180}
+            minHeight={100}
+            maxWidth={300}
+            maxHeight={200}
+            data-testid="panel-controls"
+          >
+            <div className="flex flex-col gap-2">
+              <Atari5200CartridgeSlot label="FSM">
+                <div className="flex items-center justify-between gap-2">
+                  <AtariResetKnob onReset={handleFSMReset} />
+                  <div className="flex flex-col items-end gap-1">
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" className="h-6 w-6 text-amber-100 hover:text-white hover:bg-black/20" onClick={handleZoomOut} data-testid="button-zoom-out">
+                        <ZoomOut className="w-3 h-3" />
+                      </Button>
+                      <span className="text-[8px] font-pixel text-amber-200 w-8 text-center">{Math.round(zoom * 100)}%</span>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 text-amber-100 hover:text-white hover:bg-black/20" onClick={handleZoomIn} data-testid="button-zoom-in">
+                        <ZoomIn className="w-3 h-3" />
+                      </Button>
+                    </div>
+                    <Button variant="ghost" size="sm" className="h-5 px-2 text-[7px] text-amber-100/60 hover:text-amber-100 hover:bg-black/20" onClick={handleZoomReset} data-testid="button-zoom-reset">
+                      RESET ZOOM
+                    </Button>
+                  </div>
+                </div>
+              </Atari5200CartridgeSlot>
+            </div>
+          </AtariDockPanel>
+
+          <AtariDockPanel
+            title="Audio"
+            initialPosition={{ x: 230, y: typeof window !== 'undefined' ? window.innerHeight - 200 : 400 }}
+            initialSize={{ width: 180, height: 120 }}
+            minWidth={160}
+            minHeight={90}
+            maxWidth={280}
+            maxHeight={160}
+            data-testid="panel-audio"
+          >
+            <Atari5200CartridgeSlot label="Chiptune">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-center gap-2">
+                  <Music2 className="w-4 h-4 text-amber-200" />
+                  <span className="text-[9px] text-amber-100 font-pixel truncate max-w-[80px]">{chiptune.trackName}</span>
+                </div>
+                <AtariSilverRail className="w-full" />
+                <div className="flex items-center justify-center gap-2">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8 text-amber-100 hover:text-white hover:bg-black/20 rounded-full" 
+                    onClick={chiptune.nextTrack}
+                    data-testid="button-next-track"
+                  >
+                    <SkipForward className="w-4 h-4" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className={`h-10 w-10 rounded-full hover:bg-black/20 ${!chiptune.isMuted ? 'text-green-400 bg-green-400/10' : 'text-amber-100'}`}
+                    onClick={chiptune.toggleMute}
+                    data-testid="button-toggle-music"
+                    style={{
+                      boxShadow: !chiptune.isMuted ? '0 0 12px rgba(74,222,128,0.4)' : 'none',
+                    }}
+                  >
+                    {chiptune.isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+                  </Button>
+                </div>
+              </div>
+            </Atari5200CartridgeSlot>
+          </AtariDockPanel>
 
           <div 
             className="relative origin-top-left"
