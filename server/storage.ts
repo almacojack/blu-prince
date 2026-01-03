@@ -5,6 +5,7 @@ import {
   type WorldCartridge, type InsertWorldCartridge,
   type VaultEntry, type InsertVaultEntry,
   type ExportGrant, type InsertExportGrant,
+  type FamousEvent, type InsertFamousEvent,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -47,12 +48,21 @@ export interface IStorage {
   getExportGrants(user_id: string): Promise<ExportGrant[]>;
   canExport(user_id: string, cartridge_id: string): Promise<boolean>;
   createExportGrant(grant: InsertExportGrant): Promise<ExportGrant>;
+  
+  // Famous Events operations
+  getAllFamousEvents(tenant?: string): Promise<FamousEvent[]>;
+  getFamousEvent(id: string): Promise<FamousEvent | undefined>;
+  getFamousEventsByCategory(category: string, tenant?: string): Promise<FamousEvent[]>;
+  getFamousEventsByDateRange(start: Date, end: Date, tenant?: string): Promise<FamousEvent[]>;
+  createFamousEvent(event: InsertFamousEvent): Promise<FamousEvent>;
+  updateFamousEvent(id: string, event: Partial<InsertFamousEvent>): Promise<FamousEvent | undefined>;
+  deleteFamousEvent(id: string): Promise<boolean>;
 }
 
 // PostgreSQL Storage Implementation
 import { db } from "./db";
-import { cartridges, worlds, worldCartridges, vaultEntries, exportGrants } from "@shared/schema";
-import { eq, and } from "drizzle-orm";
+import { cartridges, worlds, worldCartridges, vaultEntries, exportGrants, famousEvents } from "@shared/schema";
+import { eq, and, gte, lte, asc } from "drizzle-orm";
 import { createHash } from "crypto";
 
 export class DbStorage implements IStorage {
@@ -234,6 +244,69 @@ export class DbStorage implements IStorage {
   async createExportGrant(grant: InsertExportGrant): Promise<ExportGrant> {
     const result = await db.insert(exportGrants).values(grant).returning();
     return result[0];
+  }
+
+  // Famous Events operations
+  async getAllFamousEvents(tenant?: string): Promise<FamousEvent[]> {
+    if (tenant) {
+      return await db.select().from(famousEvents)
+        .where(eq(famousEvents.tenant, tenant))
+        .orderBy(asc(famousEvents.datetime));
+    }
+    return await db.select().from(famousEvents).orderBy(asc(famousEvents.datetime));
+  }
+
+  async getFamousEvent(id: string): Promise<FamousEvent | undefined> {
+    const result = await db.select().from(famousEvents).where(eq(famousEvents.id, id));
+    return result[0];
+  }
+
+  async getFamousEventsByCategory(category: string, tenant?: string): Promise<FamousEvent[]> {
+    if (tenant) {
+      return await db.select().from(famousEvents)
+        .where(and(eq(famousEvents.category, category), eq(famousEvents.tenant, tenant)))
+        .orderBy(asc(famousEvents.datetime));
+    }
+    return await db.select().from(famousEvents)
+      .where(eq(famousEvents.category, category))
+      .orderBy(asc(famousEvents.datetime));
+  }
+
+  async getFamousEventsByDateRange(start: Date, end: Date, tenant?: string): Promise<FamousEvent[]> {
+    if (tenant) {
+      return await db.select().from(famousEvents)
+        .where(and(
+          gte(famousEvents.datetime, start),
+          lte(famousEvents.datetime, end),
+          eq(famousEvents.tenant, tenant)
+        ))
+        .orderBy(asc(famousEvents.datetime));
+    }
+    return await db.select().from(famousEvents)
+      .where(and(
+        gte(famousEvents.datetime, start),
+        lte(famousEvents.datetime, end)
+      ))
+      .orderBy(asc(famousEvents.datetime));
+  }
+
+  async createFamousEvent(event: InsertFamousEvent): Promise<FamousEvent> {
+    const result = await db.insert(famousEvents).values(event).returning();
+    return result[0];
+  }
+
+  async updateFamousEvent(id: string, event: Partial<InsertFamousEvent>): Promise<FamousEvent | undefined> {
+    const result = await db
+      .update(famousEvents)
+      .set({ ...event, updated_at: new Date() })
+      .where(eq(famousEvents.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteFamousEvent(id: string): Promise<boolean> {
+    const result = await db.delete(famousEvents).where(eq(famousEvents.id, id)).returning();
+    return result.length > 0;
   }
 }
 

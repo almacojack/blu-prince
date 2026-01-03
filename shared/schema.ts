@@ -131,3 +131,45 @@ export const userSubscriptions = pgTable("user_subscriptions", {
   expires_at: timestamp("expires_at"),
   is_active: boolean("is_active").default(true).notNull(),
 });
+
+// Event category enum for timeline events
+export const eventCategoryEnum = z.enum([
+  "historical", 
+  "art", 
+  "music", 
+  "tech", 
+  "science", 
+  "sports", 
+  "politics", 
+  "culture",
+  "custom"
+]);
+export type EventCategory = z.infer<typeof eventCategoryEnum>;
+
+// Famous Events for Timeline - Admin-managed historical/notable events
+export const famousEvents = pgTable("famous_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  description: text("description"),
+  datetime: timestamp("datetime").notNull(),
+  end_datetime: timestamp("end_datetime"),
+  timezone: text("timezone").default("UTC"),
+  location: jsonb("location"),
+  category: text("category").default("historical").notNull(),
+  image_url: text("image_url"),
+  source_url: text("source_url"),
+  tenant: text("tenant").default("tingos"),
+  is_featured: boolean("is_featured").default(false),
+  created_by: varchar("created_by"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  updated_at: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertFamousEventSchema = createInsertSchema(famousEvents).omit({
+  id: true,
+  created_at: true,
+  updated_at: true,
+});
+
+export type InsertFamousEvent = z.infer<typeof insertFamousEventSchema>;
+export type FamousEvent = typeof famousEvents.$inferSelect;
