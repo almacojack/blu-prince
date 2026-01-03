@@ -8,7 +8,7 @@ import {
   Upload, Box, Trash2, Eye, Pencil, Music2, VolumeX, Volume2, SkipForward
 } from "lucide-react";
 import { AtariResetKnob } from "@/components/AtariResetKnob";
-import { AtariDockPanel, AtariMiniPanel, Atari5200CartridgeSlot, AtariSilverRail } from "@/components/AtariDockPanel";
+import { AtariDockPanel, AtariDockedPanel, AtariMiniPanel, Atari5200CartridgeSlot, AtariSilverRail } from "@/components/AtariDockPanel";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -516,6 +516,7 @@ export default function BluPrince() {
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
   const [showAssetPreview, setShowAssetPreview] = useState(false);
   const [zoom, setZoom] = useState(1);
+  const [floatingPanels, setFloatingPanels] = useState<{ controls: boolean; audio: boolean }>({ controls: false, audio: false });
   const [showStateSettings, setShowStateSettings] = useState(false);
   const [editingStateName, setEditingStateName] = useState<string | null>(null);
   const [showTransitionDialog, setShowTransitionDialog] = useState(false);
@@ -1400,63 +1401,129 @@ export default function BluPrince() {
             ))}
           </AnimatePresence>
           
-          <AtariDockPanel
-            title="Controls"
-            initialPosition={{ x: 16, y: typeof window !== 'undefined' ? window.innerHeight - 220 : 400 }}
-            initialSize={{ width: 200, height: 180 }}
-            minWidth={180}
-            minHeight={160}
-            maxWidth={300}
-            maxHeight={250}
-            data-testid="panel-controls"
-          >
-            <div className="flex flex-col gap-2">
-              <Atari5200CartridgeSlot label="FSM">
-                <div className="flex items-center justify-between gap-2">
+          {/* Bottom Dock Bar - Flow Layout (docked panels) */}
+          <div className="absolute bottom-3 left-3 flex items-end gap-2 z-40">
+            {!floatingPanels.controls && (
+              <AtariDockedPanel
+                title="Controls"
+                onPopOut={() => setFloatingPanels(p => ({ ...p, controls: true }))}
+                data-testid="panel-controls"
+              >
+                <div className="flex items-center gap-2">
                   <AtariResetKnob onReset={handleFSMReset} />
-                  <div className="flex flex-col items-end gap-1">
-                    <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="icon" className="h-6 w-6 text-amber-100 hover:text-white hover:bg-black/20" onClick={handleZoomOut} data-testid="button-zoom-out">
-                        <ZoomOut className="w-3 h-3" />
+                  <div className="flex flex-col gap-0.5">
+                    <div className="flex items-center gap-0.5">
+                      <Button variant="ghost" size="icon" className="h-5 w-5 text-amber-100 hover:text-white hover:bg-black/20" onClick={handleZoomOut} data-testid="button-zoom-out">
+                        <ZoomOut className="w-2.5 h-2.5" />
                       </Button>
-                      <span className="text-[8px] font-pixel text-amber-200 w-8 text-center">{Math.round(zoom * 100)}%</span>
-                      <Button variant="ghost" size="icon" className="h-6 w-6 text-amber-100 hover:text-white hover:bg-black/20" onClick={handleZoomIn} data-testid="button-zoom-in">
-                        <ZoomIn className="w-3 h-3" />
+                      <span className="text-[7px] font-pixel text-amber-200 w-7 text-center">{Math.round(zoom * 100)}%</span>
+                      <Button variant="ghost" size="icon" className="h-5 w-5 text-amber-100 hover:text-white hover:bg-black/20" onClick={handleZoomIn} data-testid="button-zoom-in">
+                        <ZoomIn className="w-2.5 h-2.5" />
                       </Button>
                     </div>
-                    <Button variant="ghost" size="sm" className="h-5 px-2 text-[7px] text-amber-100/60 hover:text-amber-100 hover:bg-black/20" onClick={handleZoomReset} data-testid="button-zoom-reset">
-                      RESET ZOOM
+                    <Button variant="ghost" size="sm" className="h-4 px-1 text-[6px] text-amber-100/60 hover:text-amber-100 hover:bg-black/20" onClick={handleZoomReset} data-testid="button-zoom-reset">
+                      RESET
                     </Button>
                   </div>
                 </div>
-              </Atari5200CartridgeSlot>
-            </div>
-          </AtariDockPanel>
+              </AtariDockedPanel>
+            )}
 
-          <AtariDockPanel
-            title="Audio"
-            initialPosition={{ x: 230, y: typeof window !== 'undefined' ? window.innerHeight - 200 : 400 }}
-            initialSize={{ width: 180, height: 120 }}
-            minWidth={160}
-            minHeight={90}
-            maxWidth={280}
-            maxHeight={160}
-            data-testid="panel-audio"
-          >
-            <Atari5200CartridgeSlot label="Chiptune">
+            {!floatingPanels.audio && (
+              <AtariDockedPanel
+                title="Audio"
+                onPopOut={() => setFloatingPanels(p => ({ ...p, audio: true }))}
+                data-testid="panel-audio"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
+                    <Music2 className="w-3 h-3 text-amber-200" />
+                    <span className="text-[7px] text-amber-100 font-pixel truncate max-w-[45px]">{chiptune.trackName}</span>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-6 w-6 text-amber-100 hover:text-white hover:bg-black/20 rounded-full" 
+                    onClick={chiptune.nextTrack}
+                    data-testid="button-next-track"
+                  >
+                    <SkipForward className="w-3 h-3" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className={`h-7 w-7 rounded-full hover:bg-black/20 ${!chiptune.isMuted ? 'text-green-400 bg-green-400/10' : 'text-amber-100'}`}
+                    onClick={chiptune.toggleMute}
+                    data-testid="button-toggle-music"
+                    style={{
+                      boxShadow: !chiptune.isMuted ? '0 0 8px rgba(74,222,128,0.4)' : 'none',
+                    }}
+                  >
+                    {chiptune.isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+                  </Button>
+                </div>
+              </AtariDockedPanel>
+            )}
+          </div>
+
+          {/* Floating Controls Panel (when popped out) */}
+          {floatingPanels.controls && (
+            <AtariDockPanel
+              title="Controls"
+              initialPosition={{ x: 16, y: typeof window !== 'undefined' ? window.innerHeight - 220 : 400 }}
+              initialSize={{ width: 180, height: 120 }}
+              minWidth={160}
+              minHeight={100}
+              maxWidth={280}
+              maxHeight={180}
+              onClose={() => setFloatingPanels(p => ({ ...p, controls: false }))}
+              data-testid="panel-controls-floating"
+            >
+              <div className="flex items-center gap-3">
+                <AtariResetKnob onReset={handleFSMReset} />
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-0.5">
+                    <Button variant="ghost" size="icon" className="h-6 w-6 text-amber-100 hover:text-white hover:bg-black/20" onClick={handleZoomOut} data-testid="button-zoom-out-float">
+                      <ZoomOut className="w-3 h-3" />
+                    </Button>
+                    <span className="text-[8px] font-pixel text-amber-200 w-8 text-center">{Math.round(zoom * 100)}%</span>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 text-amber-100 hover:text-white hover:bg-black/20" onClick={handleZoomIn} data-testid="button-zoom-in-float">
+                      <ZoomIn className="w-3 h-3" />
+                    </Button>
+                  </div>
+                  <Button variant="ghost" size="sm" className="h-5 px-2 text-[7px] text-amber-100/60 hover:text-amber-100 hover:bg-black/20" onClick={handleZoomReset} data-testid="button-zoom-reset-float">
+                    RESET ZOOM
+                  </Button>
+                </div>
+              </div>
+            </AtariDockPanel>
+          )}
+
+          {/* Floating Audio Panel (when popped out) */}
+          {floatingPanels.audio && (
+            <AtariDockPanel
+              title="Audio"
+              initialPosition={{ x: 220, y: typeof window !== 'undefined' ? window.innerHeight - 200 : 400 }}
+              initialSize={{ width: 160, height: 120 }}
+              minWidth={140}
+              minHeight={100}
+              maxWidth={240}
+              maxHeight={160}
+              onClose={() => setFloatingPanels(p => ({ ...p, audio: false }))}
+              data-testid="panel-audio-floating"
+            >
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-center gap-2">
                   <Music2 className="w-4 h-4 text-amber-200" />
-                  <span className="text-[9px] text-amber-100 font-pixel truncate max-w-[80px]">{chiptune.trackName}</span>
+                  <span className="text-[9px] text-amber-100 font-pixel truncate max-w-[70px]">{chiptune.trackName}</span>
                 </div>
-                <AtariSilverRail className="w-full" />
                 <div className="flex items-center justify-center gap-2">
                   <Button 
                     variant="ghost" 
                     size="icon" 
                     className="h-8 w-8 text-amber-100 hover:text-white hover:bg-black/20 rounded-full" 
                     onClick={chiptune.nextTrack}
-                    data-testid="button-next-track"
+                    data-testid="button-next-track-float"
                   >
                     <SkipForward className="w-4 h-4" />
                   </Button>
@@ -1465,7 +1532,7 @@ export default function BluPrince() {
                     size="icon" 
                     className={`h-10 w-10 rounded-full hover:bg-black/20 ${!chiptune.isMuted ? 'text-green-400 bg-green-400/10' : 'text-amber-100'}`}
                     onClick={chiptune.toggleMute}
-                    data-testid="button-toggle-music"
+                    data-testid="button-toggle-music-float"
                     style={{
                       boxShadow: !chiptune.isMuted ? '0 0 12px rgba(74,222,128,0.4)' : 'none',
                     }}
@@ -1474,8 +1541,8 @@ export default function BluPrince() {
                   </Button>
                 </div>
               </div>
-            </Atari5200CartridgeSlot>
-          </AtariDockPanel>
+            </AtariDockPanel>
+          )}
 
           <div 
             className="relative origin-top-left"

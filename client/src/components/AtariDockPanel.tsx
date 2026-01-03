@@ -1,7 +1,109 @@
 import { useState, useRef, useCallback, ReactNode } from "react";
 import { motion, useDragControls, useMotionValue } from "framer-motion";
-import { GripVertical, Minimize2, Maximize2, X } from "lucide-react";
+import { GripVertical, Minimize2, Maximize2, X, Move } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+// Compact docked panel for flow layouts (non-draggable)
+export function AtariDockedPanel({
+  title,
+  children,
+  className = "",
+  onPopOut,
+  "data-testid": testId,
+}: {
+  title: string;
+  children: ReactNode;
+  className?: string;
+  onPopOut?: () => void;
+  "data-testid"?: string;
+}) {
+  return (
+    <div className={`relative flex-shrink-0 ${className}`} data-testid={testId}>
+      <div className="relative overflow-hidden rounded-lg shadow-xl">
+        <div 
+          className="absolute inset-0 rounded-lg overflow-hidden"
+          style={{
+            background: `
+              repeating-linear-gradient(
+                0deg,
+                transparent 0px,
+                transparent 6px,
+                rgba(0,0,0,0.2) 6px,
+                rgba(0,0,0,0.2) 8px
+              ),
+              linear-gradient(
+                90deg,
+                #3e2723 0%,
+                #5d4037 15%,
+                #4e342e 30%,
+                #5d4037 45%,
+                #3e2723 60%,
+                #6d4c41 75%,
+                #3e2723 100%
+              )
+            `,
+            backgroundSize: '100% 14px, 100% 100%',
+          }}
+        />
+        
+        <div 
+          className="absolute inset-0 rounded-lg"
+          style={{
+            background: `
+              repeating-linear-gradient(
+                0deg,
+                transparent 0px,
+                transparent 2px,
+                rgba(93,64,55,0.12) 2px,
+                rgba(93,64,55,0.12) 4px
+              )
+            `,
+            mixBlendMode: 'overlay',
+          }}
+        />
+        
+        <div 
+          className="absolute top-0 left-0 right-0 h-0.5 rounded-t-lg"
+          style={{
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 100%)',
+          }}
+        />
+        
+        <div 
+          className="absolute bottom-0 left-0 right-0 h-0.5 rounded-b-lg"
+          style={{
+            background: 'linear-gradient(0deg, rgba(0,0,0,0.3) 0%, transparent 100%)',
+          }}
+        />
+
+        <div className="relative z-10">
+          <div className="flex items-center justify-between gap-1 px-2 py-1 border-b border-black/20">
+            <span 
+              className="font-pixel text-[8px] tracking-wider text-amber-100/80 uppercase"
+              style={{ textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}
+            >
+              {title}
+            </span>
+            {onPopOut && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-4 w-4 text-amber-100/50 hover:text-amber-100 hover:bg-black/20"
+                onClick={onPopOut}
+                title="Pop out to floating panel"
+              >
+                <Move className="w-2.5 h-2.5" />
+              </Button>
+            )}
+          </div>
+          <div className="p-2">
+            {children}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 interface AtariDockPanelProps {
   title: string;
