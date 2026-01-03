@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from "react";
+import React, { useState, useRef, useMemo, useCallback } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Text, Line, Billboard, PerspectiveCamera } from "@react-three/drei";
 import * as THREE from "three";
@@ -227,8 +227,11 @@ function VectorNode({ name, position, isInitial, isSelected, onSelect, phaseOffs
   const groupRef = useRef<THREE.Group>(null);
   const meshRef = useRef<THREE.Mesh>(null);
   const [hovered, setHovered] = useState(false);
+  const frameCount = useRef(0);
   
   useFrame((state) => {
+    frameCount.current++;
+    if (frameCount.current % 2 !== 0) return;
     if (!groupRef.current || !meshRef.current) return;
     const t = state.clock.elapsedTime;
     const motion = theme.motionFn(t, phaseOffset, position);
