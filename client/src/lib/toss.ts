@@ -111,6 +111,51 @@ export interface TossDatabaseAsset {
   data: string; // base64 encoded SQLite file
 }
 
+// Font asset for text extrusion and UI rendering
+export interface TossFontMetadata {
+  name: string;
+  family: string;
+  style: 'normal' | 'italic' | 'oblique';
+  weight: number; // 100-900
+  format: 'ttf' | 'otf' | 'woff' | 'woff2';
+  originalFormat: 'ttf' | 'otf';
+  fileSize: number;
+  compressedSize: number;
+  unitsPerEm: number;
+  ascender: number;
+  descender: number;
+  glyphCount: number;
+  subsetGlyphs?: string; // character ranges included (e.g., "A-Za-z0-9")
+  importedAt: string;
+  originalFilename: string;
+}
+
+export interface TossFontAsset {
+  id: string;
+  type: 'font';
+  metadata: TossFontMetadata;
+  data: string; // base64 encoded WOFF2 (compressed)
+  originalData?: string; // base64 encoded original TTF/OTF (for editing)
+  glyphPaths?: Record<string, string>; // SVG path data per glyph for 3D extrusion
+}
+
+// Sculpt history for procedural model rebuilding
+export interface TossSculptOperation {
+  id: string;
+  type: 'csg_union' | 'csg_subtract' | 'csg_intersect' | 'extrude' | 'revolve' | 'scale' | 'smooth' | 'shell' | 'text_extrude' | 'repair_watertight';
+  params: Record<string, any>;
+  timestamp: string;
+}
+
+export interface TossSculptedModel {
+  id: string;
+  type: 'sculpted';
+  baseModelId?: string; // reference to source model if derived
+  history: TossSculptOperation[];
+  metadata: Toss3DAssetMetadata;
+  data: string; // compiled mesh as base64
+}
+
 export interface TossAssetRegistry {
   // Legacy keyed assets (external refs)
   refs?: Record<string, TossAssetRef>;
@@ -118,6 +163,10 @@ export interface TossAssetRegistry {
   models?: Toss3DAsset[];
   // Embedded SQLite databases
   databases?: TossDatabaseAsset[];
+  // Embedded fonts for text rendering and extrusion
+  fonts?: TossFontAsset[];
+  // Sculpted/procedural models with edit history
+  sculptedModels?: TossSculptedModel[];
 }
 
 // THE FILE (The Portable Payload)
