@@ -5,7 +5,7 @@ import {
   Save, Settings, Plus, Zap, 
   ChevronDown, ZoomIn, ZoomOut, MousePointer2,
   ArrowRight, FileJson, Download, Cloud, CloudOff, Users, Share2,
-  Upload, Box, Trash2, Eye, Pencil
+  Upload, Box, Trash2, Eye, Pencil, Music2, VolumeX, Volume2, SkipForward
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -26,6 +26,119 @@ import { Asset3DPreview } from "@/components/Asset3DPreview";
 import { QRIconButton } from "@/components/QRCodePopup";
 
 const STORAGE_KEY = "blu-prince-cartridge";
+
+const CHIPTUNE_TRACKS = [
+  { name: "Pixel Quest", notes: [262, 294, 330, 349, 392, 349, 330, 294, 262, 294, 330, 392, 440, 392, 330, 294] },
+  { name: "Neon Dreams", notes: [392, 440, 494, 523, 494, 440, 392, 349, 330, 349, 392, 440, 392, 349, 330, 294] },
+  { name: "Circuit Board", notes: [523, 494, 440, 392, 440, 494, 523, 587, 523, 494, 440, 392, 349, 392, 440, 494] },
+  { name: "Retro Wave", notes: [330, 392, 494, 392, 330, 262, 294, 330, 392, 494, 587, 494, 392, 330, 294, 262] },
+];
+
+function useChiptune() {
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
+  const [currentTrack, setCurrentTrack] = useState(0);
+  const intervalRef = useRef<number | null>(null);
+  const noteIndexRef = useRef(0);
+  const gainNodeRef = useRef<GainNode | null>(null);
+  const currentTrackRef = useRef(currentTrack);
+  
+  useEffect(() => {
+    currentTrackRef.current = currentTrack;
+  }, [currentTrack]);
+  
+  const initAudio = useCallback(() => {
+    if (!audioContextRef.current) {
+      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      gainNodeRef.current = audioContextRef.current.createGain();
+      gainNodeRef.current.connect(audioContextRef.current.destination);
+      gainNodeRef.current.gain.value = 0.15;
+    }
+    return audioContextRef.current;
+  }, []);
+  
+  const playNote = useCallback((frequency: number, duration: number = 0.15) => {
+    const ctx = audioContextRef.current;
+    const gain = gainNodeRef.current;
+    if (!ctx || !gain) return;
+    
+    const osc = ctx.createOscillator();
+    const noteGain = ctx.createGain();
+    
+    osc.type = 'square';
+    osc.frequency.value = frequency;
+    
+    noteGain.gain.setValueAtTime(0.3, ctx.currentTime);
+    noteGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+    
+    osc.connect(noteGain);
+    noteGain.connect(gain);
+    
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + duration);
+  }, []);
+  
+  const stopPlayback = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    setIsPlaying(false);
+  }, []);
+  
+  const startPlayback = useCallback(() => {
+    initAudio();
+    stopPlayback();
+    setIsPlaying(true);
+    noteIndexRef.current = 0;
+    
+    intervalRef.current = window.setInterval(() => {
+      const track = CHIPTUNE_TRACKS[currentTrackRef.current];
+      playNote(track.notes[noteIndexRef.current]);
+      noteIndexRef.current = (noteIndexRef.current + 1) % track.notes.length;
+    }, 200);
+  }, [initAudio, stopPlayback, playNote]);
+  
+  const toggleMute = useCallback(() => {
+    setIsMuted(prev => {
+      const newMuted = !prev;
+      if (newMuted) {
+        stopPlayback();
+      } else {
+        startPlayback();
+      }
+      return newMuted;
+    });
+  }, [stopPlayback, startPlayback]);
+  
+  const nextTrack = useCallback(() => {
+    setCurrentTrack(prev => {
+      const next = (prev + 1) % CHIPTUNE_TRACKS.length;
+      currentTrackRef.current = next;
+      noteIndexRef.current = 0;
+      return next;
+    });
+  }, []);
+  
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+        audioContextRef.current.close().catch(() => {});
+      }
+    };
+  }, []);
+  
+  return { 
+    isPlaying, 
+    isMuted, 
+    currentTrack, 
+    trackName: CHIPTUNE_TRACKS[currentTrack].name,
+    toggleMute, 
+    nextTrack 
+  };
+}
 
 function CollaboratorAvatars({ users, myColor }: { users: CollabUser[]; myColor: string }) {
   if (users.length === 0) return null;
@@ -315,6 +428,7 @@ export default function BluPrince() {
   const [newTransitionTarget, setNewTransitionTarget] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const chiptune = useChiptune();
 
   const collaboration = useCollaboration<TossFile>({
     roomId: collabRoomId,
@@ -1134,6 +1248,29 @@ export default function BluPrince() {
                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleZoomOut} data-testid="button-zoom-out"><ZoomOut className="w-4 h-4" /></Button>
                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleZoomReset} data-testid="button-zoom-reset"><span className="text-xs">{Math.round(zoom * 100)}%</span></Button>
                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleZoomIn} data-testid="button-zoom-in"><ZoomIn className="w-4 h-4" /></Button>
+             </div>
+             
+             <div className="flex items-center bg-black/50 backdrop-blur rounded-lg border border-white/10 p-1 gap-1">
+               <Music2 className="w-4 h-4 text-purple-400 ml-2" />
+               <span className="text-[10px] text-purple-300 font-mono max-w-[80px] truncate">{chiptune.trackName}</span>
+               <Button 
+                 variant="ghost" 
+                 size="icon" 
+                 className="h-8 w-8" 
+                 onClick={chiptune.nextTrack}
+                 data-testid="button-next-track"
+               >
+                 <SkipForward className="w-4 h-4" />
+               </Button>
+               <Button 
+                 variant="ghost" 
+                 size="icon" 
+                 className={`h-8 w-8 ${!chiptune.isMuted ? 'text-green-400' : ''}`}
+                 onClick={chiptune.toggleMute}
+                 data-testid="button-toggle-music"
+               >
+                 {chiptune.isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+               </Button>
              </div>
           </div>
 
