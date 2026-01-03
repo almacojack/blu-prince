@@ -310,6 +310,9 @@ export default function BluPrince() {
   const [zoom, setZoom] = useState(1);
   const [showStateSettings, setShowStateSettings] = useState(false);
   const [editingStateName, setEditingStateName] = useState<string | null>(null);
+  const [showTransitionDialog, setShowTransitionDialog] = useState(false);
+  const [newTransitionEvent, setNewTransitionEvent] = useState("");
+  const [newTransitionTarget, setNewTransitionTarget] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -376,6 +379,34 @@ export default function BluPrince() {
   }, [collaboration]);
 
   const nodes = file._editor?.nodes || [];
+
+  // Sync nodes with states - ensure every state has a corresponding node
+  useEffect(() => {
+    const stateIds = Object.keys(file.logic.states);
+    const nodeIds = new Set(nodes.map(n => n.id));
+    const missingNodes = stateIds.filter(id => !nodeIds.has(id));
+    
+    if (missingNodes.length > 0) {
+      const newNodes = [...nodes];
+      missingNodes.forEach((stateId, index) => {
+        newNodes.push({
+          id: stateId,
+          x: 100 + (index % 4) * 200,
+          y: 100 + Math.floor(index / 4) * 150,
+          color: file.logic.states[stateId]?.type === 'initial' ? 'bg-green-500' : 
+                 file.logic.states[stateId]?.type === 'final' ? 'bg-red-500' : 'bg-blue-500'
+        });
+      });
+      
+      setFile(prev => ({
+        ...prev,
+        _editor: {
+          ...prev._editor!,
+          nodes: newNodes
+        }
+      }));
+    }
+  }, [file.logic.states]);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -444,6 +475,48 @@ export default function BluPrince() {
   const handleZoomIn = () => setZoom(z => Math.min(z + 0.1, 2));
   const handleZoomOut = () => setZoom(z => Math.max(z - 0.1, 0.5));
   const handleZoomReset = () => setZoom(1);
+
+  const handleAddTransition = () => {
+    if (!selectedNodeId || !newTransitionEvent.trim() || !newTransitionTarget) {
+      toast({ title: "Missing info", description: "Please provide event name and target state", variant: "destructive" });
+      return;
+    }
+    
+    const currentState = file.logic.states[selectedNodeId];
+    if (!currentState) return;
+    
+    const newTransition = {
+      event: newTransitionEvent.toUpperCase().replace(/\s+/g, '_'),
+      target: newTransitionTarget
+    };
+    
+    const updatedState = {
+      ...currentState,
+      transitions: [...(currentState.transitions ?? []), newTransition]
+    };
+    
+    const updatedFile: TossFile = {
+      ...file,
+      logic: {
+        ...file.logic,
+        states: {
+          ...file.logic.states,
+          [selectedNodeId]: updatedState
+        }
+      }
+    };
+    
+    setFile(updatedFile);
+    setShowTransitionDialog(false);
+    setNewTransitionEvent("");
+    setNewTransitionTarget("");
+    
+    toast({ title: "Transition Added", description: `${newTransition.event} → ${newTransition.target}` });
+    
+    if (collaboration.isJoined) {
+      collaboration.sendFullState(updatedFile);
+    }
+  };
 
   const handleCanvasWheel = useCallback((e: React.WheelEvent) => {
     if (e.ctrlKey || e.metaKey) {
@@ -1336,10 +1409,66 @@ export default function BluPrince() {
                        </div>
                      ))}
                    </div>
-                   <Button variant="outline" size="sm" className="w-full mt-2 border-dashed border-white/20 hover:border-white/40 text-xs">
+                   <Button 
+                     variant="outline" 
+                     size="sm" 
+                     className="w-full mt-2 border-dashed border-white/20 hover:border-white/40 text-xs"
+                     onClick={() => setShowTransitionDialog(true)}
+                     data-testid="button-add-transition"
+                   >
                      <Plus className="w-3 h-3 mr-1" /> Add Transition
                    </Button>
                 </div>
+                
+                <Dialog open={showTransitionDialog} onOpenChange={setShowTransitionDialog}>
+                  <DialogContent className="max-w-sm bg-[#111] border-white/20">
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2">
+                        <Zap className="w-4 h-4 text-yellow-500" />
+                        Add Transition
+                      </DialogTitle>
+                      <DialogDescription>
+                        Define an event that triggers a state change
+                      </DialogDescription>
+                    </DialogHeader>
+                    
+                    <div className="space-y-4 mt-4">
+                      <div>
+                        <label className="text-xs text-muted-foreground block mb-1">Event Name</label>
+                        <Input 
+                          value={newTransitionEvent}
+                          onChange={(e) => setNewTransitionEvent(e.target.value)}
+                          placeholder="e.g., CLICK, TIMEOUT, SUCCESS"
+                          className="bg-black/50 border-white/10"
+                          data-testid="input-transition-event"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="text-xs text-muted-foreground block mb-1">Target State</label>
+                        <select
+                          value={newTransitionTarget}
+                          onChange={(e) => setNewTransitionTarget(e.target.value)}
+                          className="w-full bg-black/50 border border-white/10 rounded px-3 py-2 text-sm text-white"
+                          data-testid="select-transition-target"
+                        >
+                          <option value="">Select target state...</option>
+                          {Object.keys(file.logic.states).filter(id => id !== selectedNodeId).map(stateId => (
+                            <option key={stateId} value={stateId}>{stateId}</option>
+                          ))}
+                        </select>
+                      </div>
+                      
+                      <Button 
+                        onClick={handleAddTransition}
+                        className="w-full bg-primary hover:bg-primary/80"
+                        data-testid="button-confirm-transition"
+                      >
+                        Add Transition
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
             ) : (
               <div className="h-full flex flex-col items-center justify-center text-muted-foreground text-center p-4">
