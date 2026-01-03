@@ -31,7 +31,8 @@ import { WaterContainer } from "@/components/WaterContainer";
 import { BrassGearAssembly } from "@/components/BrassGear";
 import { WaterControlPanel, createDefaultWaterContainer, type WaterContainerConfig } from "@/components/WaterControlPanel";
 import { SceneTree } from "@/components/SceneTree";
-import { ViewportAnglesPanel, ViewportAngle } from "@/components/ViewportAnglesPanel";
+import { ViewportAnglesPanel, ViewportAngle, CameraTarget, calculateCameraPositionForAngle } from "@/components/ViewportAnglesPanel";
+import { CameraControlPanel, CameraSettings, DEFAULT_CAMERA_SETTINGS } from "@/components/CameraControlPanel";
 import { createNewTossFile, TossFile } from "@/lib/toss";
 import {
   createGestureState, startGesture, updateGesture, endGesture,
@@ -49,6 +50,67 @@ import { useCollaboration, type CollabUser } from "@/hooks/use-collaboration";
 import { useAuth } from "@/hooks/use-auth";
 // FSM 3D visualization is rendered inline with position hints
 // Full 3D editor would need dedicated Canvas - deferred to avoid WebGL context issues
+
+// Camera Controller - positions camera based on viewport angle and selected target
+interface CameraControllerProps {
+  angle: ViewportAngle;
+  target: CameraTarget | null;
+  distance: number;
+  fov: number;
+  damping: boolean;
+}
+
+function CameraController({ angle, target, distance, fov, damping }: CameraControllerProps) {
+  const { camera, controls } = useThree();
+  const targetRef = useRef(new THREE.Vector3());
+  const positionRef = useRef(new THREE.Vector3());
+  
+  useEffect(() => {
+    if (!target) return;
+    
+    const { position: newPos, lookAt: newTarget } = calculateCameraPositionForAngle(
+      angle,
+      target,
+      distance
+    );
+    
+    targetRef.current.copy(newTarget);
+    positionRef.current.copy(newPos);
+    
+    if (damping) {
+      // Smooth transition will happen in useFrame
+    } else {
+      camera.position.copy(newPos);
+      camera.lookAt(newTarget);
+      if (controls && 'target' in controls) {
+        (controls as any).target.copy(newTarget);
+      }
+    }
+  }, [angle, target, distance, camera, controls, damping]);
+  
+  useFrame((_, delta) => {
+    if (!target || !damping) return;
+    
+    // Smooth interpolation
+    const lerpFactor = 1 - Math.pow(0.001, delta);
+    camera.position.lerp(positionRef.current, lerpFactor);
+    
+    if (controls && 'target' in controls) {
+      const ctrl = controls as any;
+      ctrl.target.lerp(targetRef.current, lerpFactor);
+    }
+  });
+  
+  // Update FOV
+  useEffect(() => {
+    if (camera instanceof THREE.PerspectiveCamera) {
+      camera.fov = fov;
+      camera.updateProjectionMatrix();
+    }
+  }, [camera, fov]);
+  
+  return null;
+}
 
 // Ground Zero - The floor at y=0
 function GroundZero() {
@@ -1708,6 +1770,8 @@ export default function BluPrinceEditor() {
   const [viewportAngle, setViewportAngle] = useState<ViewportAngle>("perspective");
   const [tossFile] = useState<TossFile>(createNewTossFile());
   const [selectedStateId, setSelectedStateId] = useState<string | null>(null);
+  const [cameraSettings, setCameraSettings] = useState<CameraSettings>(DEFAULT_CAMERA_SETTINGS);
+  const [cameraTarget, setCameraTarget] = useState<CameraTarget | null>(null);
   const rigidBodyRegistry = useRef<Map<string, RapierRigidBody>>(new Map());
   const editorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1752,6 +1816,45 @@ export default function BluPrinceEditor() {
   const mode = cartridge._editor?.mode || "DESIGN";
   const gravityEnabled = cartridge._editor?.gravity_enabled ?? true;
   const selectedItem = cartridge.items.find(i => i.id === selectedId);
+  
+  // Update camera target when item is selected (if auto-focus is enabled)
+  useEffect(() => {
+    if (selectedItem && cameraSettings.autoFocus) {
+      const pos = selectedItem.transform?.position || [0, 0, 0];
+      const itemSize = Math.max(
+        selectedItem.bounds?.width || 1,
+        selectedItem.bounds?.height || 1,
+        selectedItem.bounds?.depth || 1
+      );
+      setCameraTarget({
+        position: pos as [number, number, number],
+        size: itemSize,
+      });
+    }
+  }, [selectedItem, cameraSettings.autoFocus]);
+  
+  // Handler for manual focus on selected
+  const handleFocusSelected = useCallback(() => {
+    if (!selectedItem) return;
+    const pos = selectedItem.transform?.position || [0, 0, 0];
+    const itemSize = Math.max(
+      selectedItem.bounds?.width || 1,
+      selectedItem.bounds?.height || 1,
+      selectedItem.bounds?.depth || 1
+    );
+    setCameraTarget({
+      position: pos as [number, number, number],
+      size: itemSize,
+    });
+    toast({ title: "Camera Focused", description: `Looking at ${selectedItem.label || selectedItem.id}` });
+  }, [selectedItem, toast]);
+  
+  // Handler for reset view
+  const handleResetView = useCallback(() => {
+    setCameraTarget({ position: [0, 0, 0], size: 1 });
+    setViewportAngle("perspective");
+    toast({ title: "View Reset" });
+  }, [toast]);
   
   // Sync collaboration: Simple debounced broadcast, remote updates handled via onStateChange callback
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -2554,6 +2657,23 @@ export default function BluPrinceEditor() {
           />
         </DockablePanel>
 
+        {/* Camera Control Panel */}
+        <DockablePanel
+          id="camera"
+          title="Camera"
+          icon={<Eye className="w-4 h-4" />}
+          defaultDocked={true}
+          defaultCollapsed={false}
+        >
+          <CameraControlPanel
+            settings={cameraSettings}
+            onSettingsChange={(updates) => setCameraSettings(prev => ({ ...prev, ...updates }))}
+            onResetView={handleResetView}
+            onFocusSelected={handleFocusSelected}
+            hasSelection={!!selectedItem}
+          />
+        </DockablePanel>
+
         {/* Files Panel */}
         <DockablePanel
           id="files"
@@ -2825,21 +2945,31 @@ export default function BluPrinceEditor() {
           followCamera={false}
         />
 
+        <CameraController
+          angle={viewportAngle}
+          target={cameraTarget}
+          distance={cameraSettings.distance}
+          fov={cameraSettings.fov}
+          damping={cameraSettings.damping}
+        />
+
         <OrbitControls 
           makeDefault 
-          minDistance={3} 
-          maxDistance={30}
+          minDistance={1} 
+          maxDistance={100}
           maxPolarAngle={Math.PI / 2.1}
-          enableDamping={false}
+          enableDamping={cameraSettings.damping}
         />
         <Environment preset="night" />
       </Canvas>
 
       {/* Viewport Angles Panel - Top Right */}
-      <div className="absolute top-16 right-4 z-40">
+      <div className="absolute top-16 right-4 z-40 flex flex-col gap-2">
         <ViewportAnglesPanel
           currentAngle={viewportAngle}
           onAngleChange={setViewportAngle}
+          selectedTarget={cameraTarget}
+          cameraDistance={cameraSettings.distance}
         />
       </div>
 
