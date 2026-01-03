@@ -1,5 +1,5 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, GripVertical, X } from 'lucide-react';
+import React, { useState, useRef, useCallback } from 'react';
+import { GripVertical, Settings, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface DockablePanelProps {
@@ -11,6 +11,8 @@ export interface DockablePanelProps {
   defaultCollapsed?: boolean;
   defaultPosition?: { x: number; y: number };
   onClose?: () => void;
+  onSettingsClick?: () => void;
+  showSettings?: boolean;
   className?: string;
 }
 
@@ -29,6 +31,8 @@ export function DockablePanel({
   defaultCollapsed = false,
   defaultPosition = { x: 100, y: 100 },
   onClose,
+  onSettingsClick,
+  showSettings = false,
   className,
 }: DockablePanelProps) {
   const [state, setState] = useState<PanelState>({
@@ -42,7 +46,13 @@ export function DockablePanel({
   const [isDragging, setIsDragging] = useState(false);
 
   const handleDragStart = useCallback((e: React.PointerEvent) => {
-    if (state.docked) return;
+    if (state.docked) {
+      setState(prev => ({ 
+        ...prev, 
+        docked: false, 
+        position: { x: 100, y: e.clientY - 20 } 
+      }));
+    }
     
     e.preventDefault();
     e.stopPropagation();
@@ -50,8 +60,8 @@ export function DockablePanel({
     dragRef.current = {
       startX: e.clientX,
       startY: e.clientY,
-      startPosX: state.position.x,
-      startPosY: state.position.y,
+      startPosX: state.docked ? 100 : state.position.x,
+      startPosY: state.docked ? e.clientY - 20 : state.position.y,
     };
     
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
@@ -69,7 +79,7 @@ export function DockablePanel({
     if (newX < 60) {
       setState(prev => ({ ...prev, docked: true, position: { x: 0, y: newY } }));
     } else {
-      setState(prev => ({ ...prev, position: { x: newX, y: newY } }));
+      setState(prev => ({ ...prev, docked: false, position: { x: newX, y: newY } }));
     }
   }, [isDragging]);
 
@@ -85,25 +95,20 @@ export function DockablePanel({
     setState(prev => ({ ...prev, collapsed: !prev.collapsed }));
   }, []);
 
-  const undock = useCallback(() => {
-    setState(prev => ({ 
-      ...prev, 
-      docked: false, 
-      position: { x: 100, y: prev.position.y || 100 } 
-    }));
-  }, []);
-
   if (state.docked && state.collapsed) {
     return (
       <div
         data-panel-id={id}
-        className="w-10 bg-black/80 backdrop-blur border-r border-white/10 flex flex-col items-center py-2 cursor-pointer hover:bg-black/90 transition-colors"
-        onClick={toggleCollapse}
-        title={title}
+        className="w-10 bg-black/80 backdrop-blur border-r border-white/10 flex flex-col items-center py-2"
       >
-        <div className="p-2 rounded hover:bg-white/10 text-violet-400">
+        <button
+          onClick={toggleCollapse}
+          className="p-2 rounded hover:bg-white/10 text-violet-400 hover:text-violet-300 transition-colors"
+          title={`Expand ${title}`}
+          data-testid={`button-expand-${id}`}
+        >
           {icon}
-        </div>
+        </button>
       </div>
     );
   }
@@ -120,24 +125,38 @@ export function DockablePanel({
       >
         <div className="h-7 flex items-center justify-between px-2 border-b border-white/10 bg-black/40 shrink-0">
           <div className="flex items-center gap-1.5">
-            <span className="text-violet-400">{icon}</span>
+            <button
+              onClick={toggleCollapse}
+              className="p-0.5 rounded hover:bg-white/10 text-violet-400 hover:text-violet-300 transition-colors"
+              title={`Collapse ${title}`}
+              data-testid={`button-collapse-${id}`}
+            >
+              {icon}
+            </button>
             <span className="text-xs font-medium text-white/80 uppercase tracking-wider">{title}</span>
           </div>
           <div className="flex items-center gap-0.5">
-            <button
-              onClick={undock}
-              className="p-0.5 rounded hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors"
-              title="Undock panel"
+            {showSettings && onSettingsClick && (
+              <button
+                onClick={onSettingsClick}
+                className="p-0.5 rounded hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors"
+                title="Panel settings"
+                data-testid={`button-settings-${id}`}
+              >
+                <Settings className="w-3 h-3" />
+              </button>
+            )}
+            <div
+              onPointerDown={handleDragStart}
+              onPointerMove={handleDragMove}
+              onPointerUp={handleDragEnd}
+              onPointerCancel={handleDragEnd}
+              className="p-0.5 rounded hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors cursor-grab active:cursor-grabbing"
+              title="Drag to undock"
+              data-testid={`button-drag-${id}`}
             >
               <GripVertical className="w-3 h-3" />
-            </button>
-            <button
-              onClick={toggleCollapse}
-              className="p-0.5 rounded hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors"
-              title="Collapse panel"
-            >
-              <ChevronLeft className="w-3 h-3" />
-            </button>
+            </div>
           </div>
         </div>
         <div className="flex-1 overflow-auto">
@@ -162,30 +181,44 @@ export function DockablePanel({
         zIndex: 1000,
       }}
     >
-      <div
-        className="h-7 flex items-center justify-between px-2 border-b border-white/10 bg-black/60 shrink-0 cursor-grab select-none"
-        onPointerDown={handleDragStart}
-        onPointerMove={handleDragMove}
-        onPointerUp={handleDragEnd}
-        onPointerCancel={handleDragEnd}
-      >
-        <div className="flex items-center gap-1.5 pointer-events-none">
-          <span className="text-violet-400">{icon}</span>
+      <div className="h-7 flex items-center justify-between px-2 border-b border-white/10 bg-black/60 shrink-0">
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={toggleCollapse}
+            className="p-0.5 rounded hover:bg-white/10 text-violet-400 hover:text-violet-300 transition-colors"
+            title={state.collapsed ? `Expand ${title}` : `Collapse ${title}`}
+            data-testid={`button-toggle-${id}`}
+          >
+            {icon}
+          </button>
           <span className="text-xs font-medium text-white/80 uppercase tracking-wider">{title}</span>
         </div>
         <div className="flex items-center gap-0.5">
-          <button
-            onClick={toggleCollapse}
-            className="p-0.5 rounded hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors pointer-events-auto"
-            title={state.collapsed ? "Expand" : "Collapse"}
+          {showSettings && onSettingsClick && (
+            <button
+              onClick={onSettingsClick}
+              className="p-0.5 rounded hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors"
+              title="Panel settings"
+            >
+              <Settings className="w-3 h-3" />
+            </button>
+          )}
+          <div
+            onPointerDown={handleDragStart}
+            onPointerMove={handleDragMove}
+            onPointerUp={handleDragEnd}
+            onPointerCancel={handleDragEnd}
+            className="p-0.5 rounded hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors cursor-grab active:cursor-grabbing"
+            title="Drag to dock (left edge) or reposition"
           >
-            {state.collapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
-          </button>
+            <GripVertical className="w-3 h-3" />
+          </div>
           {onClose && (
             <button
               onClick={onClose}
-              className="p-0.5 rounded hover:bg-white/10 text-white/40 hover:text-red-400 transition-colors pointer-events-auto"
+              className="p-0.5 rounded hover:bg-white/10 text-white/40 hover:text-red-400 transition-colors"
               title="Close"
+              data-testid={`button-close-${id}`}
             >
               <X className="w-3 h-3" />
             </button>

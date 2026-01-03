@@ -17,7 +17,9 @@ import {
   Gamepad2,
   ChevronLeft,
   Tag,
-  Layers
+  Layers,
+  RotateCcw,
+  HelpCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,17 +66,22 @@ interface CartridgeCardData {
 function Cartridge3D({ 
   cartridge, 
   position, 
+  homePosition,
   isSelected, 
   isHovered,
-  onSelect 
+  onSelect,
+  shouldReset
 }: { 
   cartridge: CartridgeCardData;
   position: [number, number, number];
+  homePosition: [number, number, number];
   isSelected: boolean;
   isHovered: boolean;
   onSelect: () => void;
+  shouldReset: boolean;
 }) {
   const meshRef = useRef<THREE.Mesh>(null);
+  const rigidBodyRef = useRef<any>(null);
   const [hovered, setHovered] = useState(false);
   
   useFrame((state) => {
@@ -87,12 +94,28 @@ function Cartridge3D({
     }
   });
 
+  useEffect(() => {
+    if (shouldReset && rigidBodyRef.current) {
+      rigidBodyRef.current.setTranslation({ x: homePosition[0], y: homePosition[1], z: homePosition[2] });
+      rigidBodyRef.current.setRotation({ x: 0, y: 0, z: 0, w: 1 });
+      rigidBodyRef.current.setLinvel({ x: 0, y: 0, z: 0 });
+      rigidBodyRef.current.setAngvel({ x: 0, y: 0, z: 0 });
+    }
+  }, [shouldReset, homePosition]);
+
   const color = new THREE.Color(cartridge.color);
   const emissiveIntensity = isSelected ? 0.5 : hovered || isHovered ? 0.2 : 0;
 
   return (
-    <RigidBody type="dynamic" position={position} colliders={false} restitution={0.3} friction={0.8}>
-      <CuboidCollider args={[0.6, 0.1, 0.8]} />
+    <RigidBody 
+      ref={rigidBodyRef}
+      type="dynamic" 
+      position={position} 
+      colliders={false} 
+      restitution={0.3} 
+      friction={0.8}
+    >
+      <CuboidCollider args={[0.6, 0.12, 0.85]} />
       <group>
         <mesh
           ref={meshRef}
@@ -105,48 +128,78 @@ function Cartridge3D({
           castShadow
           receiveShadow
         >
-          <boxGeometry args={[1.2, 0.2, 1.6]} />
+          <boxGeometry args={[1.2, 0.24, 1.7]} />
           <meshStandardMaterial
             color={color}
-            roughness={0.3}
-            metalness={0.6}
+            roughness={0.4}
+            metalness={0.3}
             emissive={color}
             emissiveIntensity={emissiveIntensity}
           />
         </mesh>
         
-        <mesh position={[0, 0.11, 0]}>
-          <boxGeometry args={[0.8, 0.02, 1.2]} />
+        <mesh position={[0, 0.125, 0]}>
+          <boxGeometry args={[1.0, 0.02, 1.4]} />
+          <meshStandardMaterial color="#0a0a0a" roughness={0.9} metalness={0.1} />
+        </mesh>
+        
+        <mesh position={[0, 0.135, 0]}>
+          <boxGeometry args={[0.95, 0.01, 1.35]} />
           <meshStandardMaterial color="#1a1a1a" roughness={0.8} />
         </mesh>
         
+        <mesh position={[0, 0.14, -0.55]}>
+          <boxGeometry args={[0.85, 0.02, 0.2]} />
+          <meshStandardMaterial color={new THREE.Color(cartridge.color).multiplyScalar(0.7)} roughness={0.5} />
+        </mesh>
+        
         <Text
-          position={[0, 0.15, 0]}
+          position={[0, 0.16, -0.08]}
           rotation={[-Math.PI / 2, 0, 0]}
-          fontSize={0.12}
+          fontSize={0.11}
           color="white"
           anchorX="center"
           anchorY="middle"
-          maxWidth={1}
+          maxWidth={0.9}
+          font="/fonts/pixel.woff"
+          letterSpacing={0.05}
         >
-          {cartridge.title}
+          {cartridge.title.toUpperCase()}
         </Text>
         
         <Text
-          position={[0, 0.13, 0.35]}
+          position={[0, 0.155, 0.25]}
           rotation={[-Math.PI / 2, 0, 0]}
-          fontSize={0.06}
-          color="#888888"
+          fontSize={0.05}
+          color="#666666"
           anchorX="center"
           anchorY="middle"
+          letterSpacing={0.02}
         >
-          {cartridge.itemCount} items | {cartridge.assetCount} assets
+          {cartridge.itemCount} THINGS
         </Text>
+        
+        <Text
+          position={[0, 0.155, 0.35]}
+          rotation={[-Math.PI / 2, 0, 0]}
+          fontSize={0.04}
+          color="#444444"
+          anchorX="center"
+          anchorY="middle"
+          letterSpacing={0.03}
+        >
+          TINGOS COMPATIBLE
+        </Text>
+        
+        <mesh position={[0, -0.05, 0.7]}>
+          <boxGeometry args={[0.3, 0.08, 0.2]} />
+          <meshStandardMaterial color="#222222" roughness={0.6} metalness={0.4} />
+        </mesh>
 
         {isSelected && (
-          <Html position={[0, 0.5, 0]} center>
-            <div className="bg-black/80 px-3 py-2 rounded-lg text-white text-xs whitespace-nowrap">
-              Press A to Open | X to Delete
+          <Html position={[0, 0.6, 0]} center>
+            <div className="bg-black/90 px-3 py-2 rounded border border-violet-500/50 text-white text-xs whitespace-nowrap font-mono">
+              <span className="text-green-400">A</span> OPEN | <span className="text-red-400">X</span> DELETE
             </div>
           </Html>
         )}
@@ -176,22 +229,24 @@ function CartridgeScene({
   cartridges, 
   selectedId, 
   hoveredId,
-  onSelect 
+  onSelect,
+  resetTrigger
 }: {
   cartridges: CartridgeCardData[];
   selectedId: string | null;
   hoveredId: string | null;
   onSelect: (id: string) => void;
+  resetTrigger: number;
 }) {
-  const positions = useMemo(() => {
+  const homePositions = useMemo(() => {
     const cols = Math.ceil(Math.sqrt(cartridges.length));
     return cartridges.map((_, i) => {
       const row = Math.floor(i / cols);
       const col = i % cols;
       return [
-        (col - (cols - 1) / 2) * 2,
-        0.5 + Math.random() * 0.2,
-        (row - Math.floor(cartridges.length / cols) / 2) * 2.5
+        (col - (cols - 1) / 2) * 2.2,
+        0.5,
+        (row - Math.floor(cartridges.length / cols) / 2) * 2.8
       ] as [number, number, number];
     });
   }, [cartridges.length]);
@@ -203,10 +258,12 @@ function CartridgeScene({
         <Cartridge3D
           key={cartridge.id}
           cartridge={cartridge}
-          position={positions[i]}
+          position={homePositions[i]}
+          homePosition={homePositions[i]}
           isSelected={selectedId === cartridge.id}
           isHovered={hoveredId === cartridge.id}
           onSelect={() => onSelect(cartridge.id)}
+          shouldReset={resetTrigger > 0}
         />
       ))}
       <ambientLight intensity={0.4} />
@@ -232,6 +289,13 @@ export default function CartridgeLibrary() {
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"3d" | "list">("3d");
   const [showNewDialog, setShowNewDialog] = useState(false);
+  const [resetTrigger, setResetTrigger] = useState(0);
+
+  const handleReset = useCallback(() => {
+    setResetTrigger(prev => prev + 1);
+    setTimeout(() => setResetTrigger(0), 100);
+    toast({ title: "Cartridges Reset", description: "All cartridges returned to home positions" });
+  }, [toast]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [newCartridgeName, setNewCartridgeName] = useState("");
   const [newCartridgeDescription, setNewCartridgeDescription] = useState("");
@@ -391,6 +455,30 @@ export default function CartridgeLibrary() {
               <List className="w-4 h-4" />
             </Button>
           </div>
+          
+          {viewMode === "3d" && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={handleReset}
+              className="bg-gradient-to-b from-zinc-600 to-zinc-800 border-2 border-zinc-500 hover:from-zinc-500 hover:to-zinc-700 text-white font-mono tracking-wider shadow-lg"
+              data-testid="button-reset"
+            >
+              <RotateCcw className="w-4 h-4 mr-1" />
+              RESET
+            </Button>
+          )}
+          
+          <Link href="/library?load=help">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              className="text-violet-400 hover:text-violet-300"
+              data-testid="button-help"
+            >
+              <HelpCircle className="w-4 h-4" />
+            </Button>
+          </Link>
 
           <Button onClick={() => setShowNewDialog(true)} data-testid="button-new-cartridge">
             <Plus className="w-4 h-4 mr-2" />
@@ -409,6 +497,7 @@ export default function CartridgeLibrary() {
                   selectedId={selectedId}
                   hoveredId={hoveredCartridge?.id || null}
                   onSelect={setSelectedId}
+                  resetTrigger={resetTrigger}
                 />
                 <OrbitControls 
                   makeDefault 
