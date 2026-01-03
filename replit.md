@@ -32,6 +32,9 @@ Preferred communication style: Simple, everyday language.
 - **Environmental Forces Panel** - Separated into its own dockable panel with scientific units (Kelvin, m/s, Pascals, Sieverts, Liters)
 - **Theme System** - Global ThemeProvider with Cyberpunk/Neon and Victorian/Brass themes, theme switcher in navigation
 - **Thing Catalog** - Library card motif component browser with search, star/archive, and grid/list views
+- **QR Code System** - QRCodePopup, TngliLink, QRIconButton components for tng.li URL sharing with IoT/mobile badges
+- **Cartridge Protocol** - Agent can programmatically create TOSS cartridges and save to database via POST /api/cartridges
+- **tng.li Business Plan** - Strategic document in docs/tngly-business-plan.md for URL namespace marketing
 
 ## System Architecture
 

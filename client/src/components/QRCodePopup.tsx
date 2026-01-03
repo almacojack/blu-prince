@@ -260,7 +260,7 @@ export function QRCodePopup({ tngliId, title, open, onOpenChange }: QRCodePopupP
 }
 
 interface TngliLinkProps {
-  tngliId: string;
+  tngliId: string | null | undefined;
   title?: string;
   showFull?: boolean;
   size?: 'sm' | 'md' | 'lg';
@@ -271,6 +271,10 @@ export function TngliLink({ tngliId, title, showFull = false, size = 'sm', class
   const { themeVariant } = useTheme();
   const isVictorian = themeVariant === 'victorian';
   const [showQR, setShowQR] = useState(false);
+
+  if (!tngliId) {
+    return null;
+  }
 
   const iconSizes = {
     sm: 'w-3.5 h-3.5',
@@ -318,7 +322,7 @@ export function TngliLink({ tngliId, title, showFull = false, size = 'sm', class
 }
 
 interface QRIconButtonProps {
-  tngliId: string;
+  tngliId: string | null | undefined;
   title?: string;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
@@ -328,6 +332,10 @@ export function QRIconButton({ tngliId, title, size = 'sm', className }: QRIconB
   const { themeVariant } = useTheme();
   const isVictorian = themeVariant === 'victorian';
   const [showQR, setShowQR] = useState(false);
+
+  if (!tngliId) {
+    return null;
+  }
 
   const iconSizes = {
     sm: 'w-3.5 h-3.5',
@@ -346,7 +354,10 @@ export function QRIconButton({ tngliId, title, size = 'sm', className }: QRIconB
       <Button
         variant="ghost"
         size="icon"
-        onClick={() => setShowQR(true)}
+        onClick={(e) => {
+          e.stopPropagation();
+          setShowQR(true);
+        }}
         className={cn(
           buttonSizes[size],
           isVictorian 
