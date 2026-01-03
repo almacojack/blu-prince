@@ -103,41 +103,37 @@ export function DockablePanel({
     setState(prev => ({ ...prev, collapsed: !prev.collapsed }));
   }, []);
 
-  // Collapsed docked state - just show icon button
+  // Collapsed docked state - just show icon button (minimal height)
   if (state.docked && state.collapsed) {
     return (
-      <div
+      <button
         data-panel-id={id}
-        className="w-12 bg-black/80 backdrop-blur border-r border-white/10 flex flex-col items-center py-2"
+        onClick={toggleCollapse}
+        className="w-10 h-10 flex items-center justify-center bg-black/80 backdrop-blur border-r border-b border-white/10 hover:bg-white/10 text-violet-400 hover:text-violet-300 transition-colors touch-manipulation"
+        title={`Expand ${title}`}
+        data-testid={`button-expand-${id}`}
       >
-        <button
-          onClick={toggleCollapse}
-          className="p-3 rounded-lg hover:bg-white/10 text-violet-400 hover:text-violet-300 transition-colors touch-manipulation"
-          title={`Expand ${title}`}
-          data-testid={`button-expand-${id}`}
-        >
-          {icon}
-        </button>
-      </div>
+        {icon}
+      </button>
     );
   }
 
-  // Docked state
+  // Docked state - compact panel
   if (state.docked) {
     return (
       <div
         ref={panelRef}
         data-panel-id={id}
         className={cn(
-          "w-56 bg-black/80 backdrop-blur border-r border-white/10 flex flex-col",
+          "w-48 bg-black/90 backdrop-blur border-r border-white/10 flex flex-col max-h-[70vh]",
           className
         )}
       >
-        {/* Title bar - entire bar is drag target */}
+        {/* Title bar - compact */}
         <div 
           ref={titleBarRef}
           className={cn(
-            "h-11 flex items-center justify-between px-2 border-b border-white/10 bg-black/40 shrink-0 select-none",
+            "h-8 flex items-center justify-between px-1.5 border-b border-white/10 bg-black/40 shrink-0 select-none",
             "cursor-grab active:cursor-grabbing touch-manipulation"
           )}
           onPointerDown={handleDragStart}
@@ -145,30 +141,30 @@ export function DockablePanel({
           onPointerUp={handleDragEnd}
           onPointerCancel={handleDragEnd}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <button
               onClick={toggleCollapse}
-              className="p-2 rounded-lg hover:bg-white/10 text-violet-400 hover:text-violet-300 transition-colors touch-manipulation"
+              className="p-1.5 rounded hover:bg-white/10 text-violet-400 hover:text-violet-300 transition-colors touch-manipulation"
               title={`Collapse ${title}`}
               data-testid={`button-collapse-${id}`}
             >
               {icon}
             </button>
-            <span className="text-xs font-medium text-white/80 uppercase tracking-wider">{title}</span>
+            <span className="text-[10px] font-medium text-white/70 uppercase tracking-wider">{title}</span>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center">
             {showSettings && onSettingsClick && (
               <button
                 onClick={onSettingsClick}
-                className="p-2 rounded-lg hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors touch-manipulation"
+                className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors touch-manipulation"
                 title="Panel settings"
                 data-testid={`button-settings-${id}`}
               >
-                <Settings className="w-4 h-4" />
+                <Settings className="w-3 h-3" />
               </button>
             )}
-            <div className="p-1 text-white/30">
-              <GripVertical className="w-4 h-4" />
+            <div className="p-0.5 text-white/30">
+              <GripVertical className="w-3 h-3" />
             </div>
           </div>
         </div>
@@ -179,13 +175,13 @@ export function DockablePanel({
     );
   }
 
-  // Undocked/floating state
+  // Undocked/floating state - compact
   return (
     <div
       ref={panelRef}
       data-panel-id={id}
       className={cn(
-        "absolute w-56 bg-black/90 backdrop-blur border border-white/20 rounded-lg shadow-2xl flex flex-col overflow-hidden",
+        "absolute w-48 bg-black/95 backdrop-blur border border-white/20 rounded-lg shadow-2xl flex flex-col overflow-hidden",
         isDragging && "cursor-grabbing",
         className
       )}
@@ -195,11 +191,11 @@ export function DockablePanel({
         zIndex: 1000,
       }}
     >
-      {/* Title bar - entire bar is drag target */}
+      {/* Title bar - compact */}
       <div 
         ref={titleBarRef}
         className={cn(
-          "h-11 flex items-center justify-between px-2 border-b border-white/10 bg-black/60 shrink-0 select-none",
+          "h-8 flex items-center justify-between px-1.5 border-b border-white/10 bg-black/60 shrink-0 select-none",
           "cursor-grab active:cursor-grabbing touch-manipulation"
         )}
         onPointerDown={handleDragStart}
@@ -207,44 +203,44 @@ export function DockablePanel({
         onPointerUp={handleDragEnd}
         onPointerCancel={handleDragEnd}
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <button
             onClick={toggleCollapse}
-            className="p-2 rounded-lg hover:bg-white/10 text-violet-400 hover:text-violet-300 transition-colors touch-manipulation"
+            className="p-1.5 rounded hover:bg-white/10 text-violet-400 hover:text-violet-300 transition-colors touch-manipulation"
             title={state.collapsed ? `Expand ${title}` : `Collapse ${title}`}
             data-testid={`button-toggle-${id}`}
           >
             {icon}
           </button>
-          <span className="text-xs font-medium text-white/80 uppercase tracking-wider">{title}</span>
+          <span className="text-[10px] font-medium text-white/70 uppercase tracking-wider">{title}</span>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center">
           {showSettings && onSettingsClick && (
             <button
               onClick={onSettingsClick}
-              className="p-2 rounded-lg hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors touch-manipulation"
+              className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors touch-manipulation"
               title="Panel settings"
             >
-              <Settings className="w-4 h-4" />
+              <Settings className="w-3 h-3" />
             </button>
           )}
-          <div className="p-1 text-white/30">
-            <GripVertical className="w-4 h-4" />
+          <div className="p-0.5 text-white/30">
+            <GripVertical className="w-3 h-3" />
           </div>
           {onClose && (
             <button
               onClick={onClose}
-              className="p-2 rounded-lg hover:bg-white/10 text-white/40 hover:text-red-400 transition-colors touch-manipulation"
+              className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-red-400 transition-colors touch-manipulation"
               title="Close"
               data-testid={`button-close-${id}`}
             >
-              <X className="w-4 h-4" />
+              <X className="w-3 h-3" />
             </button>
           )}
         </div>
       </div>
       {!state.collapsed && (
-        <div className="flex-1 overflow-auto max-h-[60vh]">
+        <div className="flex-1 overflow-auto max-h-[50vh]">
           {children}
         </div>
       )}

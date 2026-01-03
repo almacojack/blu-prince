@@ -2392,7 +2392,7 @@ export default function BluPrinceEditor() {
       </Dialog>
 
       {/* Left Docked Panels */}
-      <div className="absolute left-0 top-14 bottom-0 z-40 flex">
+      <div className="absolute left-0 top-14 z-40 flex items-start">
         {/* Solids Panel */}
         <DockablePanel
           id="solids"
