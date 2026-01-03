@@ -460,7 +460,7 @@ export interface TossCartridge {
 }
 
 // Editor modes
-export type EditorMode = "DESIGN" | "TEST" | "DEPLOY" | "RUN";
+export type EditorMode = "DESIGN" | "TEST" | "DEPLOY" | "PLAY";
 
 // Default transform
 export const DEFAULT_TRANSFORM: Transform = {

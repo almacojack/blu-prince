@@ -374,7 +374,7 @@ function ModeBar({ mode, onModeChange, testStatus }: {
   onModeChange: (m: EditorMode) => void;
   testStatus: "pending" | "running" | "pass" | "fail";
 }) {
-  const modes: EditorMode[] = ["DESIGN", "TEST", "DEPLOY", "RUN"];
+  const modes: EditorMode[] = ["DESIGN", "TEST", "DEPLOY", "PLAY"];
   
   const canDeploy = testStatus === "pass";
   
