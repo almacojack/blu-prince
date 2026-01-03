@@ -19,8 +19,15 @@ import {
   Triangle, Settings, Layers, Zap, Save, Upload, CheckCircle, XCircle,
   Plus, Trash2, ArrowRight, GitBranch, X, Gamepad2, Vibrate,
   Pentagon, Hexagon, Diamond, Cone, FileImage, Eye, EyeOff,
-  Palette, Move, RotateCw, Maximize2, Database
+  Palette, Move, RotateCw, Maximize2, Database, Wrench
 } from "lucide-react";
+import { DockablePanel } from "@/components/DockablePanel";
+import { ToolsPanel, type PhysicsTool } from "@/components/ToolsPanel";
+import {
+  createGestureState, startGesture, updateGesture, endGesture,
+  calculateFlickVelocity, calculatePoolCueImpulse, calculateSlingshotImpulse,
+  applyFlickImpulse, applyDirectionalImpulse, type GestureState
+} from "@/lib/gesture-physics";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { 
@@ -51,19 +58,106 @@ interface PhysicsThingProps {
   onSelect: () => void;
   onTransformUpdate: (id: string, position: { x: number; y: number; z: number }) => void;
   mode: EditorMode;
+  activeTool?: PhysicsTool;
+  toolPower?: number;
 }
 
-function PhysicsThing({ item, isSelected, onSelect, onTransformUpdate, mode }: PhysicsThingProps) {
+function PhysicsThing({ item, isSelected, onSelect, onTransformUpdate, mode, activeTool = 'select', toolPower = 100 }: PhysicsThingProps) {
   const meshRef = useRef<THREE.Mesh>(null);
   const rigidBodyRef = useRef<RapierRigidBody>(null);
   const hasLandedRef = useRef(false);
   const squashRef = useRef({ x: 1, y: 1, z: 1 });
   const lastPositionRef = useRef({ x: 0, y: 0, z: 0 });
   
+  const gestureRef = useRef<{ 
+    active: boolean; 
+    startPos: THREE.Vector3 | null; 
+    points: Array<{ pos: THREE.Vector3; time: number }>;
+  }>({ active: false, startPos: null, points: [] });
+  
   const isAnchored = item.physics?.anchored || mode === "DESIGN";
   const gravityScale = item.physics?.gravityScale ?? 1;
   const squashIntensity = item.animation?.squash_intensity ?? 0.4;
   const recoverySpeed = item.animation?.squash_recovery_speed ?? 8;
+  
+  const isPhysicsTool = ['flick', 'pool_cue', 'slingshot'].includes(activeTool);
+  
+  const handlePointerDown = (e: any) => {
+    e.stopPropagation();
+    onSelect();
+    
+    if (isPhysicsTool && rigidBodyRef.current) {
+      const point = e.point as THREE.Vector3;
+      gestureRef.current = {
+        active: true,
+        startPos: point.clone(),
+        points: [{ pos: point.clone(), time: performance.now() }],
+      };
+      (e.target as HTMLElement)?.setPointerCapture?.(e.pointerId);
+    }
+  };
+  
+  const handlePointerMove = (e: any) => {
+    if (!gestureRef.current.active || !isPhysicsTool) return;
+    
+    const point = e.point as THREE.Vector3;
+    if (point) {
+      gestureRef.current.points.push({ pos: point.clone(), time: performance.now() });
+      if (gestureRef.current.points.length > 10) {
+        gestureRef.current.points.shift();
+      }
+    }
+  };
+  
+  const handlePointerUp = (e: any) => {
+    if (!gestureRef.current.active || !rigidBodyRef.current || !isPhysicsTool) {
+      gestureRef.current.active = false;
+      return;
+    }
+    
+    const body = rigidBodyRef.current;
+    const power = toolPower / 100;
+    const points = gestureRef.current.points;
+    const startPos = gestureRef.current.startPos;
+    
+    if (points.length >= 2 && startPos) {
+      const lastPoint = points[points.length - 1];
+      const firstPoint = points[0];
+      
+      if (activeTool === 'flick') {
+        const dt = (lastPoint.time - firstPoint.time) / 1000;
+        if (dt > 0) {
+          const velocity = new THREE.Vector3()
+            .subVectors(lastPoint.pos, firstPoint.pos)
+            .divideScalar(dt)
+            .multiplyScalar(power * 0.5);
+          velocity.clampLength(0, 30);
+          body.applyImpulse({ x: velocity.x, y: velocity.y, z: velocity.z }, true);
+        }
+      } else if (activeTool === 'pool_cue') {
+        const pullback = new THREE.Vector3().subVectors(startPos, lastPoint.pos);
+        const magnitude = Math.min(pullback.length() * power * 0.5, 50);
+        const direction = pullback.normalize();
+        body.applyImpulse({ 
+          x: direction.x * magnitude, 
+          y: direction.y * magnitude, 
+          z: direction.z * magnitude 
+        }, true);
+      } else if (activeTool === 'slingshot') {
+        const stretch = new THREE.Vector3().subVectors(startPos, lastPoint.pos);
+        const magnitude = Math.min(Math.pow(stretch.length(), 1.5) * power * 0.3, 80);
+        const direction = stretch.normalize();
+        body.applyImpulse({ 
+          x: direction.x * magnitude, 
+          y: Math.abs(direction.y) * magnitude * 0.5 + magnitude * 0.3, 
+          z: direction.z * magnitude 
+        }, true);
+      }
+    }
+    
+    gestureRef.current = { active: false, startPos: null, points: [] };
+    (e.target as HTMLElement)?.releasePointerCapture?.(e.pointerId);
+  };
 
   useFrame((state, delta) => {
     // Update squash animation using refs (no setState)
@@ -122,7 +216,9 @@ function PhysicsThing({ item, isSelected, onSelect, onTransformUpdate, mode }: P
       <mesh 
         ref={meshRef}
         castShadow
-        onClick={(e) => { e.stopPropagation(); onSelect(); }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
       >
         {item.bounds.type === "sphere" && (
           <sphereGeometry args={[item.bounds.radius || 0.5, 32, 32]} />
@@ -278,10 +374,10 @@ function ComponentPalette({ onAddComponent, onToggleLayers, showLayers, colorIco
 
   return (
     <div 
-      className="absolute left-4 top-1/2 -translate-y-1/2 z-40 flex flex-col bg-black/80 backdrop-blur rounded-lg border border-white/10 overflow-hidden"
+      className="flex flex-col"
       onPointerDown={(e) => e.stopPropagation()}
     >
-      <ScrollArea className="max-h-[400px]">
+      <ScrollArea className="max-h-[60vh]">
         <div className="p-2 space-y-1">
           <div className="text-[9px] uppercase text-muted-foreground font-bold px-1 mb-1">Primitives</div>
           {primitives.map((comp) => (
@@ -1409,6 +1505,10 @@ export default function BluPrinceEditor() {
   const [hiddenLayers, setHiddenLayers] = useState<Set<string>>(new Set());
   const [showPreferences, setShowPreferences] = useState(false);
   const [colorIcons, setColorIcons] = useState(true);
+  const [activeTool, setActiveTool] = useState<PhysicsTool>('select');
+  const [toolPower, setToolPower] = useState(100);
+  const [magnetPolarity, setMagnetPolarity] = useState<'attract' | 'repel'>('attract');
+  const [gestureState, setGestureState] = useState<GestureState>(createGestureState());
   const { toast } = useToast();
 
   const mode = cartridge._editor?.mode || "DESIGN";
@@ -1872,13 +1972,42 @@ export default function BluPrinceEditor() {
         </DialogContent>
       </Dialog>
 
-      {/* Component Palette */}
-      <ComponentPalette 
-        onAddComponent={addComponent} 
-        onToggleLayers={() => setShowLayers(!showLayers)}
-        showLayers={showLayers}
-        colorIcons={colorIcons}
-      />
+      {/* Left Docked Panels */}
+      <div className="absolute left-0 top-14 bottom-0 z-40 flex">
+        {/* Solids Panel */}
+        <DockablePanel
+          id="solids"
+          title="Solids"
+          icon={<Box className="w-4 h-4" />}
+          defaultDocked={true}
+          defaultCollapsed={false}
+        >
+          <ComponentPalette 
+            onAddComponent={addComponent} 
+            onToggleLayers={() => setShowLayers(!showLayers)}
+            showLayers={showLayers}
+            colorIcons={colorIcons}
+          />
+        </DockablePanel>
+
+        {/* Tools Panel */}
+        <DockablePanel
+          id="tools"
+          title="Tools"
+          icon={<Wrench className="w-4 h-4" />}
+          defaultDocked={true}
+          defaultCollapsed={false}
+        >
+          <ToolsPanel
+            activeTool={activeTool}
+            onToolChange={setActiveTool}
+            toolPower={toolPower}
+            onToolPowerChange={setToolPower}
+            magnetPolarity={magnetPolarity}
+            onMagnetPolarityChange={setMagnetPolarity}
+          />
+        </DockablePanel>
+      </div>
 
       {/* Layers Panel */}
       {showLayers && (
@@ -1948,6 +2077,8 @@ export default function BluPrinceEditor() {
                   onSelect={() => setSelectedId(item.id)}
                   onTransformUpdate={handleTransformUpdate}
                   mode={mode}
+                  activeTool={activeTool}
+                  toolPower={toolPower}
                 />
               ))}
           </Physics>
