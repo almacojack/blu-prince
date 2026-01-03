@@ -19,11 +19,11 @@ import {
   Tag,
   Layers,
   RotateCcw,
-  HelpCircle
+  HelpCircle,
+  Play
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -421,8 +421,8 @@ export default function CartridgeLibrary() {
   }, [setLocation]);
 
   return (
-    <div className="h-screen w-full bg-zinc-950 text-white flex flex-col" data-testid="cartridge-library-page">
-      <header className="p-4 border-b border-zinc-800 flex items-center justify-between">
+    <div className="h-screen w-full bg-zinc-950 text-white flex flex-col overflow-hidden" data-testid="cartridge-library-page">
+      <header className="sticky top-0 z-10 p-4 border-b border-zinc-800 flex items-center justify-between bg-zinc-950 shrink-0">
         <div className="flex items-center gap-4">
           <Link href="/">
             <Button variant="ghost" size="sm" data-testid="button-back-home">
@@ -543,7 +543,7 @@ export default function CartridgeLibrary() {
             )}
           </div>
         ) : (
-          <ScrollArea className="flex-1 p-4">
+          <div className="flex-1 p-4 overflow-y-auto">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {filteredCartridges.map((cartridge, index) => (
                 <motion.div
@@ -587,7 +587,7 @@ export default function CartridgeLibrary() {
                 </motion.div>
               ))}
             </div>
-          </ScrollArea>
+          </div>
         )}
 
         <AnimatePresence>
@@ -655,8 +655,18 @@ export default function CartridgeLibrary() {
                   </div>
                 )}
 
-                <div className="pt-4 space-y-2">
+                <div className="pt-4 space-y-3">
+                  <Link href={`/runtime?cartridge=${selectedCartridge.tngli_id}`}>
+                    <Button 
+                      className="w-full h-12 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold text-lg shadow-lg shadow-green-500/20" 
+                      data-testid="button-play-cartridge"
+                    >
+                      <Play className="w-6 h-6 mr-2 fill-current" />
+                      PLAY
+                    </Button>
+                  </Link>
                   <Button 
+                    variant="outline"
                     className="w-full" 
                     onClick={() => handleOpenCartridge(selectedCartridge.id)}
                     data-testid="button-open-cartridge"
