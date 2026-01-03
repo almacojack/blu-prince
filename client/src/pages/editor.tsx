@@ -82,6 +82,14 @@ function PhysicsThing({ item, isSelected, onSelect, onTransformUpdate, mode, act
   
   const isPhysicsTool = ['flick', 'pool_cue', 'slingshot'].includes(activeTool);
   
+  const getCanvas = (e: any): HTMLCanvasElement | null => {
+    const nativeEvent = e.nativeEvent || e.event;
+    if (nativeEvent?.target instanceof HTMLCanvasElement) {
+      return nativeEvent.target;
+    }
+    return null;
+  };
+  
   const handlePointerDown = (e: any) => {
     e.stopPropagation();
     onSelect();
@@ -93,7 +101,11 @@ function PhysicsThing({ item, isSelected, onSelect, onTransformUpdate, mode, act
         startPos: point.clone(),
         points: [{ pos: point.clone(), time: performance.now() }],
       };
-      (e.target as HTMLElement)?.setPointerCapture?.(e.pointerId);
+      const canvas = getCanvas(e);
+      const pointerId = e.nativeEvent?.pointerId ?? e.event?.pointerId;
+      if (canvas && pointerId !== undefined) {
+        canvas.setPointerCapture(pointerId);
+      }
     }
   };
   
@@ -110,53 +122,59 @@ function PhysicsThing({ item, isSelected, onSelect, onTransformUpdate, mode, act
   };
   
   const handlePointerUp = (e: any) => {
-    if (!gestureRef.current.active || !rigidBodyRef.current || !isPhysicsTool) {
-      gestureRef.current.active = false;
-      return;
-    }
+    const canvas = getCanvas(e);
+    const pointerId = e.nativeEvent?.pointerId ?? e.event?.pointerId;
     
-    const body = rigidBodyRef.current;
-    const power = toolPower / 100;
-    const points = gestureRef.current.points;
-    const startPos = gestureRef.current.startPos;
-    
-    if (points.length >= 2 && startPos) {
-      const lastPoint = points[points.length - 1];
-      const firstPoint = points[0];
+    try {
+      if (!gestureRef.current.active || !rigidBodyRef.current || !isPhysicsTool) {
+        return;
+      }
       
-      if (activeTool === 'flick') {
-        const dt = (lastPoint.time - firstPoint.time) / 1000;
-        if (dt > 0) {
-          const velocity = new THREE.Vector3()
-            .subVectors(lastPoint.pos, firstPoint.pos)
-            .divideScalar(dt)
-            .multiplyScalar(power * 0.5);
-          velocity.clampLength(0, 30);
-          body.applyImpulse({ x: velocity.x, y: velocity.y, z: velocity.z }, true);
+      const body = rigidBodyRef.current;
+      const power = toolPower / 100;
+      const points = gestureRef.current.points;
+      const startPos = gestureRef.current.startPos;
+      
+      if (points.length >= 2 && startPos) {
+        const lastPoint = points[points.length - 1];
+        const firstPoint = points[0];
+        
+        if (activeTool === 'flick') {
+          const dt = (lastPoint.time - firstPoint.time) / 1000;
+          if (dt > 0) {
+            const velocity = new THREE.Vector3()
+              .subVectors(lastPoint.pos, firstPoint.pos)
+              .divideScalar(dt)
+              .multiplyScalar(power * 0.5);
+            velocity.clampLength(0, 30);
+            body.applyImpulse({ x: velocity.x, y: velocity.y, z: velocity.z }, true);
+          }
+        } else if (activeTool === 'pool_cue') {
+          const pullback = new THREE.Vector3().subVectors(startPos, lastPoint.pos);
+          const magnitude = Math.min(pullback.length() * power * 0.5, 50);
+          const direction = pullback.normalize();
+          body.applyImpulse({ 
+            x: direction.x * magnitude, 
+            y: direction.y * magnitude, 
+            z: direction.z * magnitude 
+          }, true);
+        } else if (activeTool === 'slingshot') {
+          const stretch = new THREE.Vector3().subVectors(startPos, lastPoint.pos);
+          const magnitude = Math.min(Math.pow(stretch.length(), 1.5) * power * 0.3, 80);
+          const direction = stretch.normalize();
+          body.applyImpulse({ 
+            x: direction.x * magnitude, 
+            y: Math.abs(direction.y) * magnitude * 0.5 + magnitude * 0.3, 
+            z: direction.z * magnitude 
+          }, true);
         }
-      } else if (activeTool === 'pool_cue') {
-        const pullback = new THREE.Vector3().subVectors(startPos, lastPoint.pos);
-        const magnitude = Math.min(pullback.length() * power * 0.5, 50);
-        const direction = pullback.normalize();
-        body.applyImpulse({ 
-          x: direction.x * magnitude, 
-          y: direction.y * magnitude, 
-          z: direction.z * magnitude 
-        }, true);
-      } else if (activeTool === 'slingshot') {
-        const stretch = new THREE.Vector3().subVectors(startPos, lastPoint.pos);
-        const magnitude = Math.min(Math.pow(stretch.length(), 1.5) * power * 0.3, 80);
-        const direction = stretch.normalize();
-        body.applyImpulse({ 
-          x: direction.x * magnitude, 
-          y: Math.abs(direction.y) * magnitude * 0.5 + magnitude * 0.3, 
-          z: direction.z * magnitude 
-        }, true);
+      }
+    } finally {
+      gestureRef.current = { active: false, startPos: null, points: [] };
+      if (canvas && pointerId !== undefined) {
+        try { canvas.releasePointerCapture(pointerId); } catch {}
       }
     }
-    
-    gestureRef.current = { active: false, startPos: null, points: [] };
-    (e.target as HTMLElement)?.releasePointerCapture?.(e.pointerId);
   };
 
   useFrame((state, delta) => {
