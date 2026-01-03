@@ -12,6 +12,7 @@ import { AtariResetKnob } from "@/components/AtariResetKnob";
 import { AtariDockPanel, AtariDockedPanel, AtariMiniPanel, Atari5200CartridgeSlot, AtariSilverRail } from "@/components/AtariDockPanel";
 import { WinAmpPanel } from "@/components/WinAmpPanel";
 import { ScrollableButtonPanel } from "@/components/ScrollableButtonPanel";
+import { ViewportAnglesPanel, ViewportAngle } from "@/components/ViewportAnglesPanel";
 import { FritzingPanel, ElectronicPart } from "@/components/FritzingPanel";
 import { FlightControlsDashboard } from "@/components/FlightControlsDashboard";
 import { DockablePanel } from "@/components/DockablePanel";
@@ -575,6 +576,7 @@ export default function BluPrince() {
   const [showTransitionDialog, setShowTransitionDialog] = useState(false);
   const [newTransitionEvent, setNewTransitionEvent] = useState("");
   const [newTransitionTarget, setNewTransitionTarget] = useState("");
+  const [viewportAngle, setViewportAngle] = useState<ViewportAngle>("perspective");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const chiptune = useChiptune();
@@ -1491,6 +1493,14 @@ export default function BluPrince() {
               <span className="text-xs font-bold">FRITZING</span>
             </Button>
 
+          </div>
+          
+          {/* Viewport Angles Panel - Top Right */}
+          <div className="absolute top-4 right-4 z-40">
+            <ViewportAnglesPanel
+              currentAngle={viewportAngle}
+              onAngleChange={setViewportAngle}
+            />
           </div>
           
           {/* Prominent ZOOM TO FIT Button - Bottom Right */}

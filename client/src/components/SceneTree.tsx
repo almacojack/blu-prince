@@ -18,6 +18,10 @@ import {
   X,
   Plus,
   Trash2,
+  Lightbulb,
+  Sun,
+  Camera,
+  Video,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -386,6 +390,78 @@ export function SceneTree({
               />
             ))
           )}
+        </TreeNode>
+
+        <TreeNode
+          icon={<Lightbulb className="w-4 h-4 text-yellow-300" />}
+          label="Lights"
+          expandable
+          defaultExpanded
+          badge={
+            <span className="text-[10px] text-zinc-500 font-mono">3</span>
+          }
+        >
+          <TreeNode
+            icon={<Sun className="w-3.5 h-3.5 text-amber-400" />}
+            label="Ambient Light"
+            depth={1}
+            badge={
+              <span className="text-[8px] px-1 py-0.5 rounded bg-amber-500/20 text-amber-400 font-mono">
+                0.1
+              </span>
+            }
+          />
+          <TreeNode
+            icon={<Lightbulb className="w-3.5 h-3.5 text-purple-400" />}
+            label="Point Light 1"
+            depth={1}
+            badge={
+              <span className="text-[8px] px-1 py-0.5 rounded bg-purple-500/20 text-purple-400 font-mono">
+                KEY
+              </span>
+            }
+          />
+          <TreeNode
+            icon={<Lightbulb className="w-3.5 h-3.5 text-pink-400" />}
+            label="Point Light 2"
+            depth={1}
+            badge={
+              <span className="text-[8px] px-1 py-0.5 rounded bg-pink-500/20 text-pink-400 font-mono">
+                FILL
+              </span>
+            }
+          />
+        </TreeNode>
+
+        <TreeNode
+          icon={<Camera className="w-4 h-4 text-blue-400" />}
+          label="Cameras"
+          expandable
+          defaultExpanded
+          badge={
+            <span className="text-[10px] text-zinc-500 font-mono">2</span>
+          }
+        >
+          <TreeNode
+            icon={<Video className="w-3.5 h-3.5 text-cyan-400" />}
+            label="Main Camera"
+            depth={1}
+            badge={
+              <span className="text-[8px] px-1 py-0.5 rounded bg-cyan-500/20 text-cyan-400 font-mono">
+                ACTIVE
+              </span>
+            }
+          />
+          <TreeNode
+            icon={<Camera className="w-3.5 h-3.5 text-gray-400" />}
+            label="Ortho Camera"
+            depth={1}
+            badge={
+              <span className="text-[8px] px-1 py-0.5 rounded bg-gray-500/20 text-gray-400 font-mono">
+                ORTHO
+              </span>
+            }
+          />
         </TreeNode>
       </div>
     </ScrollArea>
