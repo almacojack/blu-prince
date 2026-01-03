@@ -96,14 +96,14 @@ export function AtariDockPanel({
           style={{
             background: `
               repeating-linear-gradient(
-                90deg,
+                0deg,
                 transparent 0px,
-                transparent 18px,
-                rgba(0,0,0,0.4) 18px,
-                rgba(0,0,0,0.4) 22px
+                transparent 8px,
+                rgba(0,0,0,0.25) 8px,
+                rgba(0,0,0,0.25) 10px
               ),
               linear-gradient(
-                180deg,
+                90deg,
                 #5c3d2e 0%,
                 #8b5a3c 15%,
                 #6b4423 30%,
@@ -113,7 +113,7 @@ export function AtariDockPanel({
                 #5c3d2e 100%
               )
             `,
-            backgroundSize: '40px 100%, 100% 100%',
+            backgroundSize: '100% 18px, 100% 100%',
           }}
         />
         
@@ -124,9 +124,9 @@ export function AtariDockPanel({
               repeating-linear-gradient(
                 0deg,
                 transparent 0px,
-                transparent 2px,
-                rgba(139,90,60,0.15) 2px,
-                rgba(139,90,60,0.15) 4px
+                transparent 3px,
+                rgba(139,90,60,0.12) 3px,
+                rgba(139,90,60,0.12) 6px
               )
             `,
             mixBlendMode: 'overlay',
@@ -255,14 +255,14 @@ export function AtariMiniPanel({
         style={{
           background: `
             repeating-linear-gradient(
-              90deg,
+              0deg,
               transparent 0px,
-              transparent 18px,
-              rgba(0,0,0,0.4) 18px,
-              rgba(0,0,0,0.4) 22px
+              transparent 8px,
+              rgba(0,0,0,0.25) 8px,
+              rgba(0,0,0,0.25) 10px
             ),
             linear-gradient(
-              180deg,
+              90deg,
               #5c3d2e 0%,
               #8b5a3c 15%,
               #6b4423 30%,
@@ -272,7 +272,7 @@ export function AtariMiniPanel({
               #5c3d2e 100%
             )
           `,
-          backgroundSize: '40px 100%, 100% 100%',
+          backgroundSize: '100% 18px, 100% 100%',
         }}
       />
       
@@ -283,9 +283,9 @@ export function AtariMiniPanel({
             repeating-linear-gradient(
               0deg,
               transparent 0px,
-              transparent 2px,
-              rgba(139,90,60,0.15) 2px,
-              rgba(139,90,60,0.15) 4px
+              transparent 3px,
+              rgba(139,90,60,0.12) 3px,
+              rgba(139,90,60,0.12) 6px
             )
           `,
           mixBlendMode: 'overlay',
