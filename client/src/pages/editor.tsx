@@ -1628,15 +1628,16 @@ function CollaboratorAvatars({ users, myColor }: { users: CollabUser[]; myColor:
 function RemoteCursor({ user }: { user: CollabUser }) {
   if (!user.cursor) return null;
   
+  // Cursor coordinates are normalized (0-1), convert to percentages
+  const left = `${user.cursor.x * 100}%`;
+  const top = `${user.cursor.y * 100}%`;
+  
   return (
     <motion.div
       className="absolute pointer-events-none z-50"
+      style={{ left, top }}
       initial={{ opacity: 0 }}
-      animate={{ 
-        opacity: 1,
-        x: user.cursor.x,
-        y: user.cursor.y,
-      }}
+      animate={{ opacity: 1 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
     >
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -1660,6 +1661,7 @@ function RemoteCursor({ user }: { user: CollabUser }) {
 // Main Editor
 export default function BluPrinceEditor() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [cartridge, setCartridge] = useState<TossCartridge>(createNewCartridge());
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [testStatus, setTestStatus] = useState<"pending" | "running" | "pass" | "fail">("pending");
@@ -1675,6 +1677,7 @@ export default function BluPrinceEditor() {
   const [magnetizedObjects, setMagnetizedObjects] = useState<Set<string>>(new Set());
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [collaborationEnabled, setCollaborationEnabled] = useState(false);
+  const [gestureState, setGestureState] = useState<GestureState>(createGestureState());
   const rigidBodyRegistry = useRef<Map<string, RapierRigidBody>>(new Map());
   const editorRef = useRef<HTMLDivElement>(null);
   
@@ -1698,13 +1701,13 @@ export default function BluPrinceEditor() {
         title: "User Joined",
         description: `${joinedUser.name || joinedUser.id.slice(0, 8)} joined the session`,
       });
-    }, []),
+    }, [toast]),
     onUserLeave: useCallback((leftUserId: string) => {
       toast({
         title: "User Left",
         description: "A collaborator left the session",
       });
-    }, []),
+    }, [toast]),
   });
   
   const handleRegisterBody = useCallback((id: string, body: RapierRigidBody | null) => {
@@ -1714,28 +1717,54 @@ export default function BluPrinceEditor() {
       rigidBodyRegistry.current.delete(id);
     }
   }, []);
-  
-  const [gestureState, setGestureState] = useState<GestureState>(createGestureState());
-  const { toast } = useToast();
 
   const mode = cartridge._editor?.mode || "DESIGN";
   const gravityEnabled = cartridge._editor?.gravity_enabled ?? true;
   const selectedItem = cartridge.items.find(i => i.id === selectedId);
   
-  // Update item FSM
+  // Sync collaboration: Simple debounced broadcast, remote updates handled via onStateChange callback
+  const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Debounced sync of local cartridge changes to collaboration
+  const syncCartridgeToCollab = useCallback((newCartridge: TossCartridge) => {
+    if (!collaborationEnabled || !collab.isJoined) return;
+    
+    // Clear any pending sync
+    if (syncTimeoutRef.current) {
+      clearTimeout(syncTimeoutRef.current);
+    }
+    
+    // Debounce syncs by 150ms to batch rapid edits
+    syncTimeoutRef.current = setTimeout(() => {
+      collab.sendFullState(newCartridge);
+    }, 150);
+  }, [collaborationEnabled, collab.isJoined, collab.sendFullState]);
+  
+  // Wrapper that updates cartridge AND syncs to collab
+  const updateCartridgeWithSync = useCallback((
+    updater: TossCartridge | ((prev: TossCartridge) => TossCartridge)
+  ) => {
+    setCartridge(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      syncCartridgeToCollab(next);
+      return next;
+    });
+  }, [syncCartridgeToCollab]);
+  
+  // Update item FSM (syncs to collab)
   const updateItemFSM = useCallback((fsm: ItemFSM) => {
     if (!selectedId) return;
-    setCartridge(prev => ({
+    updateCartridgeWithSync(prev => ({
       ...prev,
       items: prev.items.map(item => 
         item.id === selectedId ? { ...item, fsm } : item
       )
     }));
-  }, [selectedId]);
+  }, [selectedId, updateCartridgeWithSync]);
 
-  // Assertion management
+  // Assertion management (syncs to collab)
   const addAssertion = useCallback((assertion: UserAssertion) => {
-    setCartridge(prev => ({
+    updateCartridgeWithSync(prev => ({
       ...prev,
       tests: {
         ...prev.tests!,
@@ -1745,10 +1774,10 @@ export default function BluPrinceEditor() {
     }));
     setTestStatus("pending");
     toast({ title: "Assertion Added", description: assertion.description });
-  }, [toast]);
+  }, [toast, updateCartridgeWithSync]);
 
   const removeAssertion = useCallback((id: string) => {
-    setCartridge(prev => ({
+    updateCartridgeWithSync(prev => ({
       ...prev,
       tests: {
         ...prev.tests!,
@@ -1757,18 +1786,18 @@ export default function BluPrinceEditor() {
       }
     }));
     setTestStatus("pending");
-  }, []);
+  }, [updateCartridgeWithSync]);
 
-  // Update item controller bindings
+  // Update item controller bindings (syncs to collab)
   const updateItemController = useCallback((controller: ControllerBinding) => {
     if (!selectedId) return;
-    setCartridge(prev => ({
+    updateCartridgeWithSync(prev => ({
       ...prev,
       items: prev.items.map(item => 
         item.id === selectedId ? { ...item, controller } : item
       )
     }));
-  }, [selectedId]);
+  }, [selectedId, updateCartridgeWithSync]);
 
   // Handle transform updates from physics simulation
   const handleTransformUpdate = useCallback((id: string, position: { x: number; y: number; z: number }) => {
@@ -1782,7 +1811,7 @@ export default function BluPrinceEditor() {
     }));
   }, []);
 
-  // Handle controller transform actions
+  // Handle controller transform actions (syncs to collab)
   const applyTransformAction = useCallback((action: string) => {
     if (!selectedId) return;
     
@@ -1790,7 +1819,7 @@ export default function BluPrinceEditor() {
     const scaleAmount = 0.1;
     const rotateAmount = 15; // degrees
     
-    setCartridge(prev => ({
+    updateCartridgeWithSync(prev => ({
       ...prev,
       items: prev.items.map(item => {
         if (item.id !== selectedId) return item;
@@ -1844,7 +1873,7 @@ export default function BluPrinceEditor() {
         };
       })
     }));
-  }, [selectedId]);
+  }, [selectedId, updateCartridgeWithSync]);
 
   // Controller input loop - poll for button presses and execute bound actions
   const lastPressedRef = useRef<Set<number>>(new Set());
@@ -1971,7 +2000,7 @@ export default function BluPrinceEditor() {
       newThing.physics = { ...newThing.physics!, gravityScale: 0 };
     }
 
-    setCartridge(prev => ({
+    updateCartridgeWithSync(prev => ({
       ...prev,
       items: [...prev.items, newThing]
     }));
@@ -1999,9 +2028,9 @@ export default function BluPrinceEditor() {
     });
   }, []);
 
-  // Delete item from scene
+  // Delete item from scene (syncs to collab)
   const deleteItem = useCallback((id: string) => {
-    setCartridge(prev => ({
+    updateCartridgeWithSync(prev => ({
       ...prev,
       items: prev.items.filter(item => item.id !== id)
     }));
@@ -2014,25 +2043,19 @@ export default function BluPrinceEditor() {
       return next;
     });
     toast({ title: "Item Deleted" });
-  }, [selectedId, toast]);
-
-  // Sync local cartridge changes to collaboration
-  const syncToCollab = useCallback((newCartridge: TossCartridge) => {
-    if (collaborationEnabled && collab.isJoined) {
-      collab.sendFullState(newCartridge);
-    }
-  }, [collaborationEnabled, collab.isJoined, collab.sendFullState]);
+  }, [selectedId, toast, updateCartridgeWithSync]);
   
-  // Track mouse position for collaboration cursors
+  // Track mouse position for collaboration cursors (normalized 0-1)
   useEffect(() => {
     if (!collaborationEnabled || !collab.isJoined || !editorRef.current) return;
     
     const handleMouseMove = (e: MouseEvent) => {
       const rect = editorRef.current?.getBoundingClientRect();
-      if (rect) {
+      if (rect && rect.width > 0 && rect.height > 0) {
+        // Send normalized coordinates (0-1 range)
         collab.sendCursor({
-          x: e.clientX - rect.left,
-          y: e.clientY - rect.top,
+          x: (e.clientX - rect.left) / rect.width,
+          y: (e.clientY - rect.top) / rect.height,
         });
       }
     };
@@ -2043,14 +2066,10 @@ export default function BluPrinceEditor() {
   }, [collaborationEnabled, collab.isJoined, collab.sendCursor]);
 
   const toggleGravity = () => {
-    setCartridge(prev => {
-      const updated = {
-        ...prev,
-        _editor: { ...prev._editor!, gravity_enabled: !gravityEnabled }
-      };
-      syncToCollab(updated);
-      return updated;
-    });
+    updateCartridgeWithSync(prev => ({
+      ...prev,
+      _editor: { ...prev._editor!, gravity_enabled: !gravityEnabled }
+    }));
     toast({
       title: gravityEnabled ? "Gravity Disabled" : "Gravity Enabled",
       description: gravityEnabled ? "Objects will float!" : "Objects will fall!",
@@ -2058,7 +2077,7 @@ export default function BluPrinceEditor() {
   };
 
   const resetScene = () => {
-    setCartridge(createNewCartridge());
+    updateCartridgeWithSync(createNewCartridge());
     setSelectedId(null);
     setTestStatus("pending");
   };
