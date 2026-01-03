@@ -21,8 +21,15 @@ import {
   Layers,
   Wrench,
   Palette,
-  X
+  X,
+  Menu,
+  ZoomIn,
+  ZoomOut,
+  Eye
 } from "lucide-react";
+import { useUiScale, MIN_SCALE, MAX_SCALE, DEFAULT_SCALE } from "@/contexts/UiScaleContext";
+import { Slider } from "@/components/ui/slider";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -94,6 +101,40 @@ interface CommandPaletteProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   commands: CommandItem[];
+}
+
+function UiScaleSlider() {
+  const { scale, setScale, resetScale } = useUiScale();
+  
+  return (
+    <div className="px-3 py-3 border-t border-zinc-700">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <Eye className="w-4 h-4 text-zinc-400" />
+          <span className="text-sm text-white">UI Scale</span>
+        </div>
+        <button 
+          onClick={resetScale}
+          className="text-xs text-zinc-500 hover:text-white transition-colors"
+        >
+          Reset
+        </button>
+      </div>
+      <div className="flex items-center gap-3">
+        <ZoomOut className="w-4 h-4 text-zinc-500" />
+        <Slider
+          value={[scale]}
+          min={MIN_SCALE}
+          max={MAX_SCALE}
+          step={0.05}
+          onValueChange={([value]) => setScale(value)}
+          className="flex-1"
+        />
+        <ZoomIn className="w-4 h-4 text-zinc-500" />
+        <span className="text-xs text-zinc-400 w-10 text-right">{Math.round(scale * 100)}%</span>
+      </div>
+    </div>
+  );
 }
 
 function CommandPalette({ open, onOpenChange, commands }: CommandPaletteProps) {
@@ -174,7 +215,7 @@ function CommandPalette({ open, onOpenChange, commands }: CommandPaletteProps) {
                           cmd.action();
                           onOpenChange(false);
                         }}
-                        className="w-full flex items-center gap-3 px-2 py-2 rounded-md hover:bg-zinc-800 transition-colors group"
+                        className="w-full flex items-center gap-3 px-3 py-3 rounded-md hover:bg-zinc-800 transition-colors group touch-manipulation min-h-[44px]"
                         data-testid={`command-${cmd.id}`}
                       >
                         <span className="text-zinc-400 group-hover:text-white transition-colors">
@@ -199,6 +240,9 @@ function CommandPalette({ open, onOpenChange, commands }: CommandPaletteProps) {
             )}
           </div>
         </ScrollArea>
+        
+        {/* UI Scale Slider - always visible at bottom */}
+        <UiScaleSlider />
       </DialogContent>
     </Dialog>
   );
@@ -361,13 +405,81 @@ export function UnifiedHeader({
     { id: "data-tables", label: "Data", icon: <Database className="w-4 h-4" />, path: "/data-tables", color: "text-emerald-400" },
   ];
   
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
+  // Mobile navigation items
+  const mobileNavItems = [
+    { label: "Home", icon: <Home className="w-5 h-5" />, path: "/" },
+    { label: "3D Editor", icon: <Box className="w-5 h-5" />, path: "/editor" },
+    { label: "Statechart", icon: <GitBranch className="w-5 h-5" />, path: "/statechart" },
+    { label: "Data Tables", icon: <Database className="w-5 h-5" />, path: "/data-tables" },
+    { label: "Library", icon: <FolderOpen className="w-5 h-5" />, path: "/library" },
+    { label: "Controller", icon: <Gamepad2 className="w-5 h-5" />, path: "/controller" },
+  ];
+  
   return (
     <>
-      <header className="absolute top-0 left-0 right-0 z-50 h-14 flex items-center justify-between px-4 bg-black/40 backdrop-blur border-b border-white/10">
-        <div className="flex items-center gap-3">
+      <header className="absolute top-0 left-0 right-0 z-50 h-14 flex items-center justify-between px-2 sm:px-4 bg-black/40 backdrop-blur border-b border-white/10">
+        {/* Mobile hamburger menu */}
+        <div className="md:hidden">
+          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-11 w-11 touch-manipulation"
+                data-testid="button-mobile-menu"
+              >
+                <Menu className="w-6 h-6" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-72 bg-zinc-900 border-zinc-700 p-0">
+              <div className="flex flex-col h-full">
+                <div className="p-4 border-b border-zinc-700">
+                  <div className="flex items-center gap-3">
+                    <CartridgeBadge cartridge={cartridge} size="lg" />
+                    <div>
+                      <div className="font-pixel text-white">
+                        {cartridge?.meta?.title || "UNTITLED"}
+                      </div>
+                      <div className="text-xs text-zinc-500">
+                        v{cartridge?.meta?.version || "1.0"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <ScrollArea className="flex-1">
+                  <div className="p-2">
+                    {mobileNavItems.map(item => (
+                      <Link key={item.path} href={item.path}>
+                        <button
+                          onClick={() => setMobileMenuOpen(false)}
+                          className={`w-full flex items-center gap-3 p-4 rounded-lg hover:bg-zinc-800 transition-colors touch-manipulation ${
+                            location === item.path ? "bg-zinc-800 text-primary" : "text-white"
+                          }`}
+                        >
+                          {item.icon}
+                          <span className="text-base">{item.label}</span>
+                        </button>
+                      </Link>
+                    ))}
+                  </div>
+                </ScrollArea>
+                
+                <div className="p-4 border-t border-zinc-700">
+                  <UiScaleSlider />
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+        
+        {/* Desktop left section */}
+        <div className="hidden md:flex items-center gap-3">
           <Link href="/">
-            <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-white" data-testid="button-home">
-              <ArrowLeft className="w-4 h-4" />
+            <Button variant="ghost" size="icon" className="h-11 w-11 text-muted-foreground hover:text-white touch-manipulation" data-testid="button-home">
+              <ArrowLeft className="w-5 h-5" />
             </Button>
           </Link>
           
@@ -391,76 +503,99 @@ export function UnifiedHeader({
             v{cartridge?.meta?.version || "1.0"}
           </Badge>
         </div>
+        
+        {/* Mobile cartridge badge - compact */}
+        <div className="flex md:hidden items-center gap-2">
+          <Link href="/editor">
+            <CartridgeBadge cartridge={cartridge} size="sm" />
+          </Link>
+          <span className="font-pixel text-xs text-white truncate max-w-24">
+            {cartridge?.meta?.title || "UNTITLED"}
+          </span>
+        </div>
 
+        {/* Desktop view switcher */}
         {showViewSwitcher && (
-          <div className="flex items-center gap-1 bg-zinc-900/50 rounded-lg p-1 border border-zinc-700">
+          <div className="hidden md:flex items-center gap-1 bg-zinc-900/50 rounded-lg p-1 border border-zinc-700">
             {viewButtons.map(view => (
               <Link key={view.id} href={view.path}>
                 <Button
-                  size="sm"
+                  size="default"
                   variant={currentView === view.id ? "default" : "ghost"}
-                  className={`h-7 px-3 ${currentView === view.id ? "bg-zinc-700" : view.color}`}
+                  className={`min-h-11 px-4 touch-manipulation ${currentView === view.id ? "bg-zinc-700" : view.color}`}
                   data-testid={`button-view-${view.id}`}
                 >
                   {view.icon}
-                  <span className="ml-1.5 text-xs">{view.label}</span>
+                  <span className="ml-1.5 text-sm">{view.label}</span>
                 </Button>
               </Link>
             ))}
           </div>
         )}
 
-        <div className="flex items-center gap-2">
-          {onGravityToggle && (
-            <Button 
-              size="sm" 
-              variant="ghost"
-              onClick={onGravityToggle}
-              className={gravityEnabled ? "text-green-400" : "text-orange-400"}
-              data-testid="button-gravity"
-            >
-              <Zap className="w-4 h-4 mr-1" />
-              {gravityEnabled ? "ON" : "OFF"}
-            </Button>
-          )}
+        {/* Right section - responsive */}
+        <div className="flex items-center gap-1 sm:gap-2">
+          {/* Desktop-only buttons */}
+          <div className="hidden sm:flex items-center gap-2">
+            {onGravityToggle && (
+              <Button 
+                size="default" 
+                variant="ghost"
+                onClick={onGravityToggle}
+                className={`min-h-11 px-4 touch-manipulation ${gravityEnabled ? "text-green-400" : "text-orange-400"}`}
+                data-testid="button-gravity"
+              >
+                <Zap className="w-5 h-5 mr-1" />
+                {gravityEnabled ? "ON" : "OFF"}
+              </Button>
+            )}
+            
+            {onReset && (
+              <Button size="icon" variant="ghost" onClick={onReset} className="h-11 w-11 touch-manipulation" data-testid="button-reset">
+                <RotateCcw className="w-5 h-5" />
+              </Button>
+            )}
+            
+            {children}
+            
+            <Separator orientation="vertical" className="h-6" />
+            
+            {onShareClick && (
+              <Button
+                size="default"
+                variant={collaborationEnabled ? "default" : "ghost"}
+                onClick={onShareClick}
+                className={`min-h-11 px-4 touch-manipulation ${collaborationEnabled ? "bg-cyan-600 text-white" : "text-cyan-400"}`}
+                data-testid="button-share"
+              >
+                {collaborationEnabled ? <Users className="w-5 h-5 mr-1" /> : <Share2 className="w-5 h-5 mr-1" />}
+                {collaborationEnabled ? collaboratorCount : "Share"}
+              </Button>
+            )}
+          </div>
           
-          {onReset && (
-            <Button size="sm" variant="ghost" onClick={onReset} data-testid="button-reset">
-              <RotateCcw className="w-4 h-4" />
-            </Button>
-          )}
-          
-          {children}
-          
-          <Separator orientation="vertical" className="h-6" />
-          
-          {onShareClick && (
-            <Button
-              size="sm"
-              variant={collaborationEnabled ? "default" : "ghost"}
-              onClick={onShareClick}
-              className={collaborationEnabled ? "bg-cyan-600 text-white" : "text-cyan-400"}
-              data-testid="button-share"
-            >
-              {collaborationEnabled ? <Users className="w-4 h-4 mr-1" /> : <Share2 className="w-4 h-4 mr-1" />}
-              {collaborationEnabled ? collaboratorCount : "Share"}
-            </Button>
-          )}
-          
+          {/* Command palette - always visible */}
           <Button
-            size="sm"
+            size="icon"
             variant="ghost"
             onClick={() => setCommandPaletteOpen(true)}
-            className="text-zinc-400 hover:text-white"
+            className="h-11 w-11 text-zinc-400 hover:text-white touch-manipulation"
             title="Command Palette (Ctrl+K)"
             data-testid="button-command-palette"
           >
-            <Command className="w-4 h-4" />
+            <Command className="w-5 h-5" />
           </Button>
           
+          {/* Save button - always visible when available */}
           {onSave && (
-            <Button size="sm" className="bg-primary/20 text-primary border border-primary/50" onClick={onSave} data-testid="button-save">
-              <Save className="w-4 h-4 mr-1" /> Save
+            <Button 
+              size="default" 
+              className="min-h-11 px-4 bg-primary/20 text-primary border border-primary/50 touch-manipulation" 
+              onClick={onSave} 
+              data-testid="button-save"
+            >
+              <Save className="w-5 h-5" />
+              <span className="hidden sm:inline ml-1">Save</span>
             </Button>
           )}
         </div>

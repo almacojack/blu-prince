@@ -100,12 +100,21 @@ function Cartridge3D({
       rigidBodyRef.current.setRotation({ x: 0, y: 0, z: 0, w: 1 });
       rigidBodyRef.current.setLinvel({ x: 0, y: 0, z: 0 });
       rigidBodyRef.current.setAngvel({ x: 0, y: 0, z: 0 });
+      // Wake up the body after reset so physics continues
+      rigidBodyRef.current.wakeUp();
     }
   }, [shouldReset, homePosition]);
 
   const color = new THREE.Color(cartridge.color);
   const emissiveIntensity = isSelected ? 0.5 : hovered || isHovered ? 0.2 : 0;
 
+  // Wake up the body when component mounts to ensure physics simulation starts
+  useEffect(() => {
+    if (rigidBodyRef.current) {
+      rigidBodyRef.current.wakeUp();
+    }
+  }, []);
+  
   return (
     <RigidBody 
       ref={rigidBodyRef}
@@ -114,8 +123,12 @@ function Cartridge3D({
       colliders={false} 
       restitution={0.3} 
       friction={0.8}
+      mass={1}
+      linearDamping={0.1}
+      angularDamping={0.1}
+      ccd={true}
     >
-      <CuboidCollider args={[0.6, 0.12, 0.85]} />
+      <CuboidCollider args={[0.6, 0.12, 0.85]} mass={1} />
       <group>
         <mesh
           ref={meshRef}
