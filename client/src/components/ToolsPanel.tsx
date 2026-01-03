@@ -155,6 +155,7 @@ const PHYSICS_TOOLS: { id: PhysicsTool; icon: React.ReactNode; label: string; de
   { id: 'slingshot', icon: <Sparkles className="w-4 h-4" />, label: 'Slingshot', description: 'Stretch & BOING!' },
   { id: 'spring', icon: <Link2 className="w-4 h-4" />, label: 'Spring', description: 'Connect with springs' },
   { id: 'magnet', icon: <Magnet className="w-4 h-4" />, label: 'Magnet', description: 'Attract or repel' },
+  { id: 'water_hose', icon: <Droplets className="w-4 h-4" />, label: 'Water Hose', description: 'Fill containers!' },
 ];
 
 export function ToolsPanel({
