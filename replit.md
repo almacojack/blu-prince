@@ -26,7 +26,12 @@ Preferred communication style: Simple, everyday language.
 - **"Manipulate, don't manage"** - Users should interact directly with visual objects, not hunt through menus
 - **"Show me, don't make me find it"** - Cartridges and tools should be visually present and accessible
 - **80s Atari kid vibe** - Immersive 3D backdrop like watching TV from a kid's perspective in the 80s
-- **Cyberpunk neon aesthetic** - Glowing paths, neon colors, CRT effects
+- **Dual Theme System** - Cyberpunk Neon (default) and Victorian Brass themes available via theme switcher
+
+### Recent Changes (January 2026)
+- **Environmental Forces Panel** - Separated into its own dockable panel with scientific units (Kelvin, m/s, Pascals, Sieverts, Liters)
+- **Theme System** - Global ThemeProvider with Cyberpunk/Neon and Victorian/Brass themes, theme switcher in navigation
+- **Thing Catalog** - Library card motif component browser with search, star/archive, and grid/list views
 
 ## System Architecture
 
