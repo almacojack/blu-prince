@@ -5,6 +5,7 @@ import { insertCartridgeSchema, insertWorldSchema, insertWorldCartridgeSchema, i
 import { z } from "zod";
 import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
 import { setupWebSocket, getChannelStats } from "./websocket";
+import { isDevMode, generateMockCartridges, generateMockWorlds, generateMockEvents, generateMockVaultEntries, getMarvinQuote, DEV_MODE_BANNER } from "@shared/devMode";
 
 function requireAuth(req: any, res: any, next: any) {
   if (!req.user) {
@@ -21,15 +22,59 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // Setup WebSocket for controller events
   setupWebSocket(httpServer);
   
-  // Health check
+  const devMode = isDevMode();
+  
+  // Health check with dev mode info
   app.get("/api/health", (req, res) => {
-    res.json({ status: "ok" });
+    res.json({ 
+      status: "ok",
+      mode: devMode ? "development" : "production",
+      mock_data: devMode,
+    });
+  });
+  
+  // Dev mode info endpoint
+  app.get("/api/dev-info", (req, res) => {
+    if (!devMode) {
+      return res.status(404).json({ error: "Not found" });
+    }
+    const theme = Math.random() > 0.5 ? 'victorian' : 'cyberpunk';
+    res.json({
+      mode: "development",
+      mock_data_enabled: true,
+      marvin_says: getMarvinQuote(),
+      banner: DEV_MODE_BANNER[theme],
+      theme,
+    });
   });
 
-  // Get all cartridges
+  // Get all cartridges (with mock data fallback in dev mode)
   app.get("/api/cartridges", async (req, res) => {
     try {
       const cartridges = await storage.getAllCartridges();
+      
+      if (devMode && cartridges.length === 0) {
+        const mockCartridges = generateMockCartridges(8);
+        return res.json(mockCartridges.map(mc => ({
+          id: mc.id,
+          tngli_id: mc.tngli_id,
+          toss_file: {
+            manifest: { 
+              id: mc.id, 
+              tngli_id: mc.tngli_id,
+              title: mc.title,
+              author: mc.author,
+              description: mc.description,
+              version: "1.0.0"
+            },
+            ...mc.toss_file
+          },
+          owner_id: null,
+          _mock: true,
+          _marvin_says: getMarvinQuote(),
+        })));
+      }
+      
       res.json(cartridges);
     } catch (error) {
       console.error("Error fetching cartridges:", error);
@@ -139,6 +184,22 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const userId = (req as any).user?.id;
       const tenant = getTenant(req);
       const allWorlds = await storage.getAllWorlds();
+      
+      // Dev mode: return mock worlds if no real data
+      if (devMode && allWorlds.length === 0) {
+        const mockWorlds = generateMockWorlds(4);
+        return res.json(mockWorlds.map(mw => ({
+          id: mw.id,
+          name: mw.name,
+          slug: mw.slug,
+          description: mw.description,
+          owner_id: null,
+          tenant: tenant,
+          visibility: "public",
+          _mock: true,
+          _marvin_says: getMarvinQuote(),
+        })));
+      }
       
       // Get public worlds for this tenant
       const publicWorlds = allWorlds.filter(w => 
@@ -317,6 +378,21 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     try {
       const userId = (req as any).user.id;
       const entries = await storage.getVaultEntries(userId);
+      
+      // Dev mode: return mock vault entries if empty
+      if (devMode && entries.length === 0) {
+        const mockEntries = generateMockVaultEntries(4);
+        return res.json(mockEntries.map(me => ({
+          id: me.id,
+          user_id: userId,
+          cartridge_id: me.cartridge_id,
+          cartridge_title: me.cartridge_title,
+          vaulted_at: me.vaulted_at,
+          _mock: true,
+          _marvin_says: getMarvinQuote(),
+        })));
+      }
+      
       res.json(entries);
     } catch (error) {
       console.error("Error fetching vault:", error);
@@ -395,6 +471,22 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       } else {
         events = await storage.getAllFamousEvents(tenant);
       }
+      
+      // Dev mode: return mock events if no real data
+      if (devMode && events.length === 0) {
+        const mockEvents = generateMockEvents(6);
+        return res.json(mockEvents.map(me => ({
+          id: me.id,
+          title: me.title,
+          description: me.description,
+          event_date: me.date,
+          category: me.category,
+          tenant: tenant || "tingos",
+          _mock: true,
+          _marvin_says: getMarvinQuote(),
+        })));
+      }
+      
       res.json(events);
     } catch (error) {
       console.error("Error fetching events:", error);

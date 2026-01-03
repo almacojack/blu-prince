@@ -176,6 +176,77 @@ export function generateMockWorld(theme?: 'victorian' | 'cyberpunk'): MockWorld 
   };
 }
 
+export function generateMockWorlds(count: number = 3): MockWorld[] {
+  return Array.from({ length: count }, () => generateMockWorld());
+}
+
+export interface MockEvent {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  category: string;
+  theme: 'victorian' | 'cyberpunk';
+}
+
+export function generateMockEvent(theme?: 'victorian' | 'cyberpunk'): MockEvent {
+  const selectedTheme = theme || (Math.random() > 0.5 ? 'victorian' : 'cyberpunk');
+  const isVictorian = selectedTheme === 'victorian';
+  
+  const victorianEvents = [
+    { title: "The Great Exhibition Opens", date: "1851-05-01", category: "exhibition" },
+    { title: "First Transatlantic Telegraph", date: "1858-08-16", category: "technology" },
+    { title: "Crystal Palace Fire", date: "1866-12-30", category: "disaster" },
+    { title: "Pneumatic Dispatch Inaugurated", date: "1863-02-20", category: "technology" },
+    { title: "Royal Society of Steam Engineers Founded", date: "1847-03-14", category: "society" },
+  ];
+  
+  const cyberpunkEvents = [
+    { title: "MEGACORP_HOSTILE_TAKEOVER::COMPLETE", date: "2077-06-15", category: "corporate" },
+    { title: "Neural Net Awakening [CLASSIFIED]", date: "2084-01-01", category: "ai" },
+    { title: "Chrome District Riots - Day 47", date: "2079-11-23", category: "civil_unrest" },
+    { title: "First Human-AI Merger Approved", date: "2081-09-09", category: "technology" },
+    { title: "Global Grid Blackout - 72 Hours", date: "2076-12-31", category: "disaster" },
+  ];
+  
+  const event = pickRandom(isVictorian ? victorianEvents : cyberpunkEvents);
+  
+  return {
+    id: generateId(),
+    title: event.title,
+    description: pickRandom(isVictorian ? VICTORIAN_DESCRIPTIONS : CYBERPUNK_DESCRIPTIONS),
+    date: event.date,
+    category: event.category,
+    theme: selectedTheme,
+  };
+}
+
+export function generateMockEvents(count: number = 5): MockEvent[] {
+  return Array.from({ length: count }, () => generateMockEvent());
+}
+
+export interface MockVaultEntry {
+  id: string;
+  cartridge_id: string;
+  cartridge_title: string;
+  vaulted_at: string;
+  theme: 'victorian' | 'cyberpunk';
+}
+
+export function generateMockVaultEntries(count: number = 3): MockVaultEntry[] {
+  return Array.from({ length: count }, () => {
+    const theme = Math.random() > 0.5 ? 'victorian' : 'cyberpunk';
+    const isVictorian = theme === 'victorian';
+    return {
+      id: generateId(),
+      cartridge_id: generateId(),
+      cartridge_title: pickRandom(isVictorian ? VICTORIAN_CARTRIDGE_NAMES : CYBERPUNK_CARTRIDGE_NAMES),
+      vaulted_at: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
+      theme,
+    };
+  });
+}
+
 export function getMarvinQuote(): string {
   return pickRandom(MARVIN_QUOTES);
 }
