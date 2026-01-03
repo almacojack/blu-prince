@@ -342,7 +342,7 @@ function VectorTransition({ from, to, event, isHighlighted, isSelfLoop, theme }:
     );
   }, [from, to, isSelfLoop]);
 
-  const points = useMemo(() => curve.getPoints(24), [curve]);
+  const points = useMemo(() => curve.getPoints(16), [curve]);
   const color = isHighlighted ? theme.nodeSelectedColor : theme.transitionColor;
 
   const arrowData = useMemo(() => {
@@ -716,7 +716,20 @@ export default function StatechartEditor() {
       </div>
 
       <div className="flex-1 relative">
-        <Canvas key={theme.id}>
+        <Canvas 
+          key={theme.id}
+          onCreated={({ gl }) => {
+            const canvas = gl.domElement;
+            canvas.addEventListener('webglcontextlost', (e) => {
+              e.preventDefault();
+              console.warn('WebGL context lost - will auto-restore');
+            });
+            canvas.addEventListener('webglcontextrestored', () => {
+              console.log('WebGL context restored');
+            });
+          }}
+          gl={{ antialias: true, powerPreference: 'default' }}
+        >
           <color attach="background" args={[theme.background]} />
           <fog attach="fog" args={[theme.fogColor, theme.fogNear, theme.fogFar]} />
           <StatechartScene 
