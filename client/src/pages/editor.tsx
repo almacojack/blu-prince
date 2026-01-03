@@ -30,6 +30,9 @@ import { ControllerMappingsPanel } from "@/components/ControllerMappingsPanel";
 import { WaterContainer } from "@/components/WaterContainer";
 import { BrassGearAssembly } from "@/components/BrassGear";
 import { WaterControlPanel, createDefaultWaterContainer, type WaterContainerConfig } from "@/components/WaterControlPanel";
+import { SceneTree } from "@/components/SceneTree";
+import { ViewportAnglesPanel, ViewportAngle } from "@/components/ViewportAnglesPanel";
+import { createNewTossFile, TossFile } from "@/lib/toss";
 import {
   createGestureState, startGesture, updateGesture, endGesture,
   calculateFlickVelocity, calculatePoolCueImpulse, calculateSlingshotImpulse,
@@ -1702,6 +1705,9 @@ export default function BluPrinceEditor() {
   const [importProgress, setImportProgress] = useState<{ percent: number; stage: string; message: string } | null>(null);
   const [waterContainers, setWaterContainers] = useState<WaterContainerConfig[]>([]);
   const [activeWaterContainerId, setActiveWaterContainerId] = useState<string | null>(null);
+  const [viewportAngle, setViewportAngle] = useState<ViewportAngle>("perspective");
+  const [tossFile] = useState<TossFile>(createNewTossFile());
+  const [selectedStateId, setSelectedStateId] = useState<string | null>(null);
   const rigidBodyRegistry = useRef<Map<string, RapierRigidBody>>(new Map());
   const editorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -2528,6 +2534,26 @@ export default function BluPrinceEditor() {
           />
         </DockablePanel>
 
+        {/* Outliner Panel - Scene Hierarchy */}
+        <DockablePanel
+          id="outliner"
+          title="Outliner"
+          icon={<Layers className="w-4 h-4" />}
+          defaultDocked={true}
+          defaultCollapsed={false}
+        >
+          <SceneTree
+            file={tossFile}
+            selectedStateId={selectedStateId}
+            selectedAssetId={selectedAssetId}
+            onSelectState={setSelectedStateId}
+            onSelectAsset={setSelectedAssetId}
+            onRenameState={() => {}}
+            onRenameAsset={() => {}}
+            onAddState={() => {}}
+          />
+        </DockablePanel>
+
         {/* Files Panel */}
         <DockablePanel
           id="files"
@@ -2808,6 +2834,14 @@ export default function BluPrinceEditor() {
         />
         <Environment preset="night" />
       </Canvas>
+
+      {/* Viewport Angles Panel - Top Right */}
+      <div className="absolute top-16 right-4 z-40">
+        <ViewportAnglesPanel
+          currentAngle={viewportAngle}
+          onAngleChange={setViewportAngle}
+        />
+      </div>
 
       {/* Remote Cursors */}
       {collaborationEnabled && collab.isConnected && (

@@ -1304,10 +1304,10 @@ export default function BluPrince() {
       </Dialog>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Left Panel - Scene Tree with hierarchical view */}
+        {/* Left Panel - Outliner with hierarchical view */}
         <DockablePanel
-          id="scene-panel"
-          title="Scene"
+          id="outliner-panel"
+          title="Outliner"
           icon={<Layers className="w-4 h-4" />}
           defaultDocked={true}
           defaultWidth={280}
