@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { ArrowRight, Gamepad2, Users, Briefcase, Terminal, Layers, Hexagon, Code, Cpu, LogOut, User } from "lucide-react";
-import heroImage from "@assets/generated_images/retro_futuristic_data_cartridge.png";
+import { ArrowRight, Gamepad2, Users, Briefcase, Terminal, Layers, Hexagon, Code, Cpu, LogOut, User, Flame, Snowflake, Droplets, Wind, Zap, Box } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
+import { SimulatorDisplay } from "@/components/SimulatorDisplay";
 
 const colorMap: Record<string, { bg: string, text: string, border: string, glow: string }> = {
   primary: { bg: "bg-primary", text: "text-primary", border: "border-primary", glow: "shadow-primary/50" },
@@ -118,40 +118,62 @@ export default function Home() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative z-10 container mx-auto px-6 pt-20 pb-12">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+      <section className="relative z-10 container mx-auto px-6 pt-12 pb-12">
+        <div className="grid lg:grid-cols-2 gap-8 items-center">
           <motion.div 
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 mb-8 backdrop-blur-sm">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 mb-6 backdrop-blur-sm">
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-xs font-mono text-muted-foreground">ENGINE ONLINE • v1.0.0</span>
+              <span className="text-xs font-mono text-muted-foreground">MODELING AGENCY • v1.0.0</span>
             </div>
             
-            <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6 leading-none">
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-white/50">Write Once.</span>
+            <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-4 leading-none">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-white/50">Simulate.</span>
               <br />
-              <span className="font-pixel text-4xl md:text-5xl text-primary mt-4 block text-glow">PLAY ANYWHERE</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-white/80 to-white/40">Model.</span>
+              <br />
+              <span className="font-pixel text-3xl md:text-4xl text-primary mt-2 block text-glow">DEPLOY</span>
             </h1>
             
-            <p className="text-lg text-muted-foreground max-w-xl leading-relaxed mb-8 font-light">
-              A high-performance gaming engine, pub/sub collaboration layer, and BPM framework wrapped in one.
-              Deploy <span className="text-secondary font-mono mx-1">TOSS cartridges</span> to browsers, microcontrollers, or CLI.
+            <p className="text-lg text-muted-foreground max-w-xl leading-relaxed mb-6 font-light">
+              Your <span className="text-secondary font-semibold">modeling agency</span> for powerful simulation tools.
+              Create physics-driven experiences with fire, ice, water, and wind forces.
+              Deploy <span className="text-primary font-mono">TOSS cartridges</span> anywhere.
             </p>
 
-            <div className="flex flex-wrap gap-4">
+            <div className="grid grid-cols-2 gap-3 mb-6">
+              <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                <div className="flex items-center gap-2 mb-1">
+                  <Flame className="w-4 h-4 text-red-400" />
+                  <Snowflake className="w-4 h-4 text-blue-400" />
+                  <Droplets className="w-4 h-4 text-cyan-400" />
+                  <Wind className="w-4 h-4 text-green-400" />
+                </div>
+                <span className="text-xs text-muted-foreground">Environmental Forces</span>
+              </div>
+              <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                <div className="flex items-center gap-2 mb-1">
+                  <Box className="w-4 h-4 text-violet-400" />
+                  <Zap className="w-4 h-4 text-yellow-400" />
+                </div>
+                <span className="text-xs text-muted-foreground">Hitbox Collisions</span>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
               <Link href="/editor">
-                <Button size="lg" className="bg-secondary hover:bg-secondary/90 text-black font-mono h-12 cursor-pointer border-2 border-transparent hover:border-white/20 transition-all">
-                  <Gamepad2 className="mr-2 h-4 w-4" />
-                  OPEN EDITOR
+                <Button size="lg" className="min-h-11 bg-secondary hover:bg-secondary/90 text-black font-mono cursor-pointer border-2 border-transparent hover:border-white/20 transition-all touch-manipulation" data-testid="button-open-editor">
+                  <Hexagon className="mr-2 h-4 w-4" />
+                  BLU-PRINCE EDITOR
                 </Button>
               </Link>
               <Link href="/runtime">
-                <Button size="lg" className="bg-primary/10 hover:bg-primary/20 text-primary font-mono h-12 cursor-pointer border border-primary/50">
+                <Button size="lg" className="min-h-11 bg-primary/10 hover:bg-primary/20 text-primary font-mono cursor-pointer border border-primary/50 touch-manipulation" data-testid="button-launch-simulator">
                   <Terminal className="mr-2 h-4 w-4" />
-                  LAUNCH SIMULATOR
+                  SIMULATOR
                 </Button>
               </Link>
             </div>
@@ -161,67 +183,70 @@ export default function Home() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="relative flex justify-center items-center"
+            className="relative"
           >
-            <div className="relative w-full max-w-[500px] aspect-square">
-              {/* Spinning ring effect */}
-              <div className="absolute inset-0 border border-primary/20 rounded-full animate-[spin_10s_linear_infinite]" />
-              <div className="absolute inset-10 border border-secondary/20 rounded-full animate-[spin_15s_linear_infinite_reverse]" />
-              
-              <img 
-                src={heroImage} 
-                alt="TOSS Cartridge" 
-                className="absolute inset-0 w-full h-full object-contain drop-shadow-[0_0_50px_rgba(124,58,237,0.3)] hover:scale-105 transition-transform duration-500"
-              />
-              
-              {/* Floating Interface Elements */}
-              <motion.div 
-                animate={{ y: [0, -10, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute -right-4 top-20 p-4 rounded-lg bg-black/80 backdrop-blur border border-primary/30 max-w-[200px]"
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <Gamepad2 className="w-3 h-3 text-primary" />
-                  <span className="text-[10px] font-mono text-primary">INPUT_DETECTED</span>
-                </div>
-                <div className="space-y-1">
-                   <div className="flex justify-between text-[10px] font-mono text-muted-foreground">
-                    <span>DEVICE</span>
-                    <span className="text-white">PICO_W</span>
-                  </div>
-                  <div className="flex justify-between text-[10px] font-mono text-muted-foreground">
-                    <span>LATENCY</span>
-                    <span className="text-green-500">12ms</span>
-                  </div>
-                </div>
-              </motion.div>
-            </div>
+            <SimulatorDisplay showControls={true} autoAnimate={true} />
           </motion.div>
         </div>
       </section>
 
       {/* Core Pillars */}
       <section className="relative z-10 py-12 container mx-auto px-6">
-        <div className="grid md:grid-cols-3 gap-8">
-          <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
+        <div className="text-center mb-8">
+          <h2 className="text-2xl font-bold mb-2">Powerful Simulation Modeling</h2>
+          <p className="text-muted-foreground">Forces, physics, and declarative side effects</p>
+        </div>
+        <div className="grid md:grid-cols-4 gap-6">
+          <div className="p-5 rounded-2xl bg-gradient-to-b from-red-500/10 to-transparent border border-red-500/20 hover:border-red-500/40 transition-colors">
+            <Flame className="w-8 h-8 text-red-400 mb-4" />
+            <h3 className="text-lg font-bold mb-2">Fire Forces</h3>
+            <p className="text-sm text-muted-foreground">
+              Temperature-sensitive objects melt, burn, or trigger side effects on contact.
+            </p>
+          </div>
+          <div className="p-5 rounded-2xl bg-gradient-to-b from-blue-500/10 to-transparent border border-blue-500/20 hover:border-blue-500/40 transition-colors">
+            <Snowflake className="w-8 h-8 text-blue-400 mb-4" />
+            <h3 className="text-lg font-bold mb-2">Ice Forces</h3>
+            <p className="text-sm text-muted-foreground">
+              Freeze points trigger state changes. Objects can shatter or become brittle.
+            </p>
+          </div>
+          <div className="p-5 rounded-2xl bg-gradient-to-b from-cyan-500/10 to-transparent border border-cyan-500/20 hover:border-cyan-500/40 transition-colors">
+            <Droplets className="w-8 h-8 text-cyan-400 mb-4" />
+            <h3 className="text-lg font-bold mb-2">Water Forces</h3>
+            <p className="text-sm text-muted-foreground">
+              Buoyancy simulation - objects sink, float, or achieve neutral density.
+            </p>
+          </div>
+          <div className="p-5 rounded-2xl bg-gradient-to-b from-green-500/10 to-transparent border border-green-500/20 hover:border-green-500/40 transition-colors">
+            <Wind className="w-8 h-8 text-green-400 mb-4" />
+            <h3 className="text-lg font-bold mb-2">Wind Forces</h3>
+            <p className="text-sm text-muted-foreground">
+              Aerodynamic drag and lift coefficients. Push, pull, and flutter effects.
+            </p>
+          </div>
+        </div>
+        
+        <div className="grid md:grid-cols-3 gap-6 mt-8">
+          <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
+            <Box className="w-8 h-8 text-violet-400 mb-4" />
+            <h3 className="text-lg font-bold mb-2">Hitbox Collisions</h3>
+            <p className="text-sm text-muted-foreground">
+              Force emitters have hitboxes. Objects detect overlap and fire events to targets.
+            </p>
+          </div>
+          <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
+            <Zap className="w-8 h-8 text-yellow-400 mb-4" />
+            <h3 className="text-lg font-bold mb-2">Side Effects</h3>
+            <p className="text-sm text-muted-foreground">
+              Declarative callbacks: onMelt, onFreeze, onSubmerge. Source + target + force = action.
+            </p>
+          </div>
+          <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
             <Gamepad2 className="w-8 h-8 text-primary mb-4" />
-            <h3 className="text-xl font-bold mb-2">Gaming First</h3>
+            <h3 className="text-lg font-bold mb-2">Controller First</h3>
             <p className="text-sm text-muted-foreground">
-              Built for loops, input handling, and rendering. Whether it's ThreeJS, Canvas, or an ASCII TUI.
-            </p>
-          </div>
-          <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
-            <Users className="w-8 h-8 text-secondary mb-4" />
-            <h3 className="text-xl font-bold mb-2">Multi-User Sync</h3>
-            <p className="text-sm text-muted-foreground">
-              Real-time Pub/Sub layer baked in. Collaboration is just a shared state away.
-            </p>
-          </div>
-          <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
-            <Briefcase className="w-8 h-8 text-accent mb-4" />
-            <h3 className="text-xl font-bold mb-2">Business Logic</h3>
-            <p className="text-sm text-muted-foreground">
-              Deterministic state machines make it perfect for complex BPM workflows when the fun is over.
+              Zero-config gamepad detection. Haptic feedback, visual bindings, cross-platform.
             </p>
           </div>
         </div>

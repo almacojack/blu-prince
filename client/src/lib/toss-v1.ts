@@ -49,6 +49,126 @@ export interface PhysicsProps {
   angularDamping?: number;
 }
 
+// ============================================
+// FORCE SYSTEM - Environmental forces with hitboxes
+// ============================================
+
+// Types of environmental forces
+export type ForceType = "fire" | "ice" | "water" | "wind" | "magnet" | "gravity" | "electric";
+
+// Force emitter - a source that applies forces to objects in its hitbox
+export interface ForceEmitter {
+  id: string;
+  type: ForceType;
+  enabled: boolean;
+  
+  // Position and hitbox
+  transform: Transform;
+  hitbox: Bounds;
+  
+  // Force properties
+  magnitude: number;        // Strength of force (0-100)
+  direction?: { x: number; y: number; z: number }; // For directional forces (wind, gravity)
+  falloff?: "none" | "linear" | "quadratic"; // How force decreases with distance
+  radius?: number;          // Max effect radius
+  
+  // Target filtering - which objects are affected
+  targetFilter?: {
+    itemIds?: string[];           // Specific item IDs to affect (empty = all)
+    excludeItemIds?: string[];    // Items to exclude
+    sensitivityRequired?: keyof SensitivityDeclarations; // Only affect items with this sensitivity
+    tags?: string[];              // Only affect items with these tags
+  };
+  
+  // Visual representation
+  visualStyle?: "particles" | "glow" | "distortion" | "none";
+  color?: string;
+  showHitbox?: boolean;     // Visualize the hitbox in editor
+  
+  // Pulse/oscillation
+  pulsing?: boolean;
+  pulseFrequency?: number;  // Hz
+}
+
+// Sensitivity declarations - how objects react to forces
+export interface SensitivityDeclarations {
+  temperature?: {           // React to fire/ice
+    sensitive: boolean;
+    magnitude: number;      // 0-1, how strongly affected
+    meltPoint?: number;     // Temperature at which state changes
+    freezePoint?: number;
+    onMelt?: string;        // Side effect action name
+    onFreeze?: string;
+  };
+  magnetic?: {              // React to magnets
+    sensitive: boolean;
+    magnitude: number;
+    polarity?: "positive" | "negative" | "neutral";
+    onAttract?: string;
+    onRepel?: string;
+  };
+  buoyancy?: {              // React to water
+    sensitive: boolean;
+    magnitude: number;      // <1 sinks, =1 neutral, >1 floats
+    onSubmerge?: string;
+    onSurface?: string;
+  };
+  aerodynamic?: {           // React to wind
+    sensitive: boolean;
+    dragCoefficient: number;
+    liftCoefficient?: number;
+    onGust?: string;
+  };
+  electric?: {              // React to electric forces
+    sensitive: boolean;
+    conductivity: number;   // 0-1
+    charge?: number;        // coulombs
+    onShock?: string;
+  };
+}
+
+// Side effect definition - callbacks triggered by force interactions
+export interface SideEffect {
+  id: string;
+  name: string;
+  type: "state_change" | "spawn" | "destroy" | "sound" | "particle" | "animation" | "custom";
+  
+  // What triggers this effect
+  trigger: {
+    forceType: ForceType;
+    forceEmitterId?: string;  // Specific emitter, or undefined for any
+    condition: "enter" | "exit" | "threshold" | "continuous";
+    threshold?: number;     // For threshold triggers
+  };
+  
+  // Source/target relationship
+  source: {
+    type: "force_emitter" | "item" | "global";
+    id?: string;            // Force emitter or item ID
+  };
+  target: {
+    type: "self" | "other" | "specific";
+    itemId?: string;        // For "specific" target type
+    itemIds?: string[];     // Multiple targets
+  };
+  
+  // What happens
+  action: {
+    targetState?: string;   // For state_change
+    spawnItem?: string;     // For spawn (item template id)
+    spawnAtTarget?: boolean; // Spawn at target location
+    soundAsset?: string;    // For sound
+    particleConfig?: Record<string, any>;
+    animationName?: string;
+    customHandler?: string; // Function name for custom
+  };
+  
+  // Timing
+  delay?: number;           // ms
+  cooldown?: number;        // ms between triggers
+  maxTriggers?: number;     // Limit total triggers (-1 = unlimited)
+}
+
 // Controller binding for an item
 export interface ControllerBinding {
   focus_order?: number;
@@ -105,6 +225,12 @@ export interface TossItem {
   
   // Per-item state machine
   fsm?: ItemFSM;
+  
+  // Force sensitivity - how this object reacts to environmental forces
+  sensitivity?: SensitivityDeclarations;
+  
+  // Side effects - callbacks triggered by force interactions
+  sideEffects?: SideEffect[];
   
   // Hierarchy
   parent_id?: string;      // for hierarchical grouping
@@ -238,6 +364,12 @@ export interface TossCartridge {
   
   // 3D assets and other binary content
   assets?: TossAssetRegistry;
+  
+  // Environmental force emitters (fire, ice, water, wind, etc.)
+  forceEmitters?: ForceEmitter[];
+  
+  // Global side effects (cartridge-level callbacks)
+  globalSideEffects?: SideEffect[];
   
   // Test harness for validation
   tests?: TestHarness;
