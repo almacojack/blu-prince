@@ -7,9 +7,10 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+import { SVGLoader } from 'three/addons/loaders/SVGLoader.js';
 import type { Toss3DAsset, Toss3DAssetMetadata } from './toss';
 
-type Asset3DFormat = 'gltf' | 'glb' | 'obj' | 'stl' | 'threejs-json';
+type Asset3DFormat = 'gltf' | 'glb' | 'obj' | 'stl' | 'threejs-json' | 'svg';
 
 export interface ImportResult {
   success: boolean;
@@ -42,6 +43,8 @@ function detectFormat(filename: string, arrayBuffer?: ArrayBuffer): Asset3DForma
       return 'stl';
     case 'json':
       return 'threejs-json';
+    case 'svg':
+      return 'svg';
     default:
       return null;
   }
@@ -401,6 +404,108 @@ export async function importThreeJSJSON(
   }
 }
 
+export interface SVGImportOptions {
+  extrudeDepth: number;
+  scale: number;
+  centerOrigin: boolean;
+}
+
+export async function importSVG(
+  file: File,
+  options: Partial<SVGImportOptions> = {},
+  onProgress?: (progress: ImportProgress) => void
+): Promise<ImportResult> {
+  const { extrudeDepth = 0.2, scale = 0.01, centerOrigin = true } = options;
+  
+  try {
+    onProgress?.({ stage: 'reading', percent: 10, message: 'Reading SVG file...' });
+    
+    const text = await file.text();
+    
+    onProgress?.({ stage: 'parsing', percent: 30, message: 'Parsing SVG paths...' });
+    
+    const loader = new SVGLoader();
+    const svgData = loader.parse(text);
+    
+    onProgress?.({ stage: 'analyzing', percent: 50, message: 'Extruding shapes...' });
+    
+    const group = new THREE.Group();
+    const material = new THREE.MeshStandardMaterial({
+      color: 0x7c3aed,
+      roughness: 0.5,
+      metalness: 0.1,
+      side: THREE.DoubleSide,
+    });
+    
+    for (const path of svgData.paths) {
+      const shapes = SVGLoader.createShapes(path);
+      
+      for (const shape of shapes) {
+        let geometry: THREE.BufferGeometry;
+        
+        if (extrudeDepth > 0) {
+          const extrudeSettings = {
+            depth: extrudeDepth,
+            bevelEnabled: false,
+          };
+          geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+        } else {
+          geometry = new THREE.ShapeGeometry(shape);
+        }
+        
+        const mesh = new THREE.Mesh(geometry, material.clone());
+        
+        if (path.color) {
+          (mesh.material as THREE.MeshStandardMaterial).color.set(path.color);
+        }
+        
+        group.add(mesh);
+      }
+    }
+    
+    group.scale.set(scale, -scale, scale);
+    
+    if (centerOrigin) {
+      const box = new THREE.Box3().setFromObject(group);
+      const center = box.getCenter(new THREE.Vector3());
+      group.position.sub(center);
+    }
+    
+    onProgress?.({ stage: 'encoding', percent: 80, message: 'Encoding asset...' });
+    
+    const stats = computeMeshStats(group);
+    const boundingBox = computeBoundingBox(group);
+    const thumbnail = await generateThumbnail(group);
+    
+    const metadata: Toss3DAssetMetadata = {
+      name: file.name.replace(/\.svg$/i, ''),
+      format: 'svg' as any,
+      fileSize: file.size,
+      vertexCount: stats.vertexCount,
+      faceCount: stats.faceCount,
+      hasAnimations: false,
+      hasTextures: false,
+      boundingBox,
+      importedAt: new Date().toISOString(),
+      originalFilename: file.name,
+    };
+    
+    const asset: Toss3DAsset = {
+      id: generateId(),
+      type: 'model',
+      metadata,
+      data: text,
+      thumbnail,
+    };
+    
+    onProgress?.({ stage: 'done', percent: 100, message: 'SVG import complete!' });
+    
+    return { success: true, asset, object3D: group };
+  } catch (error) {
+    return { success: false, error: String(error) };
+  }
+}
+
 export async function importAsset(
   file: File,
   onProgress?: (progress: ImportProgress) => void
@@ -410,7 +515,7 @@ export async function importAsset(
   if (!format) {
     return { 
       success: false, 
-      error: `Unsupported file format. Supported: glTF, GLB, OBJ, STL, Three.js JSON` 
+      error: `Unsupported file format. Supported: glTF, GLB, OBJ, STL, Three.js JSON, SVG` 
     };
   }
   
@@ -424,15 +529,17 @@ export async function importAsset(
       return importSTL(file, onProgress);
     case 'threejs-json':
       return importThreeJSJSON(file, onProgress);
+    case 'svg':
+      return importSVG(file, {}, onProgress);
     default:
       return { success: false, error: 'Unknown format' };
   }
 }
 
 export function getSupportedExtensions(): string[] {
-  return ['.gltf', '.glb', '.obj', '.stl', '.json'];
+  return ['.gltf', '.glb', '.obj', '.stl', '.json', '.svg'];
 }
 
 export function getAcceptString(): string {
-  return '.gltf,.glb,.obj,.stl,.json';
+  return '.gltf,.glb,.obj,.stl,.json,.svg';
 }

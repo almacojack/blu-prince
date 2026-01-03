@@ -17,8 +17,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   ArrowLeft, Play, Pause, RotateCcw, Box, Circle, 
   Triangle, Settings, Layers, Zap, Save, Upload, CheckCircle, XCircle,
-  Plus, Trash2, ArrowRight, GitBranch, X, Gamepad2, Vibrate
+  Plus, Trash2, ArrowRight, GitBranch, X, Gamepad2, Vibrate,
+  Pentagon, Hexagon, Diamond, Cone, FileImage, Eye, EyeOff,
+  Palette, Move, RotateCw, Maximize2
 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 import { 
   TossCartridge, TossItem, EditorMode, UserAssertion, ItemFSM, ControllerBinding,
   createNewCartridge, createThing, DEFAULT_PHYSICS, CONTROLLER_BUTTONS
@@ -120,14 +124,39 @@ function PhysicsThing({ item, isSelected, onSelect, onTransformUpdate, mode }: P
         castShadow
         onClick={(e) => { e.stopPropagation(); onSelect(); }}
       >
-        {item.bounds.type === "sphere" ? (
+        {item.bounds.type === "sphere" && (
           <sphereGeometry args={[item.bounds.radius || 0.5, 32, 32]} />
-        ) : (
+        )}
+        {item.bounds.type === "box" && (
           <boxGeometry args={[
             item.bounds.width || 1, 
             item.bounds.height || 1, 
             item.bounds.depth || 1
           ]} />
+        )}
+        {item.bounds.type === "cone" && (
+          <coneGeometry args={[0.5, 1, 32]} />
+        )}
+        {item.bounds.type === "tetrahedron" && (
+          <tetrahedronGeometry args={[0.6]} />
+        )}
+        {item.bounds.type === "octahedron" && (
+          <octahedronGeometry args={[0.5]} />
+        )}
+        {item.bounds.type === "icosahedron" && (
+          <icosahedronGeometry args={[0.5]} />
+        )}
+        {item.bounds.type === "dodecahedron" && (
+          <dodecahedronGeometry args={[0.5]} />
+        )}
+        {item.bounds.type === "cylinder" && (
+          <cylinderGeometry args={[0.4, 0.4, 1, 32]} />
+        )}
+        {item.bounds.type === "torus" && (
+          <torusGeometry args={[0.4, 0.15, 16, 48]} />
+        )}
+        {!item.bounds.type || !["sphere", "box", "cone", "tetrahedron", "octahedron", "icosahedron", "dodecahedron", "cylinder", "torus"].includes(item.bounds.type) && (
+          <boxGeometry args={[1, 1, 1]} />
         )}
         <meshStandardMaterial 
           color={color} 
@@ -200,36 +229,220 @@ function ModeBar({ mode, onModeChange, testStatus }: {
   );
 }
 
-// Component palette
-function ComponentPalette({ onAddComponent }: { onAddComponent: (type: string) => void }) {
-  const components = [
-    { id: "box", icon: Box, label: "Box" },
-    { id: "sphere", icon: Circle, label: "Sphere" },
-    { id: "plain_button", icon: Triangle, label: "Button" },
+// Component palette with color icons support
+interface ComponentPaletteProps {
+  onAddComponent: (type: string) => void;
+  onToggleLayers: () => void;
+  showLayers: boolean;
+  colorIcons: boolean;
+}
+
+function ComponentPalette({ onAddComponent, onToggleLayers, showLayers, colorIcons }: ComponentPaletteProps) {
+  const primitives = [
+    { id: "box", icon: Box, label: "Box", color: "#7c3aed" },
+    { id: "sphere", icon: Circle, label: "Sphere", color: "#ff6b6b" },
+    { id: "cone", icon: Triangle, label: "Cone", color: "#fbbf24" },
+    { id: "cylinder", icon: Hexagon, label: "Cylinder", color: "#34d399" },
   ];
+  
+  const platonic = [
+    { id: "tetrahedron", icon: Triangle, label: "Tetrahedron (4)", color: "#f472b6" },
+    { id: "octahedron", icon: Diamond, label: "Octahedron (8)", color: "#60a5fa" },
+    { id: "icosahedron", icon: Pentagon, label: "Icosahedron (20)", color: "#a78bfa" },
+    { id: "dodecahedron", icon: Hexagon, label: "Dodecahedron (12)", color: "#2dd4bf" },
+  ];
+  
+  const special = [
+    { id: "torus", icon: Circle, label: "Torus", color: "#fb923c" },
+  ];
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const handleFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    const { importAsset } = await import('@/lib/asset-importer');
+    const result = await importAsset(file, (progress) => {
+      console.log(`Import progress: ${progress.percent}% - ${progress.message}`);
+    });
+    
+    if (result.success && result.asset) {
+      onAddComponent(`imported_${result.asset.id}`);
+    }
+    
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   return (
     <div 
-      className="absolute left-4 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-2 bg-black/80 backdrop-blur p-2 rounded-lg border border-white/10"
+      className="absolute left-4 top-1/2 -translate-y-1/2 z-40 flex flex-col bg-black/80 backdrop-blur rounded-lg border border-white/10 overflow-hidden"
       onPointerDown={(e) => e.stopPropagation()}
     >
-      {components.map((comp) => (
-        <Button
-          key={comp.id}
-          size="icon"
-          variant="ghost"
-          onClick={() => onAddComponent(comp.id)}
-          className="w-10 h-10 text-muted-foreground hover:text-white hover:bg-white/10"
-          title={comp.label}
-          data-testid={`button-add-${comp.id}`}
+      <ScrollArea className="max-h-[400px]">
+        <div className="p-2 space-y-1">
+          <div className="text-[9px] uppercase text-muted-foreground font-bold px-1 mb-1">Primitives</div>
+          {primitives.map((comp) => (
+            <Button
+              key={comp.id}
+              size="icon"
+              variant="ghost"
+              onClick={() => onAddComponent(comp.id)}
+              className="w-10 h-10 hover:bg-white/10"
+              style={colorIcons ? { color: comp.color } : { color: 'inherit' }}
+              title={comp.label}
+              data-testid={`button-add-${comp.id}`}
+            >
+              <comp.icon className="w-5 h-5" />
+            </Button>
+          ))}
+          
+          <Separator className="my-2 bg-white/10" />
+          <div className="text-[9px] uppercase text-muted-foreground font-bold px-1 mb-1">Platonic Solids</div>
+          {platonic.map((comp) => (
+            <Button
+              key={comp.id}
+              size="icon"
+              variant="ghost"
+              onClick={() => onAddComponent(comp.id)}
+              className="w-10 h-10 hover:bg-white/10"
+              style={colorIcons ? { color: comp.color } : { color: 'inherit' }}
+              title={comp.label}
+              data-testid={`button-add-${comp.id}`}
+            >
+              <comp.icon className="w-5 h-5" />
+            </Button>
+          ))}
+          
+          <Separator className="my-2 bg-white/10" />
+          <div className="text-[9px] uppercase text-muted-foreground font-bold px-1 mb-1">Special</div>
+          {special.map((comp) => (
+            <Button
+              key={comp.id}
+              size="icon"
+              variant="ghost"
+              onClick={() => onAddComponent(comp.id)}
+              className="w-10 h-10 hover:bg-white/10"
+              style={colorIcons ? { color: comp.color } : { color: 'inherit' }}
+              title={comp.label}
+              data-testid={`button-add-${comp.id}`}
+            >
+              <comp.icon className="w-5 h-5" />
+            </Button>
+          ))}
+          
+          <Separator className="my-2 bg-white/10" />
+          <div className="text-[9px] uppercase text-muted-foreground font-bold px-1 mb-1">Import</div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".svg,.gltf,.glb,.obj,.stl,.json"
+            onChange={handleFileImport}
+            className="hidden"
+          />
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={() => fileInputRef.current?.click()}
+            className="w-10 h-10 hover:bg-white/10"
+            style={colorIcons ? { color: '#10b981' } : { color: 'inherit' }}
+            title="Import SVG/3D File"
+            data-testid="button-import-file"
+          >
+            <FileImage className="w-5 h-5" />
+          </Button>
+        </div>
+      </ScrollArea>
+      
+      <Separator className="bg-white/10" />
+      <div className="p-2">
+        <Button 
+          size="icon" 
+          variant="ghost" 
+          className={`w-10 h-10 ${showLayers ? 'text-cyan-400 bg-cyan-400/10' : 'text-muted-foreground'}`}
+          title="Toggle Layers"
+          onClick={onToggleLayers}
+          data-testid="button-toggle-layers"
         >
-          <comp.icon className="w-5 h-5" />
+          <Layers className="w-5 h-5" />
         </Button>
-      ))}
-      <Separator className="my-1" />
-      <Button size="icon" variant="ghost" className="w-10 h-10 text-muted-foreground" title="Layers">
-        <Layers className="w-5 h-5" />
-      </Button>
+      </div>
+    </div>
+  );
+}
+
+// Layers Panel
+interface LayersPanelProps {
+  items: TossItem[];
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+  onToggleVisibility: (id: string) => void;
+  onDelete: (id: string) => void;
+  hiddenLayers: Set<string>;
+}
+
+function LayersPanel({ items, selectedId, onSelect, onToggleVisibility, onDelete, hiddenLayers }: LayersPanelProps) {
+  return (
+    <div className="absolute left-20 top-1/2 -translate-y-1/2 z-40 w-56 bg-black/90 backdrop-blur border border-white/10 rounded-lg overflow-hidden">
+      <div className="p-2 border-b border-white/10">
+        <div className="text-xs font-mono uppercase text-muted-foreground flex items-center gap-2">
+          <Layers className="w-3 h-3" /> Scene Layers
+        </div>
+      </div>
+      <ScrollArea className="max-h-[300px]">
+        <div className="p-2 space-y-1">
+          {items.length === 0 ? (
+            <div className="text-xs text-muted-foreground p-2 text-center">No objects in scene</div>
+          ) : (
+            items.map((item) => {
+              const isHidden = hiddenLayers.has(item.id);
+              const isSelected = selectedId === item.id;
+              return (
+                <div 
+                  key={item.id}
+                  className={`flex items-center justify-between p-2 rounded cursor-pointer transition-colors ${
+                    isSelected ? 'bg-primary/20 border border-primary/50' : 'hover:bg-white/5'
+                  } ${isHidden ? 'opacity-50' : ''}`}
+                  onClick={() => onSelect(item.id)}
+                >
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: item.material?.color || '#7c3aed' }}
+                    />
+                    <span className="text-xs text-white font-mono truncate max-w-[100px]">
+                      {item.id.split('_')[1] || item.id}
+                    </span>
+                    <Badge variant="outline" className="text-[8px] px-1 py-0 border-white/20">
+                      {item.bounds.type || 'box'}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="w-6 h-6"
+                      onClick={(e) => { e.stopPropagation(); onToggleVisibility(item.id); }}
+                    >
+                      {isHidden ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="w-6 h-6 text-red-400 hover:text-red-300"
+                      onClick={(e) => { e.stopPropagation(); onDelete(item.id); }}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </ScrollArea>
     </div>
   );
 }
@@ -826,6 +1039,22 @@ function ControllerPanel({ item, onUpdate, onClose }: ControllerPanelProps) {
   ["on_press", "on_release", "on_hover", "on_focus"].forEach(e => {
     if (!availableEvents.includes(e)) availableEvents.push(e);
   });
+  
+  // Manipulation actions for transform control
+  const manipulationActions = [
+    { id: "nudge_x_pos", label: "Nudge +X", icon: Move },
+    { id: "nudge_x_neg", label: "Nudge -X", icon: Move },
+    { id: "nudge_y_pos", label: "Nudge +Y", icon: Move },
+    { id: "nudge_y_neg", label: "Nudge -Y", icon: Move },
+    { id: "nudge_z_pos", label: "Nudge +Z", icon: Move },
+    { id: "nudge_z_neg", label: "Nudge -Z", icon: Move },
+    { id: "scale_up", label: "Scale Up", icon: Maximize2 },
+    { id: "scale_down", label: "Scale Down", icon: Maximize2 },
+    { id: "rotate_cw", label: "Rotate CW", icon: RotateCw },
+    { id: "rotate_ccw", label: "Rotate CCW", icon: RotateCw },
+    { id: "snap_to_grid", label: "Snap to Grid", icon: Move },
+    { id: "reset_transform", label: "Reset Transform", icon: RotateCcw },
+  ];
 
   const removeBinding = (button: string) => {
     const { [button]: _, ...rest } = controller.bindings;
@@ -954,6 +1183,90 @@ function ControllerPanel({ item, onUpdate, onClose }: ControllerPanelProps) {
               ))}
             </div>
           )}
+        </div>
+
+        {/* Transform Manipulation Actions */}
+        <div className="mt-4 p-2 bg-white/5 rounded">
+          <Label className="text-xs text-muted-foreground mb-2 block flex items-center gap-2">
+            <Move className="w-3 h-3" /> Transform Actions
+          </Label>
+          <p className="text-[10px] text-muted-foreground mb-2">
+            Bind controller buttons to manipulate objects in 3D space
+          </p>
+          {waitingForButton ? null : (
+            <div className="grid grid-cols-2 gap-1">
+              {manipulationActions.map(action => {
+                const isBound = Object.values(controller.bindings).includes(action.id);
+                return (
+                  <Button
+                    key={action.id}
+                    size="sm"
+                    variant={isBound ? "secondary" : "outline"}
+                    onClick={() => setWaitingForButton(action.id)}
+                    className={`text-[9px] h-6 ${isBound ? 'bg-primary/20' : ''}`}
+                    disabled={gamepads.length === 0}
+                    data-testid={`button-bind-${action.id}`}
+                  >
+                    <action.icon className="w-2 h-2 mr-1" /> {action.label}
+                  </Button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Quick Presets */}
+        <div className="mt-4 p-2 bg-white/5 rounded">
+          <Label className="text-xs text-muted-foreground mb-2 block">Quick Presets</Label>
+          <div className="space-y-1">
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full text-[10px] h-7"
+              onClick={() => {
+                const preset: ControllerBinding = {
+                  ...controller,
+                  bindings: {
+                    ...controller.bindings,
+                    "DPAD_UP": "nudge_z_neg",
+                    "DPAD_DOWN": "nudge_z_pos",
+                    "DPAD_LEFT": "nudge_x_neg",
+                    "DPAD_RIGHT": "nudge_x_pos",
+                    "LEFT_BUMPER": "scale_down",
+                    "RIGHT_BUMPER": "scale_up",
+                    "LEFT_TRIGGER": "rotate_ccw",
+                    "RIGHT_TRIGGER": "rotate_cw",
+                  }
+                };
+                setController(preset);
+                onUpdate(preset);
+              }}
+              data-testid="button-preset-standard"
+            >
+              Standard Transform Controls
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full text-[10px] h-7"
+              onClick={() => {
+                const preset: ControllerBinding = {
+                  ...controller,
+                  bindings: {
+                    "A": "on_press",
+                    "B": "on_release",
+                    "X": "snap_to_grid",
+                    "Y": "reset_transform",
+                  }
+                };
+                setController(preset);
+                onUpdate(preset);
+              }}
+              data-testid="button-preset-minimal"
+            >
+              Minimal (A/B/X/Y only)
+            </Button>
+          </div>
         </div>
 
         {/* Manual binding for when no controller */}
@@ -1092,6 +1405,10 @@ export default function BluPrinceEditor() {
   const [testStatus, setTestStatus] = useState<"pending" | "running" | "pass" | "fail">("pending");
   const [showFSMEditor, setShowFSMEditor] = useState(false);
   const [showController, setShowController] = useState(false);
+  const [showLayers, setShowLayers] = useState(false);
+  const [hiddenLayers, setHiddenLayers] = useState<Set<string>>(new Set());
+  const [showPreferences, setShowPreferences] = useState(false);
+  const [colorIcons, setColorIcons] = useState(true);
   const { toast } = useToast();
 
   const mode = cartridge._editor?.mode || "DESIGN";
@@ -1158,6 +1475,114 @@ export default function BluPrinceEditor() {
     }));
   }, []);
 
+  // Handle controller transform actions
+  const applyTransformAction = useCallback((action: string) => {
+    if (!selectedId) return;
+    
+    const nudgeAmount = 0.25;
+    const scaleAmount = 0.1;
+    const rotateAmount = 15; // degrees
+    
+    setCartridge(prev => ({
+      ...prev,
+      items: prev.items.map(item => {
+        if (item.id !== selectedId) return item;
+        
+        const pos = { ...item.transform.position };
+        const rot = { ...item.transform.rotation };
+        const scale = { ...item.transform.scale };
+        
+        switch (action) {
+          case "nudge_x_pos": pos.x += nudgeAmount; break;
+          case "nudge_x_neg": pos.x -= nudgeAmount; break;
+          case "nudge_y_pos": pos.y += nudgeAmount; break;
+          case "nudge_y_neg": pos.y -= nudgeAmount; break;
+          case "nudge_z_pos": pos.z += nudgeAmount; break;
+          case "nudge_z_neg": pos.z -= nudgeAmount; break;
+          case "scale_up":
+            scale.x *= (1 + scaleAmount);
+            scale.y *= (1 + scaleAmount);
+            scale.z *= (1 + scaleAmount);
+            break;
+          case "scale_down":
+            scale.x *= (1 - scaleAmount);
+            scale.y *= (1 - scaleAmount);
+            scale.z *= (1 - scaleAmount);
+            break;
+          case "rotate_cw":
+            rot.y += rotateAmount;
+            break;
+          case "rotate_ccw":
+            rot.y -= rotateAmount;
+            break;
+          case "snap_to_grid":
+            pos.x = Math.round(pos.x);
+            pos.y = Math.round(pos.y);
+            pos.z = Math.round(pos.z);
+            break;
+          case "reset_transform":
+            return {
+              ...item,
+              transform: {
+                position: { x: 0, y: 2, z: 0 },
+                rotation: { x: 0, y: 0, z: 0 },
+                scale: { x: 1, y: 1, z: 1 }
+              }
+            };
+        }
+        
+        return {
+          ...item,
+          transform: { position: pos, rotation: rot, scale }
+        };
+      })
+    }));
+  }, [selectedId]);
+
+  // Controller input loop - poll for button presses and execute bound actions
+  const lastPressedRef = useRef<Set<number>>(new Set());
+  
+  useEffect(() => {
+    if (!selectedItem?.controller) return;
+    
+    const pollController = () => {
+      const gamepads = navigator.getGamepads();
+      const pad = gamepads[0];
+      if (!pad) return;
+      
+      const bindings = selectedItem.controller!.bindings;
+      const buttonIndexMap: Record<string, number> = {
+        "A": 0, "B": 1, "X": 2, "Y": 3,
+        "LEFT_BUMPER": 4, "RIGHT_BUMPER": 5,
+        "LEFT_TRIGGER": 6, "RIGHT_TRIGGER": 7,
+        "SELECT": 8, "START": 9,
+        "LEFT_STICK_CLICK": 10, "RIGHT_STICK_CLICK": 11,
+        "DPAD_UP": 12, "DPAD_DOWN": 13, "DPAD_LEFT": 14, "DPAD_RIGHT": 15,
+        "HOME": 16,
+      };
+      
+      // Check each binding
+      Object.entries(bindings).forEach(([button, action]) => {
+        const idx = buttonIndexMap[button];
+        if (idx === undefined) return;
+        
+        const isPressed = pad.buttons[idx]?.pressed;
+        const wasPressed = lastPressedRef.current.has(idx);
+        
+        // Trigger on button down (not held)
+        if (isPressed && !wasPressed) {
+          applyTransformAction(action);
+          lastPressedRef.current.add(idx);
+        } else if (!isPressed && wasPressed) {
+          lastPressedRef.current.delete(idx);
+        }
+      });
+    };
+    
+    const interval = setInterval(pollController, 50);
+    return () => clearInterval(interval);
+  }, [selectedItem?.controller, applyTransformAction]);
+
   const setMode = (newMode: EditorMode) => {
     setCartridge(prev => ({
       ...prev,
@@ -1201,20 +1626,36 @@ export default function BluPrinceEditor() {
     }
   };
 
+  // Shape type to color mapping
+  const shapeColors: Record<string, string> = {
+    box: "#7c3aed",
+    sphere: "#ff6b6b", 
+    cone: "#fbbf24",
+    cylinder: "#34d399",
+    tetrahedron: "#f472b6",
+    octahedron: "#60a5fa",
+    icosahedron: "#a78bfa",
+    dodecahedron: "#2dd4bf",
+    torus: "#fb923c",
+  };
+
   const addComponent = (type: string) => {
     // Drop from above Ground Zero
     const dropHeight = 5 + Math.random() * 3;
     const xOffset = (Math.random() - 0.5) * 4;
     const zOffset = (Math.random() - 0.5) * 4;
+    
+    const color = shapeColors[type] || "#7c3aed";
 
     const newThing = createThing(
-      type === "sphere" ? "mesh_glyph" : type,
+      `mesh_${type}`,
       { x: xOffset, y: dropHeight, z: zOffset },
-      { color: type === "sphere" ? "#ff6b6b" : "#7c3aed" }
+      { color }
     );
 
+    // Set the correct bounds type for all shapes
+    newThing.bounds.type = type;
     if (type === "sphere") {
-      newThing.bounds.type = "sphere";
       newThing.bounds.radius = 0.5;
     }
 
@@ -1231,12 +1672,42 @@ export default function BluPrinceEditor() {
     setSelectedId(newThing.id);
 
     toast({
-      title: "Thing Created",
+      title: `${type.charAt(0).toUpperCase() + type.slice(1)} Created`,
       description: gravityEnabled 
         ? "Watch it fall to Ground Zero!" 
         : "Floating in zero-g...",
     });
   };
+
+  // Layer visibility management
+  const toggleLayerVisibility = useCallback((id: string) => {
+    setHiddenLayers(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }, []);
+
+  // Delete item from scene
+  const deleteItem = useCallback((id: string) => {
+    setCartridge(prev => ({
+      ...prev,
+      items: prev.items.filter(item => item.id !== id)
+    }));
+    if (selectedId === id) {
+      setSelectedId(null);
+    }
+    setHiddenLayers(prev => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+    toast({ title: "Item Deleted" });
+  }, [selectedId, toast]);
 
   const toggleGravity = () => {
     setCartridge(prev => ({
@@ -1325,14 +1796,91 @@ export default function BluPrinceEditor() {
             </>
           )}
           <Separator orientation="vertical" className="h-6" />
+          <Button 
+            size="sm" 
+            variant="ghost"
+            onClick={() => setShowPreferences(true)}
+            title="Preferences"
+            data-testid="button-preferences"
+          >
+            <Settings className="w-4 h-4" />
+          </Button>
           <Button size="sm" className="bg-primary/20 text-primary border border-primary/50">
             <Save className="w-4 h-4 mr-1" /> Save
           </Button>
         </div>
       </header>
 
+      {/* Preferences Dialog */}
+      <Dialog open={showPreferences} onOpenChange={setShowPreferences}>
+        <DialogContent className="sm:max-w-md bg-black/95 border-white/10">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <Settings className="w-5 h-5" /> Editor Preferences
+            </DialogTitle>
+            <DialogDescription>
+              Customize your editing experience
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="text-white">Color Icons</Label>
+                <p className="text-xs text-muted-foreground">Show shape icons in their assigned colors</p>
+              </div>
+              <Switch
+                checked={colorIcons}
+                onCheckedChange={setColorIcons}
+                data-testid="switch-color-icons"
+              />
+            </div>
+            <Separator className="bg-white/10" />
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="text-white">Show Layers Panel</Label>
+                <p className="text-xs text-muted-foreground">Display the layer management panel</p>
+              </div>
+              <Switch
+                checked={showLayers}
+                onCheckedChange={setShowLayers}
+                data-testid="switch-show-layers"
+              />
+            </div>
+            <Separator className="bg-white/10" />
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="text-white">Gravity</Label>
+                <p className="text-xs text-muted-foreground">Enable physics simulation gravity</p>
+              </div>
+              <Switch
+                checked={gravityEnabled}
+                onCheckedChange={() => toggleGravity()}
+                data-testid="switch-gravity"
+              />
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Component Palette */}
-      <ComponentPalette onAddComponent={addComponent} />
+      <ComponentPalette 
+        onAddComponent={addComponent} 
+        onToggleLayers={() => setShowLayers(!showLayers)}
+        showLayers={showLayers}
+        colorIcons={colorIcons}
+      />
+
+      {/* Layers Panel */}
+      {showLayers && (
+        <LayersPanel
+          items={cartridge.items}
+          selectedId={selectedId}
+          onSelect={setSelectedId}
+          onToggleVisibility={toggleLayerVisibility}
+          onDelete={deleteItem}
+          hiddenLayers={hiddenLayers}
+        />
+      )}
 
       {/* FSM Editor Panel */}
       {showFSMEditor && selectedItem && (
@@ -1380,16 +1928,18 @@ export default function BluPrinceEditor() {
           <Physics gravity={gravityEnabled ? [0, -9.81, 0] : [0, 0, 0]}>
             <GroundZero />
             
-            {cartridge.items.map((item) => (
-              <PhysicsThing
-                key={item.id}
-                item={item}
-                isSelected={selectedId === item.id}
-                onSelect={() => setSelectedId(item.id)}
-                onTransformUpdate={handleTransformUpdate}
-                mode={mode}
-              />
-            ))}
+            {cartridge.items
+              .filter(item => !hiddenLayers.has(item.id))
+              .map((item) => (
+                <PhysicsThing
+                  key={item.id}
+                  item={item}
+                  isSelected={selectedId === item.id}
+                  onSelect={() => setSelectedId(item.id)}
+                  onTransformUpdate={handleTransformUpdate}
+                  mode={mode}
+                />
+              ))}
           </Physics>
         </Suspense>
 
