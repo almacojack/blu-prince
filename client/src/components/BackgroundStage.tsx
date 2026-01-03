@@ -10,6 +10,8 @@ import {
 import { EffectComposer, Bloom, ChromaticAberration, Vignette } from "@react-three/postprocessing";
 import * as THREE from "three";
 import { useLocation } from "wouter";
+import { useTheme } from "@/contexts/ThemeContext";
+import { NeonSkyEffects, BrassSkyEffects } from "./ThemeSkyEffects";
 
 function CRTMonitor({ position = [0, 0, 0] as [number, number, number] }) {
   const screenRef = useRef<THREE.Mesh>(null);
@@ -133,27 +135,31 @@ function NeonSign({ text = "tingOS", position = [-4, 2.5, -3] as [number, number
   );
 }
 
-function Room() {
+function Room({ isCyberpunk = true }: { isCyberpunk?: boolean }) {
+  const floorColor = isCyberpunk ? "#1a1a2e" : "#2a2218";
+  const wallColor = isCyberpunk ? "#0f0f23" : "#1e1a12";
+  const sideColor = isCyberpunk ? "#12122e" : "#241f15";
+  
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2.5, 0]} receiveShadow>
         <planeGeometry args={[20, 20]} />
-        <meshStandardMaterial color="#1a1a2e" roughness={0.9} />
+        <meshStandardMaterial color={floorColor} roughness={0.9} />
       </mesh>
       
       <mesh position={[0, 2, -5]} receiveShadow>
         <planeGeometry args={[20, 10]} />
-        <meshStandardMaterial color="#0f0f23" roughness={0.95} />
+        <meshStandardMaterial color={wallColor} roughness={0.95} />
       </mesh>
       
       <mesh rotation={[0, Math.PI / 2, 0]} position={[-8, 2, 0]}>
         <planeGeometry args={[15, 10]} />
-        <meshStandardMaterial color="#12122e" roughness={0.95} />
+        <meshStandardMaterial color={sideColor} roughness={0.95} />
       </mesh>
       
       <mesh rotation={[0, -Math.PI / 2, 0]} position={[8, 2, 0]}>
         <planeGeometry args={[15, 10]} />
-        <meshStandardMaterial color="#12122e" roughness={0.95} />
+        <meshStandardMaterial color={sideColor} roughness={0.95} />
       </mesh>
     </group>
   );
@@ -242,7 +248,7 @@ function FloatingParticles() {
   );
 }
 
-function SceneContent() {
+function SceneContent({ themeVariant }: { themeVariant: 'cyberpunk' | 'victorian' }) {
   const { camera } = useThree();
   const [location] = useLocation();
   
@@ -254,39 +260,58 @@ function SceneContent() {
     camera.lookAt(lookOffset, 0, -2);
   });
 
+  const isCyberpunk = themeVariant === 'cyberpunk';
+  const bgColor = isCyberpunk ? "#050510" : "#1a1510";
+
   return (
     <>
-      <color attach="background" args={["#050510"]} />
-      <fog attach="fog" args={["#050510", 5, 25]} />
+      <color attach="background" args={[bgColor]} />
+      <fog attach="fog" args={[bgColor, 5, 25]} />
       
       <ambientLight intensity={0.1} />
-      <pointLight position={[0, 5, 5]} color="#7c3aed" intensity={0.5} />
-      <pointLight position={[-5, 3, -2]} color="#ec4899" intensity={0.3} />
-      <pointLight position={[5, 3, -2]} color="#3b82f6" intensity={0.3} />
+      {isCyberpunk ? (
+        <>
+          <pointLight position={[0, 5, 5]} color="#7c3aed" intensity={0.5} />
+          <pointLight position={[-5, 3, -2]} color="#ec4899" intensity={0.3} />
+          <pointLight position={[5, 3, -2]} color="#3b82f6" intensity={0.3} />
+        </>
+      ) : (
+        <>
+          <pointLight position={[0, 5, 5]} color="#b8860b" intensity={0.4} />
+          <pointLight position={[-5, 3, -2]} color="#daa520" intensity={0.2} />
+          <pointLight position={[5, 3, -2]} color="#8b4513" intensity={0.2} />
+        </>
+      )}
       
-      <Room />
-      <NeonGrid />
-      <CRTMonitor position={[0, 0, -2]} />
-      <CartridgeShelf position={[4, -1, -2]} />
-      <Beanbag position={[-2.5, -2, 1]} />
-      <AtariConsole position={[0, -2.2, 0.5]} />
-      <FloatingParticles />
-      <Stars radius={50} depth={50} count={1000} factor={2} fade speed={0.5} />
+      <Room isCyberpunk={isCyberpunk} />
+      {isCyberpunk && (
+        <>
+          <NeonGrid />
+          <CRTMonitor position={[0, 0, -2]} />
+          <CartridgeShelf position={[4, -1, -2]} />
+          <Beanbag position={[-2.5, -2, 1]} />
+          <AtariConsole position={[0, -2.2, 0.5]} />
+          <FloatingParticles />
+        </>
+      )}
+      <Stars radius={50} depth={50} count={isCyberpunk ? 1000 : 300} factor={2} fade speed={0.5} />
+      
+      {isCyberpunk ? <NeonSkyEffects /> : <BrassSkyEffects />}
       
       <EffectComposer>
         <Bloom 
-          intensity={0.8}
+          intensity={isCyberpunk ? 0.8 : 0.4}
           luminanceThreshold={0.2}
           luminanceSmoothing={0.9}
         />
-        <ChromaticAberration offset={[0.001, 0.001]} />
-        <Vignette eskil={false} offset={0.1} darkness={0.8} />
+        <ChromaticAberration offset={isCyberpunk ? [0.001, 0.001] : [0.0003, 0.0003]} />
+        <Vignette eskil={false} offset={0.1} darkness={isCyberpunk ? 0.8 : 0.6} />
       </EffectComposer>
     </>
   );
 }
 
-export function BackgroundStage() {
+function BackgroundStageInner({ themeVariant }: { themeVariant: 'cyberpunk' | 'victorian' }) {
   return (
     <div className="fixed inset-0 z-0" data-testid="background-stage">
       <Canvas
@@ -303,10 +328,15 @@ export function BackgroundStage() {
         }}
         dpr={[1, 1.5]}
       >
-        <SceneContent />
+        <SceneContent themeVariant={themeVariant} />
       </Canvas>
     </div>
   );
+}
+
+export function BackgroundStage() {
+  const { themeVariant } = useTheme();
+  return <BackgroundStageInner themeVariant={themeVariant} />;
 }
 
 export default BackgroundStage;
