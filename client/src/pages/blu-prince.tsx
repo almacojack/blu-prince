@@ -26,7 +26,7 @@ import type { Toss3DAsset } from "@/lib/toss";
 import { Progress } from "@/components/ui/progress";
 import { Asset3DPreview } from "@/components/Asset3DPreview";
 import { QRIconButton } from "@/components/QRCodePopup";
-import bluPrinceLogo from "@assets/generated_images/manga_style_blue_hindu_deity.png";
+import bluPrinceLogo from "@assets/generated_images/posterized_blue_deity_face_closeup.png";
 
 const STORAGE_KEY = "blu-prince-cartridge";
 
@@ -345,17 +345,14 @@ function CartridgeBezel({
               <Link href="/">
                 <motion.div 
                   className="relative cursor-pointer"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.98 }}
+                  whileHover={{ scale: 1.08 }}
+                  whileTap={{ scale: 0.95 }}
                 >
-                  <div className="absolute -inset-1 bg-gradient-to-r from-purple-600/40 to-cyan-600/40 rounded-full blur-md" />
-                  <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-purple-500/50 shadow-lg shadow-purple-500/30">
-                    <img 
-                      src={bluPrinceLogo} 
-                      alt="Blu-Prince"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
+                  <img 
+                    src={bluPrinceLogo} 
+                    alt="Blu-Prince"
+                    className="w-14 h-14 object-contain drop-shadow-lg"
+                  />
                 </motion.div>
               </Link>
               
