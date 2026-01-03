@@ -1305,26 +1305,29 @@ export default function BluPrince() {
                   if (!fromNode || !toNode) return null;
 
                   const nodeWidth = 160;
-                  const nodeHeight = 80;
+                  const nodeHeight = 72;
                   
-                  const fromCenterX = fromNode.x + nodeWidth / 2;
-                  const fromCenterY = fromNode.y + nodeHeight / 2;
-                  const toCenterX = toNode.x + nodeWidth / 2;
-                  const toCenterY = toNode.y + nodeHeight / 2;
+                  const goingRight = toNode.x > fromNode.x;
                   
-                  const dx = toCenterX - fromCenterX;
-                  const dy = toCenterY - fromCenterY;
+                  let x1: number, y1: number, x2: number, y2: number;
+                  
+                  if (goingRight) {
+                    x1 = fromNode.x + nodeWidth;
+                    y1 = fromNode.y + nodeHeight / 2;
+                    x2 = toNode.x;
+                    y2 = toNode.y + nodeHeight / 2;
+                  } else {
+                    x1 = fromNode.x;
+                    y1 = fromNode.y + nodeHeight / 2;
+                    x2 = toNode.x + nodeWidth;
+                    y2 = toNode.y + nodeHeight / 2;
+                  }
+                  
+                  const dx = x2 - x1;
+                  const dy = y2 - y1;
                   const distance = Math.sqrt(dx * dx + dy * dy);
                   
                   if (distance < 10) return null;
-                  
-                  const angle = Math.atan2(dy, dx);
-                  const padding = 8;
-                  
-                  const x1 = fromCenterX + Math.cos(angle) * (nodeWidth / 2 + padding);
-                  const y1 = fromCenterY + Math.sin(angle) * (nodeHeight / 2 - 10);
-                  const x2 = toCenterX - Math.cos(angle) * (nodeWidth / 2 + padding + 5);
-                  const y2 = toCenterY - Math.sin(angle) * (nodeHeight / 2 - 10);
                   
                   const midX = (x1 + x2) / 2;
                   const midY = (y1 + y2) / 2;
@@ -1374,7 +1377,7 @@ export default function BluPrince() {
               </svg>
             </div>
 
-            <div className="relative w-full h-full">
+            <div className="absolute inset-0">
               {nodes.map((node) => {
                 const stateData = file.logic.states[node.id];
                 const isEditing = editingStateName === node.id;
@@ -1391,7 +1394,7 @@ export default function BluPrince() {
                     whileDrag={{ scale: 1.05, zIndex: 100 }}
                     transition={{ scale: { type: "spring", stiffness: 300, damping: 20 }, opacity: { duration: 0.2 } }}
                     style={{ left: node.x, top: node.y }}
-                    className={`absolute w-40 p-0 rounded-lg border border-white/10 bg-[#1a1b23] shadow-xl cursor-pointer overflow-hidden ${selectedNodeId === node.id ? 'ring-2 ring-primary' : ''}`}
+                    className={`absolute w-40 h-[72px] p-0 rounded-lg border border-white/10 bg-[#1a1b23] shadow-xl cursor-pointer overflow-hidden ${selectedNodeId === node.id ? 'ring-2 ring-primary' : ''}`}
                     onClick={() => setSelectedNodeId(node.id)}
                     data-testid={`state-node-${node.id}`}
                   >
