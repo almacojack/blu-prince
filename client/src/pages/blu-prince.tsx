@@ -33,6 +33,7 @@ import { Progress } from "@/components/ui/progress";
 import { Asset3DPreview } from "@/components/Asset3DPreview";
 import { QRIconButton } from "@/components/QRCodePopup";
 import { WolfensteinHealth } from "@/components/WolfensteinHealth";
+import { SceneTree } from "@/components/SceneTree";
 import bluPrinceLogo from "@assets/generated_images/jeweled_blue_deity_walnut_bg.png";
 
 const STORAGE_KEY = "blu-prince-cartridge";
@@ -887,6 +888,31 @@ export default function BluPrince() {
     }
   };
 
+  const handleRenameAsset = (assetId: string, newName: string) => {
+    if (!newName.trim()) return;
+    
+    const assets = file.assets?.models || [];
+    const updatedAssets = assets.map(asset => 
+      asset.id === assetId 
+        ? { ...asset, metadata: { ...asset.metadata, name: newName.trim() } }
+        : asset
+    );
+    
+    const updatedFile: TossFile = {
+      ...file,
+      assets: {
+        ...file.assets,
+        models: updatedAssets
+      }
+    };
+    
+    setFile(updatedFile);
+    
+    if (collaboration.isJoined) {
+      collaboration.sendFullState(updatedFile);
+    }
+  };
+
   const handleAddNode = (type: TossState['type']) => {
     const existingIds = Object.keys(file.logic.states);
     let counter = 0;
@@ -1275,10 +1301,10 @@ export default function BluPrince() {
       </Dialog>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Left Panel - Logic Primitives & 3D Assets */}
+        {/* Left Panel - Scene Tree with hierarchical view */}
         <DockablePanel
-          id="logic-panel"
-          title="Logic"
+          id="scene-panel"
+          title="Scene"
           icon={<Layers className="w-4 h-4" />}
           defaultDocked={true}
           defaultWidth={280}
@@ -1286,162 +1312,125 @@ export default function BluPrince() {
           maxWidth={450}
           dockSide="left"
         >
-          <div className="p-3 border-b border-white/5">
-            <h3 className="text-[10px] font-mono uppercase text-muted-foreground mb-3 flex items-center gap-1.5">
-              <ChevronDown className="w-3 h-3" /> States
-            </h3>
-            <div className="grid grid-cols-2 gap-2">
-              {["initial", "state", "compound", "final"].map((item) => (
-                <div 
-                  key={item} 
-                  onClick={() => handleAddNode(item as any)}
-                  className="p-2 rounded bg-white/5 hover:bg-white/10 border border-white/5 cursor-pointer flex flex-col items-center gap-1 transition-colors active:scale-95"
-                  data-testid={`add-state-${item}`}
-                >
-                  <div className={`w-6 h-6 rounded ${item === 'initial' ? 'bg-green-500/20' : 'bg-primary/20'}`} />
-                  <span className="text-[10px] text-muted-foreground capitalize">{item}</span>
-                </div>
-              ))}
+          <div className="flex flex-col h-full">
+            {/* Add State buttons */}
+            <div className="p-2 border-b border-white/5">
+              <div className="text-[10px] font-mono uppercase text-muted-foreground mb-2 flex items-center gap-1.5">
+                <Plus className="w-3 h-3" /> Add State
+              </div>
+              <div className="grid grid-cols-4 gap-1">
+                {(["initial", "state", "compound", "final"] as const).map((item) => (
+                  <button 
+                    key={item} 
+                    onClick={() => handleAddNode(item)}
+                    className="p-1.5 rounded bg-white/5 hover:bg-white/10 border border-white/5 cursor-pointer flex flex-col items-center gap-0.5 transition-colors active:scale-95"
+                    data-testid={`add-state-${item}`}
+                    title={`Add ${item} state`}
+                  >
+                    <div className={`w-4 h-4 rounded-sm flex items-center justify-center ${
+                      item === 'initial' ? 'bg-green-500/30' : 
+                      item === 'final' ? 'bg-red-500/30' : 
+                      item === 'compound' ? 'bg-purple-500/30' : 
+                      'bg-cyan-500/30'
+                    }`}>
+                      {item === 'initial' && <div className="w-2 h-2 rounded-full bg-green-400" />}
+                      {item === 'state' && <div className="w-2 h-2 rounded-sm bg-cyan-400" />}
+                      {item === 'compound' && <Layers className="w-2.5 h-2.5 text-purple-400" />}
+                      {item === 'final' && <div className="w-2 h-2 rounded-full border-2 border-red-400" />}
+                    </div>
+                    <span className="text-[8px] text-muted-foreground capitalize">{item}</span>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-          
-          <div className="p-3 border-b border-white/5">
-            <h3 className="text-[10px] font-mono uppercase text-muted-foreground mb-3 flex items-center gap-1.5">
-              <Zap className="w-3 h-3" /> Events
-            </h3>
-            <Button variant="outline" size="sm" className="w-full text-xs justify-start border-dashed border-white/20">
-              <Plus className="w-3 h-3 mr-2" /> Define Trigger
-            </Button>
-          </div>
-          
-          <div className="p-3 flex-1 flex flex-col min-h-0">
-            <h3 className="text-[10px] font-mono uppercase text-muted-foreground mb-3 flex items-center gap-1.5">
-              <Box className="w-3 h-3" /> 3D Assets
-            </h3>
             
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept={getAcceptString()}
-              onChange={handleImport3DAsset}
-              className="hidden"
-              data-testid="input-3d-file"
-            />
+            {/* Import 3D Model button */}
+            <div className="p-2 border-b border-white/5">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={getAcceptString()}
+                onChange={handleImport3DAsset}
+                className="hidden"
+                data-testid="input-3d-file"
+              />
+              
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full text-xs justify-start border-dashed border-white/20 hover:border-cyan-500/50 hover:bg-cyan-500/10 hover:text-cyan-400"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={!!importProgress}
+                data-testid="button-import-3d"
+              >
+                <Upload className="w-3 h-3 mr-2" /> 
+                {importProgress ? importProgress.message : "Import 3D Model"}
+              </Button>
+              
+              {importProgress && (
+                <div className="mt-2">
+                  <Progress value={importProgress.percent} className="h-1" />
+                  <span className="text-[10px] text-muted-foreground mt-1 block">{importProgress.stage}</span>
+                </div>
+              )}
+            </div>
             
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="w-full text-xs justify-start border-dashed border-white/20 hover:border-cyan-500/50 hover:bg-cyan-500/10 hover:text-cyan-400 mb-3"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={!!importProgress}
-              data-testid="button-import-3d"
-            >
-              <Upload className="w-3 h-3 mr-2" /> 
-              {importProgress ? importProgress.message : "Import 3D Model"}
-            </Button>
-            
-            {importProgress && (
-              <div className="mb-3">
-                <Progress value={importProgress.percent} className="h-1" />
-                <span className="text-[10px] text-muted-foreground mt-1 block">{importProgress.stage}</span>
-              </div>
-            )}
-            
-            <ScrollArea className="flex-1">
-              <div className="space-y-2 pr-2">
-                {getAssets().length === 0 ? (
-                  <div className="text-center py-6 text-muted-foreground">
-                    <Box className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                    <p className="text-[10px]">No 3D assets yet</p>
-                    <p className="text-[9px] opacity-60 mt-1">
-                      Supports glTF, GLB, OBJ, STL
-                    </p>
-                  </div>
-                ) : (
-                  getAssets().map((asset) => (
-                    <motion.div
-                      key={asset.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className={`group relative p-2 rounded-lg border transition-colors cursor-pointer ${
-                        selectedAssetId === asset.id 
-                          ? 'border-cyan-500/50 bg-cyan-500/10' 
-                          : 'border-white/10 bg-white/5 hover:border-white/20'
-                      }`}
-                      onClick={() => setSelectedAssetId(asset.id)}
-                      data-testid={`asset-item-${asset.id}`}
-                    >
-                      <div className="flex items-start gap-2">
-                        {asset.thumbnail ? (
-                          <img 
-                            src={createThumbnailFromData(asset.thumbnail) || ''} 
-                            alt={asset.metadata.name}
-                            className="w-10 h-10 rounded bg-black/50 object-cover"
-                          />
-                        ) : (
-                          <div className="w-10 h-10 rounded bg-black/50 flex items-center justify-center">
-                            <Box className="w-5 h-5 text-muted-foreground" />
-                          </div>
-                        )}
-                        
-                        <div className="flex-1 min-w-0">
-                          <div className="text-xs font-mono text-white truncate">
-                            {asset.metadata.name}
-                          </div>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <Badge 
-                              variant="outline" 
-                              className="text-[8px] h-4 px-1.5 border-purple-500/50 text-purple-400 bg-purple-500/10"
-                            >
-                              {asset.metadata.format.toUpperCase()}
-                            </Badge>
-                            <span className="text-[9px] text-muted-foreground">
-                              {(asset.metadata.fileSize / 1024).toFixed(1)}KB
-                            </span>
-                          </div>
-                          {asset.metadata.printable && (
-                            <Badge 
-                              variant="outline" 
-                              className="text-[8px] h-4 px-1.5 mt-1 border-green-500/50 text-green-400 bg-green-500/10"
-                            >
-                              3D Printable
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                      
-                      <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 hover:bg-cyan-500/20 hover:text-cyan-400"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedAssetId(asset.id);
-                            setShowAssetPreview(true);
-                          }}
-                          data-testid={`button-preview-${asset.id}`}
-                        >
-                          <Eye className="w-3 h-3" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 hover:bg-red-500/20 hover:text-red-400"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteAsset(asset.id);
-                          }}
-                          data-testid={`button-delete-${asset.id}`}
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    </motion.div>
-                  ))
-                )}
-              </div>
-            </ScrollArea>
+            {/* Scene Tree */}
+            <div className="flex-1 min-h-0">
+              <SceneTree
+                file={file}
+                selectedStateId={selectedNodeId}
+                selectedAssetId={selectedAssetId}
+                onSelectState={(id) => setSelectedNodeId(id)}
+                onSelectAsset={(id) => setSelectedAssetId(id)}
+                onRenameState={handleRenameState}
+                onRenameAsset={handleRenameAsset}
+                onAddState={handleAddNode}
+                onDeleteState={(id) => {
+                  const remainingCount = Object.keys(file.logic.states).length - 1;
+                  if (remainingCount < 1) {
+                    toast({ 
+                      title: "Cannot delete", 
+                      description: "State machine must have at least one state", 
+                      variant: "destructive" 
+                    });
+                    return;
+                  }
+                  
+                  const newStates = { ...file.logic.states };
+                  delete newStates[id];
+                  
+                  Object.values(newStates).forEach(state => {
+                    state.transitions = (state.transitions ?? []).filter(t => t.target !== id);
+                  });
+                  
+                  const remainingIds = Object.keys(newStates);
+                  let newInitial = file.logic.initial;
+                  if (file.logic.initial === id) {
+                    const initialState = remainingIds.find(sid => newStates[sid]?.type === 'initial');
+                    newInitial = initialState || remainingIds[0];
+                  }
+                  
+                  const updatedFile: TossFile = {
+                    ...file,
+                    logic: { 
+                      ...file.logic, 
+                      initial: newInitial,
+                      states: newStates 
+                    },
+                    _editor: {
+                      ...file._editor!,
+                      nodes: nodes.filter(n => n.id !== id)
+                    }
+                  };
+                  setFile(updatedFile);
+                  if (selectedNodeId === id) setSelectedNodeId(null);
+                  
+                  toast({ title: "State deleted", description: `Removed "${id}" from the state machine` });
+                }}
+                onDeleteAsset={handleDeleteAsset}
+              />
+            </div>
           </div>
         </DockablePanel>
 
