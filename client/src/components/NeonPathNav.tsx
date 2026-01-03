@@ -159,18 +159,28 @@ export function NeonPathNav({
                   : "bg-gradient-to-br from-blue-500 to-cyan-400"
               )} />
             </div>
-            <span className={cn(
-              "text-xl hidden sm:block",
-              isVictorian 
-                ? "font-serif text-amber-100 tracking-wide" 
-                : "font-mono font-bold text-white tracking-tight drop-shadow-[0_0_10px_rgba(59,130,246,0.8)]"
-            )}>
-              {isVictorian ? (
-                <span className="italic">tingOS</span>
-              ) : (
-                <span>ting<span className="text-cyan-400">OS</span></span>
-              )}
-            </span>
+            <div className="hidden sm:flex flex-col">
+              <span className={cn(
+                "text-xl",
+                isVictorian 
+                  ? "font-serif text-amber-100 tracking-wide" 
+                  : "font-mono font-bold text-white tracking-tight drop-shadow-[0_0_10px_rgba(59,130,246,0.8)]"
+              )}>
+                {isVictorian ? (
+                  <span className="italic">tingOS</span>
+                ) : (
+                  <span>ting<span className="text-cyan-400">OS</span></span>
+                )}
+              </span>
+              <span className={cn(
+                "text-[8px] leading-none -mt-0.5",
+                isVictorian 
+                  ? "font-serif italic text-amber-300/70" 
+                  : "font-mono text-cyan-400/60"
+              )}>
+                the little engine that could
+              </span>
+            </div>
           </motion.div>
         </Link>
 
