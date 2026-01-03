@@ -16,6 +16,12 @@ The killer feature is **game controller support as first-class objects** - zero-
 
 Preferred communication style: Simple, everyday language.
 
+### Design Philosophy
+- **"Manipulate, don't manage"** - Users should interact directly with visual objects, not hunt through menus
+- **"Show me, don't make me find it"** - Cartridges and tools should be visually present and accessible
+- **80s Atari kid vibe** - Immersive 3D backdrop like watching TV from a kid's perspective in the 80s
+- **Cyberpunk neon aesthetic** - Glowing paths, neon colors, CRT effects
+
 ## System Architecture
 
 ### Frontend Architecture

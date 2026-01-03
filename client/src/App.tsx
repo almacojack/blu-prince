@@ -1,3 +1,4 @@
+import { useState, Suspense, lazy } from "react";
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -7,6 +8,10 @@ import { CartridgeProvider } from "@/contexts/cartridge-context";
 import { UiScaleProvider } from "@/contexts/UiScaleContext";
 import { TutorialProvider } from "@/contexts/TutorialContext";
 import { TutorialOverlay } from "@/components/TutorialOverlay";
+import { TutorialMenu } from "@/components/TutorialMenu";
+import { NeonPathNav } from "@/components/NeonPathNav";
+import { GlobalCommandPalette } from "@/components/GlobalCommandPalette";
+import { useFullscreen } from "@/hooks/useFullscreen";
 import Home from "@/pages/home";
 import BluPrince from "@/pages/blu-prince";
 import BluPrinceEditor from "@/pages/editor";
@@ -39,6 +44,49 @@ function Router() {
   );
 }
 
+const BackgroundStage = lazy(() => import("@/components/BackgroundStage"));
+
+function AppContent() {
+  const { isFullscreen, toggleFullscreen } = useFullscreen();
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  // Tutorial is opened via custom event
+
+  const handleTutorialOpen = () => {
+    const event = new CustomEvent("open-tutorial-menu");
+    window.dispatchEvent(event);
+  };
+
+  return (
+    <div className="min-h-screen text-foreground antialiased selection:bg-primary/20 relative">
+      <Suspense fallback={<div className="fixed inset-0 bg-[#050510]" />}>
+        <BackgroundStage />
+      </Suspense>
+      
+      <NeonPathNav 
+        onCommandPaletteOpen={() => setCommandPaletteOpen(true)}
+        onFullscreenToggle={toggleFullscreen}
+        isFullscreen={isFullscreen}
+      />
+      
+      <div className="relative z-10 pt-16">
+        <div className="scanline" />
+        <Router />
+      </div>
+      
+      <Toaster />
+      <TutorialOverlay />
+      <TutorialMenu />
+      
+      <GlobalCommandPalette 
+        open={commandPaletteOpen}
+        onOpenChange={setCommandPaletteOpen}
+        onFullscreenToggle={toggleFullscreen}
+        onTutorialOpen={handleTutorialOpen}
+      />
+    </div>
+  );
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -46,12 +94,7 @@ function App() {
         <CartridgeProvider>
           <TutorialProvider>
             <TooltipProvider>
-              <div className="min-h-screen bg-background text-foreground antialiased selection:bg-primary/20">
-                <div className="scanline" />
-                <Router />
-                <Toaster />
-                <TutorialOverlay />
-              </div>
+              <AppContent />
             </TooltipProvider>
           </TutorialProvider>
         </CartridgeProvider>
