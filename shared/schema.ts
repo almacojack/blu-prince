@@ -173,3 +173,28 @@ export const insertFamousEventSchema = createInsertSchema(famousEvents).omit({
 
 export type InsertFamousEvent = z.infer<typeof insertFamousEventSchema>;
 export type FamousEvent = typeof famousEvents.$inferSelect;
+
+// Widget Documentation - Dynamic docs per component
+export const widgetDocs = pgTable("widget_docs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  component_name: text("component_name").notNull().unique(),
+  display_name: text("display_name").notNull(),
+  description: text("description").notNull(),
+  category: text("category").default("general").notNull(),
+  toss_example: text("toss_example"),
+  props_schema: jsonb("props_schema"),
+  usage_notes: text("usage_notes"),
+  tags: text("tags").array(),
+  is_published: boolean("is_published").default(true).notNull(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  updated_at: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertWidgetDocSchema = createInsertSchema(widgetDocs).omit({
+  id: true,
+  created_at: true,
+  updated_at: true,
+});
+
+export type InsertWidgetDoc = z.infer<typeof insertWidgetDocSchema>;
+export type WidgetDoc = typeof widgetDocs.$inferSelect;

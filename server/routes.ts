@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertCartridgeSchema, insertWorldSchema, insertWorldCartridgeSchema, insertFamousEventSchema } from "@shared/schema";
+import { insertCartridgeSchema, insertWorldSchema, insertWorldCartridgeSchema, insertFamousEventSchema, insertWidgetDocSchema } from "@shared/schema";
 import { z } from "zod";
 import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
 import { setupWebSocket, getChannelStats } from "./websocket";
@@ -567,6 +567,212 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     } catch (error) {
       console.error("Error deleting event:", error);
       res.status(500).json({ error: "Failed to delete event" });
+    }
+  });
+
+  // Widget Documentation Routes
+  app.get("/api/widgets", async (req, res) => {
+    try {
+      const { category } = req.query;
+      const widgets = category 
+        ? await storage.getWidgetDocsByCategory(category as string)
+        : await storage.getAllWidgetDocs();
+      res.json(widgets);
+    } catch (error) {
+      console.error("Error fetching widget docs:", error);
+      res.status(500).json({ error: "Failed to fetch widget documentation" });
+    }
+  });
+
+  app.get("/api/widgets/:componentName", async (req, res) => {
+    try {
+      const widget = await storage.getWidgetDoc(req.params.componentName);
+      if (!widget) {
+        return res.status(404).json({ error: "Widget not found" });
+      }
+      res.json(widget);
+    } catch (error) {
+      console.error("Error fetching widget doc:", error);
+      res.status(500).json({ error: "Failed to fetch widget documentation" });
+    }
+  });
+
+  app.post("/api/widgets", async (req, res) => {
+    try {
+      const validatedData = insertWidgetDocSchema.parse(req.body);
+      const widget = await storage.upsertWidgetDoc(validatedData);
+      res.status(201).json(widget);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid widget data", details: error.errors });
+      }
+      console.error("Error creating widget doc:", error);
+      res.status(500).json({ error: "Failed to create widget documentation" });
+    }
+  });
+
+  app.put("/api/widgets/:componentName", async (req, res) => {
+    try {
+      const validatedData = insertWidgetDocSchema.partial().parse(req.body);
+      const widget = await storage.updateWidgetDoc(req.params.componentName, validatedData);
+      if (!widget) {
+        return res.status(404).json({ error: "Widget not found" });
+      }
+      res.json(widget);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid widget data", details: error.errors });
+      }
+      console.error("Error updating widget doc:", error);
+      res.status(500).json({ error: "Failed to update widget documentation" });
+    }
+  });
+
+  app.delete("/api/widgets/:componentName", requireAuth, async (req, res) => {
+    try {
+      const success = await storage.deleteWidgetDoc(req.params.componentName);
+      if (!success) {
+        return res.status(404).json({ error: "Widget not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting widget doc:", error);
+      res.status(500).json({ error: "Failed to delete widget documentation" });
+    }
+  });
+
+  // Seed widget docs endpoint (for development)
+  app.post("/api/widgets/seed", async (req, res) => {
+    try {
+      const widgetDefs = [
+        {
+          component_name: "GeigerCounter",
+          display_name: "Geiger Counter",
+          description: "Authentic radiation detector with clicking audio, analog meter, and CPM readout. Perfect for Cold War era game aesthetics with classic, military, and steampunk variants.",
+          category: "radiation",
+          toss_example: JSON.stringify({
+            widget: "GeigerCounter",
+            props: { radiationLevel: 0.15, variant: "steampunk", size: "medium", showCPM: true, autoAnimate: true },
+            bindings: { onRadiationChange: "context.radiation = $event" }
+          }, null, 2),
+          props_schema: {
+            radiationLevel: { type: "number", default: 0.1, min: 0, max: 1 },
+            variant: { type: "enum", options: ["classic", "military", "steampunk"], default: "classic" },
+            size: { type: "enum", options: ["small", "medium", "large"], default: "medium" },
+            showCPM: { type: "boolean", default: true },
+            autoAnimate: { type: "boolean", default: true }
+          },
+          usage_notes: "The Geiger counter plays clicking sounds based on radiation level. Higher levels produce more frequent clicks. The needle uses spring physics for realistic movement.",
+          tags: ["radiation", "cold-war", "fallout", "steampunk", "audio"],
+          is_published: true
+        },
+        {
+          component_name: "NixieDisplay",
+          display_name: "Nixie Tube Display",
+          description: "Warm orange glow of nixie tube digits. Stack multiple tubes for counters, clocks, or numeric displays with authentic vacuum tube aesthetics.",
+          category: "display",
+          toss_example: JSON.stringify({
+            widget: "NixieDisplay",
+            props: { value: "{{context.counter}}", digits: 4, size: "medium", label: "COUNTER" }
+          }, null, 2),
+          props_schema: {
+            value: { type: "string", description: "Numeric value to display" },
+            digits: { type: "number", default: 4, min: 1, max: 10 },
+            size: { type: "enum", options: ["small", "medium", "large"], default: "medium" },
+            label: { type: "string", optional: true }
+          },
+          usage_notes: "Each digit shows all numbers with the active one glowing. The warm orange color simulates real nixie tube phosphor. Values are zero-padded automatically.",
+          tags: ["nixie", "display", "retro", "vacuum-tube", "counter"],
+          is_published: true
+        },
+        {
+          component_name: "MagicEyeTube",
+          display_name: "Magic Eye Tube",
+          description: "Classic tuning indicator with eerie green phosphor glow. Three variants (classic, dual, target) for different visual effects as signal strength indicators.",
+          category: "indicator",
+          toss_example: JSON.stringify({
+            widget: "MagicEyeTube",
+            props: { level: "{{context.signalStrength}}", size: "medium", variant: "classic" }
+          }, null, 2),
+          props_schema: {
+            level: { type: "number", default: 0.5, min: 0, max: 1 },
+            size: { type: "enum", options: ["small", "medium", "large"], default: "medium" },
+            variant: { type: "enum", options: ["classic", "dual", "target"], default: "classic" }
+          },
+          usage_notes: "The shadow area shrinks as level increases, mimicking real vacuum tube tuning indicators. Use for signal strength, tuning accuracy, or general level indication.",
+          tags: ["magic-eye", "indicator", "vacuum-tube", "tuning", "green-glow"],
+          is_published: true
+        },
+        {
+          component_name: "TubeArray",
+          display_name: "Vacuum Tube Array",
+          description: "Glowing vacuum tubes with animated filaments. Mix triodes, pentodes, and rectifiers for authentic amplifier aesthetics with warm filament glow.",
+          category: "decorative",
+          toss_example: JSON.stringify({
+            widget: "TubeArray",
+            props: { count: 4, type: "mixed", size: "medium", isOn: true }
+          }, null, 2),
+          props_schema: {
+            count: { type: "number", default: 4, min: 1, max: 8 },
+            type: { type: "enum", options: ["triode", "pentode", "rectifier", "mixed"], default: "mixed" },
+            size: { type: "enum", options: ["small", "medium", "large"], default: "medium" },
+            isOn: { type: "boolean", default: true }
+          },
+          usage_notes: "Tube filaments flicker subtly when on. Mixed type alternates between triode, pentode, and rectifier styles. Great for audio equipment or steampunk machinery aesthetics.",
+          tags: ["vacuum-tube", "amplifier", "decorative", "steampunk", "filament"],
+          is_published: true
+        },
+        {
+          component_name: "VUMeter",
+          display_name: "VU Meter",
+          description: "Analog volume unit meter with bouncing needle, dB scale, and peak LED. Available in classic, steampunk, and neon variants for audio visualization.",
+          category: "audio",
+          toss_example: JSON.stringify({
+            widget: "VUMeter",
+            props: { level: "{{context.audioLevel}}", variant: "steampunk", size: "md", label: "OUTPUT", showPeakLED: true }
+          }, null, 2),
+          props_schema: {
+            level: { type: "number", default: 0, min: 0, max: 1 },
+            variant: { type: "enum", options: ["classic", "steampunk", "neon"], default: "classic" },
+            size: { type: "enum", options: ["sm", "md", "lg"], default: "md" },
+            label: { type: "string", default: "VU" },
+            showPeakLED: { type: "boolean", default: true }
+          },
+          usage_notes: "Needle uses spring physics for authentic ballistics. Peak LED lights up in the red zone. Connect to audio analyser for real signal visualization.",
+          tags: ["vu-meter", "audio", "analog", "needle", "peak"],
+          is_published: true
+        },
+        {
+          component_name: "StereoVUMeter",
+          display_name: "Stereo VU Meters",
+          description: "Paired left/right channel meters for stereo audio visualization. Perfect for music players, DAWs, and audio monitoring applications.",
+          category: "audio",
+          toss_example: JSON.stringify({
+            widget: "StereoVUMeter",
+            props: { leftLevel: "{{context.leftChannel}}", rightLevel: "{{context.rightChannel}}", variant: "classic", size: "sm" }
+          }, null, 2),
+          props_schema: {
+            leftLevel: { type: "number", default: 0, min: 0, max: 1 },
+            rightLevel: { type: "number", default: 0, min: 0, max: 1 },
+            variant: { type: "enum", options: ["classic", "steampunk", "neon"], default: "classic" },
+            size: { type: "enum", options: ["sm", "md", "lg"], default: "md" }
+          },
+          usage_notes: "L/R labels indicate channels. Both meters share the same visual style. For mono sources, pass the same value to both channels.",
+          tags: ["vu-meter", "stereo", "audio", "dual-channel"],
+          is_published: true
+        }
+      ];
+
+      const results = [];
+      for (const def of widgetDefs) {
+        const widget = await storage.upsertWidgetDoc(def);
+        results.push(widget);
+      }
+      
+      res.json({ seeded: results.length, widgets: results });
+    } catch (error) {
+      console.error("Error seeding widget docs:", error);
+      res.status(500).json({ error: "Failed to seed widget documentation" });
     }
   });
 

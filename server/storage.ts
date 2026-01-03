@@ -6,6 +6,7 @@ import {
   type VaultEntry, type InsertVaultEntry,
   type ExportGrant, type InsertExportGrant,
   type FamousEvent, type InsertFamousEvent,
+  type WidgetDoc, type InsertWidgetDoc,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -57,11 +58,20 @@ export interface IStorage {
   createFamousEvent(event: InsertFamousEvent): Promise<FamousEvent>;
   updateFamousEvent(id: string, event: Partial<InsertFamousEvent>): Promise<FamousEvent | undefined>;
   deleteFamousEvent(id: string): Promise<boolean>;
+  
+  // Widget Documentation operations
+  getAllWidgetDocs(): Promise<WidgetDoc[]>;
+  getWidgetDoc(componentName: string): Promise<WidgetDoc | undefined>;
+  getWidgetDocsByCategory(category: string): Promise<WidgetDoc[]>;
+  createWidgetDoc(doc: InsertWidgetDoc): Promise<WidgetDoc>;
+  updateWidgetDoc(componentName: string, doc: Partial<InsertWidgetDoc>): Promise<WidgetDoc | undefined>;
+  deleteWidgetDoc(componentName: string): Promise<boolean>;
+  upsertWidgetDoc(doc: InsertWidgetDoc): Promise<WidgetDoc>;
 }
 
 // PostgreSQL Storage Implementation
 import { db } from "./db";
-import { cartridges, worlds, worldCartridges, vaultEntries, exportGrants, famousEvents } from "@shared/schema";
+import { cartridges, worlds, worldCartridges, vaultEntries, exportGrants, famousEvents, widgetDocs } from "@shared/schema";
 import { eq, and, gte, lte, asc } from "drizzle-orm";
 import { createHash } from "crypto";
 
@@ -307,6 +317,49 @@ export class DbStorage implements IStorage {
   async deleteFamousEvent(id: string): Promise<boolean> {
     const result = await db.delete(famousEvents).where(eq(famousEvents.id, id)).returning();
     return result.length > 0;
+  }
+
+  // Widget Documentation operations
+  async getAllWidgetDocs(): Promise<WidgetDoc[]> {
+    return await db.select().from(widgetDocs).where(eq(widgetDocs.is_published, true));
+  }
+
+  async getWidgetDoc(componentName: string): Promise<WidgetDoc | undefined> {
+    const result = await db.select().from(widgetDocs).where(eq(widgetDocs.component_name, componentName));
+    return result[0];
+  }
+
+  async getWidgetDocsByCategory(category: string): Promise<WidgetDoc[]> {
+    return await db.select().from(widgetDocs)
+      .where(and(eq(widgetDocs.category, category), eq(widgetDocs.is_published, true)));
+  }
+
+  async createWidgetDoc(doc: InsertWidgetDoc): Promise<WidgetDoc> {
+    const result = await db.insert(widgetDocs).values(doc).returning();
+    return result[0];
+  }
+
+  async updateWidgetDoc(componentName: string, doc: Partial<InsertWidgetDoc>): Promise<WidgetDoc | undefined> {
+    const result = await db
+      .update(widgetDocs)
+      .set({ ...doc, updated_at: new Date() })
+      .where(eq(widgetDocs.component_name, componentName))
+      .returning();
+    return result[0];
+  }
+
+  async deleteWidgetDoc(componentName: string): Promise<boolean> {
+    const result = await db.delete(widgetDocs).where(eq(widgetDocs.component_name, componentName)).returning();
+    return result.length > 0;
+  }
+
+  async upsertWidgetDoc(doc: InsertWidgetDoc): Promise<WidgetDoc> {
+    const existing = await this.getWidgetDoc(doc.component_name);
+    if (existing) {
+      const updated = await this.updateWidgetDoc(doc.component_name, doc);
+      return updated!;
+    }
+    return await this.createWidgetDoc(doc);
   }
 }
 
