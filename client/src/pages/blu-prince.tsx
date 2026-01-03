@@ -26,7 +26,7 @@ import type { Toss3DAsset } from "@/lib/toss";
 import { Progress } from "@/components/ui/progress";
 import { Asset3DPreview } from "@/components/Asset3DPreview";
 import { QRIconButton } from "@/components/QRCodePopup";
-import bluPrinceLogo from "@assets/generated_images/blue_deity_on_dark_wood_bg.png";
+import bluPrinceLogo from "@assets/generated_images/jeweled_blue_deity_walnut_bg.png";
 
 const STORAGE_KEY = "blu-prince-cartridge";
 
@@ -293,13 +293,13 @@ function CartridgeBezel({
             ),
             linear-gradient(
               90deg,
-              #5c3d2e 0%,
-              #8b5a3c 15%,
-              #6b4423 30%,
-              #8b5a3c 45%,
-              #5c3d2e 60%,
-              #7a4a2f 75%,
-              #5c3d2e 100%
+              #3e2723 0%,
+              #5d4037 15%,
+              #4e342e 30%,
+              #5d4037 45%,
+              #3e2723 60%,
+              #6d4c41 75%,
+              #3e2723 100%
             )
           `,
           backgroundSize: '100% 18px, 100% 100%',
@@ -320,8 +320,8 @@ function CartridgeBezel({
                 0deg,
                 transparent 0px,
                 transparent 3px,
-                rgba(139,90,60,0.1) 3px,
-                rgba(139,90,60,0.1) 6px
+                rgba(93,64,55,0.15) 3px,
+                rgba(93,64,55,0.15) 6px
               )
             `,
             mixBlendMode: 'overlay',

@@ -104,13 +104,13 @@ export function AtariDockPanel({
               ),
               linear-gradient(
                 90deg,
-                #5c3d2e 0%,
-                #8b5a3c 15%,
-                #6b4423 30%,
-                #8b5a3c 45%,
-                #5c3d2e 60%,
-                #7a4a2f 75%,
-                #5c3d2e 100%
+                #3e2723 0%,
+                #5d4037 15%,
+                #4e342e 30%,
+                #5d4037 45%,
+                #3e2723 60%,
+                #6d4c41 75%,
+                #3e2723 100%
               )
             `,
             backgroundSize: '100% 18px, 100% 100%',
@@ -125,8 +125,8 @@ export function AtariDockPanel({
                 0deg,
                 transparent 0px,
                 transparent 3px,
-                rgba(139,90,60,0.12) 3px,
-                rgba(139,90,60,0.12) 6px
+                rgba(93,64,55,0.15) 3px,
+                rgba(93,64,55,0.15) 6px
               )
             `,
             mixBlendMode: 'overlay',
@@ -263,13 +263,13 @@ export function AtariMiniPanel({
             ),
             linear-gradient(
               90deg,
-              #5c3d2e 0%,
-              #8b5a3c 15%,
-              #6b4423 30%,
-              #8b5a3c 45%,
-              #5c3d2e 60%,
-              #7a4a2f 75%,
-              #5c3d2e 100%
+              #3e2723 0%,
+              #5d4037 15%,
+              #4e342e 30%,
+              #5d4037 45%,
+              #3e2723 60%,
+              #6d4c41 75%,
+              #3e2723 100%
             )
           `,
           backgroundSize: '100% 18px, 100% 100%',
@@ -284,8 +284,8 @@ export function AtariMiniPanel({
               0deg,
               transparent 0px,
               transparent 3px,
-              rgba(139,90,60,0.12) 3px,
-              rgba(139,90,60,0.12) 6px
+              rgba(93,64,55,0.15) 3px,
+              rgba(93,64,55,0.15) 6px
             )
           `,
           mixBlendMode: 'overlay',
