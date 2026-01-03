@@ -1,6 +1,11 @@
-import React, { useState, useRef, useCallback } from 'react';
-import { GripVertical, Settings, X } from 'lucide-react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { motion, useDragControls, useMotionValue, animate } from 'framer-motion';
+import { GripVertical, Settings, X, Pin, PinOff, Minimize2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { calculateSnap, bounceTransition } from '@/lib/magnetic-snap';
+import { SnapFlash } from '@/components/SnapFlash';
+
+export type PanelMode = 'docked' | 'floating';
 
 export interface DockablePanelProps {
   id: string;
@@ -10,16 +15,14 @@ export interface DockablePanelProps {
   defaultDocked?: boolean;
   defaultCollapsed?: boolean;
   defaultPosition?: { x: number; y: number };
+  defaultWidth?: number;
+  minWidth?: number;
+  maxWidth?: number;
+  dockSide?: 'left' | 'right';
   onClose?: () => void;
   onSettingsClick?: () => void;
   showSettings?: boolean;
   className?: string;
-}
-
-interface PanelState {
-  docked: boolean;
-  collapsed: boolean;
-  position: { x: number; y: number };
 }
 
 export function DockablePanel({
@@ -30,81 +33,131 @@ export function DockablePanel({
   defaultDocked = true,
   defaultCollapsed = false,
   defaultPosition = { x: 100, y: 100 },
+  defaultWidth = 280,
+  minWidth = 180,
+  maxWidth = 500,
+  dockSide = 'left',
   onClose,
   onSettingsClick,
   showSettings = false,
   className,
 }: DockablePanelProps) {
-  const [state, setState] = useState<PanelState>({
-    docked: defaultDocked,
-    collapsed: defaultCollapsed,
-    position: defaultPosition,
-  });
+  const [docked, setDocked] = useState(defaultDocked);
+  const [collapsed, setCollapsed] = useState(defaultCollapsed);
+  const [width, setWidth] = useState(defaultWidth);
+  const [snapLines, setSnapLines] = useState<{ x: number | null; y: number | null }>({ x: null, y: null });
   
+  // Framer Motion for floating mode
+  const dragControls = useDragControls();
+  const motionX = useMotionValue(defaultPosition.x);
+  const motionY = useMotionValue(defaultPosition.y);
+  const constraintsRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
-  const titleBarRef = useRef<HTMLDivElement>(null);
-  const dragRef = useRef<{ startX: number; startY: number; startPosX: number; startPosY: number } | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
+  
+  // Resize state
+  const [isResizing, setIsResizing] = useState(false);
+  const resizeRef = useRef<{ startX: number; startWidth: number } | null>(null);
 
-  const handleDragStart = useCallback((e: React.PointerEvent) => {
-    // Don't start drag if clicking on a button
-    const target = e.target as HTMLElement;
-    if (target.closest('button')) {
+  const handleModeToggle = useCallback(() => {
+    setDocked(prev => !prev);
+  }, []);
+
+  const handleDragEnd = useCallback(() => {
+    if (docked || !panelRef.current) return;
+    
+    const rect = panelRef.current.getBoundingClientRect();
+    const containerWidth = window.innerWidth;
+    const containerHeight = window.innerHeight;
+    
+    // Check if near dock edge
+    const currentX = motionX.get();
+    if (dockSide === 'left' && currentX < 60) {
+      setDocked(true);
+      return;
+    }
+    if (dockSide === 'right' && currentX > containerWidth - rect.width - 60) {
+      setDocked(true);
       return;
     }
     
-    if (state.docked) {
-      setState(prev => ({ 
-        ...prev, 
-        docked: false, 
-        position: { x: 100, y: e.clientY - 20 } 
-      }));
+    const snap = calculateSnap(
+      currentX,
+      motionY.get(),
+      rect.width,
+      rect.height,
+      containerWidth,
+      containerHeight
+    );
+    
+    if (snap.snappedX || snap.snappedY) {
+      setSnapLines({ x: snap.snapLineX, y: snap.snapLineY });
+      setTimeout(() => setSnapLines({ x: null, y: null }), 50);
     }
     
+    animate(motionX, snap.x, bounceTransition);
+    animate(motionY, snap.y, bounceTransition);
+  }, [docked, motionX, motionY, dockSide]);
+
+  // Horizontal resize handlers
+  const handleResizeStart = useCallback((e: React.PointerEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsDragging(true);
-    dragRef.current = {
-      startX: e.clientX,
-      startY: e.clientY,
-      startPosX: state.docked ? 100 : state.position.x,
-      startPosY: state.docked ? e.clientY - 20 : state.position.y,
+    setIsResizing(true);
+    resizeRef.current = { startX: e.clientX, startWidth: width };
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  }, [width]);
+
+  useEffect(() => {
+    if (!isResizing) return;
+    
+    const handleMove = (e: PointerEvent) => {
+      if (!resizeRef.current) return;
+      const deltaX = dockSide === 'left' 
+        ? e.clientX - resizeRef.current.startX
+        : resizeRef.current.startX - e.clientX;
+      const newWidth = Math.max(minWidth, Math.min(maxWidth, resizeRef.current.startWidth + deltaX));
+      setWidth(newWidth);
     };
     
-    // Use titleBar for capture to allow full bar dragging
-    titleBarRef.current?.setPointerCapture(e.pointerId);
-  }, [state.docked, state.position]);
-
-  const handleDragMove = useCallback((e: React.PointerEvent) => {
-    if (!isDragging || !dragRef.current) return;
+    const handleUp = () => {
+      setIsResizing(false);
+      resizeRef.current = null;
+    };
     
-    const dx = e.clientX - dragRef.current.startX;
-    const dy = e.clientY - dragRef.current.startY;
-    
-    const newX = dragRef.current.startPosX + dx;
-    const newY = dragRef.current.startPosY + dy;
-    
-    if (newX < 60) {
-      setState(prev => ({ ...prev, docked: true, position: { x: 0, y: newY } }));
-    } else {
-      setState(prev => ({ ...prev, docked: false, position: { x: newX, y: newY } }));
-    }
-  }, [isDragging]);
-
-  const handleDragEnd = useCallback((e: React.PointerEvent) => {
-    if (!isDragging) return;
-    
-    setIsDragging(false);
-    dragRef.current = null;
-    titleBarRef.current?.releasePointerCapture(e.pointerId);
-  }, [isDragging]);
+    window.addEventListener('pointermove', handleMove);
+    window.addEventListener('pointerup', handleUp);
+    return () => {
+      window.removeEventListener('pointermove', handleMove);
+      window.removeEventListener('pointerup', handleUp);
+    };
+  }, [isResizing, dockSide, minWidth, maxWidth]);
 
   const toggleCollapse = useCallback(() => {
-    setState(prev => ({ ...prev, collapsed: !prev.collapsed }));
+    setCollapsed(prev => !prev);
   }, []);
 
-  // Collapsed docked state - just show icon button (minimal height)
-  if (state.docked && state.collapsed) {
+  // Resize handle component
+  const ResizeHandle = (
+    <div
+      className={cn(
+        "absolute top-0 bottom-0 w-1.5 cursor-col-resize group z-50",
+        dockSide === 'left' ? 'right-0' : 'left-0',
+        isResizing && 'bg-cyan-500'
+      )}
+      onPointerDown={handleResizeStart}
+      data-testid={`resize-handle-${id}`}
+    >
+      <div className={cn(
+        "absolute top-1/2 -translate-y-1/2 w-1 h-16 rounded-full transition-colors",
+        dockSide === 'left' ? 'right-0.5' : 'left-0.5',
+        "bg-white/10 group-hover:bg-cyan-500/50",
+        isResizing && 'bg-cyan-500'
+      )} />
+    </div>
+  );
+
+  // Collapsed docked state - just show icon button
+  if (docked && collapsed) {
     return (
       <button
         data-panel-id={id}
@@ -118,30 +171,24 @@ export function DockablePanel({
     );
   }
 
-  // Docked state - compact panel
-  if (state.docked) {
+  // Docked state - resizable panel
+  if (docked) {
     return (
       <div
         ref={panelRef}
         data-panel-id={id}
         className={cn(
-          "w-48 bg-black/90 backdrop-blur border-r border-white/10 flex flex-col max-h-[70vh]",
+          "relative bg-black/90 backdrop-blur flex flex-col",
+          dockSide === 'left' ? 'border-r' : 'border-l',
+          "border-white/10",
           className
         )}
+        style={{ width }}
+        data-testid={`panel-${id}`}
       >
-        {/* Title bar - compact */}
-        <div 
-          ref={titleBarRef}
-          className={cn(
-            "h-8 flex items-center justify-between px-1.5 border-b border-white/10 bg-black/40 shrink-0 select-none",
-            "cursor-grab active:cursor-grabbing touch-manipulation"
-          )}
-          onPointerDown={handleDragStart}
-          onPointerMove={handleDragMove}
-          onPointerUp={handleDragEnd}
-          onPointerCancel={handleDragEnd}
-        >
-          <div className="flex items-center gap-1">
+        {/* Title bar */}
+        <div className="h-9 flex items-center justify-between px-2 border-b border-white/10 bg-black/40 shrink-0 select-none">
+          <div className="flex items-center gap-1.5">
             <button
               onClick={toggleCollapse}
               className="p-1.5 rounded hover:bg-white/10 text-violet-400 hover:text-violet-300 transition-colors touch-manipulation"
@@ -150,100 +197,139 @@ export function DockablePanel({
             >
               {icon}
             </button>
-            <span className="text-[10px] font-medium text-white/70 uppercase tracking-wider">{title}</span>
+            <span className="text-[10px] font-bold text-white/70 uppercase tracking-wider">{title}</span>
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center gap-0.5">
             {showSettings && onSettingsClick && (
               <button
                 onClick={onSettingsClick}
-                className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors touch-manipulation"
+                className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors"
                 title="Panel settings"
                 data-testid={`button-settings-${id}`}
               >
                 <Settings className="w-3 h-3" />
               </button>
             )}
-            <div className="p-0.5 text-white/30">
-              <GripVertical className="w-3 h-3" />
-            </div>
+            <button
+              onClick={handleModeToggle}
+              className="p-1 rounded hover:bg-white/10 text-cyan-400/70 hover:text-cyan-300 transition-colors"
+              title="Float panel"
+              data-testid={`button-float-${id}`}
+            >
+              <PinOff className="w-3 h-3" />
+            </button>
           </div>
         </div>
+        
         <div className="flex-1 overflow-auto">
           {children}
         </div>
+        
+        {ResizeHandle}
       </div>
     );
   }
 
-  // Undocked/floating state - compact
+  // Floating state with Framer Motion
   return (
-    <div
-      ref={panelRef}
-      data-panel-id={id}
-      className={cn(
-        "absolute w-48 bg-black/95 backdrop-blur border border-white/20 rounded-lg shadow-2xl flex flex-col overflow-hidden",
-        isDragging && "cursor-grabbing",
-        className
-      )}
-      style={{
-        left: state.position.x,
-        top: state.position.y,
-        zIndex: 1000,
-      }}
-    >
-      {/* Title bar - compact */}
-      <div 
-        ref={titleBarRef}
+    <>
+      <SnapFlash 
+        snapLineX={snapLines.x} 
+        snapLineY={snapLines.y} 
+        containerWidth={typeof window !== 'undefined' ? window.innerWidth : 1920}
+        containerHeight={typeof window !== 'undefined' ? window.innerHeight : 1080}
+      />
+      <div ref={constraintsRef} className="fixed inset-0 pointer-events-none" />
+      <motion.div
+        ref={panelRef}
+        drag
+        dragControls={dragControls}
+        dragMomentum={false}
+        dragElastic={0}
+        dragConstraints={constraintsRef}
+        onDragEnd={handleDragEnd}
+        style={{ x: motionX, y: motionY, width }}
         className={cn(
-          "h-8 flex items-center justify-between px-1.5 border-b border-white/10 bg-black/60 shrink-0 select-none",
-          "cursor-grab active:cursor-grabbing touch-manipulation"
+          "fixed z-50 pointer-events-auto rounded-lg overflow-hidden",
+          className
         )}
-        onPointerDown={handleDragStart}
-        onPointerMove={handleDragMove}
-        onPointerUp={handleDragEnd}
-        onPointerCancel={handleDragEnd}
+        data-panel-id={id}
+        data-testid={`panel-${id}`}
       >
-        <div className="flex items-center gap-1">
-          <button
-            onClick={toggleCollapse}
-            className="p-1.5 rounded hover:bg-white/10 text-violet-400 hover:text-violet-300 transition-colors touch-manipulation"
-            title={state.collapsed ? `Expand ${title}` : `Collapse ${title}`}
-            data-testid={`button-toggle-${id}`}
+        <div 
+          className="relative bg-gradient-to-b from-gray-900/98 to-black/98 backdrop-blur-xl border border-white/20 rounded-lg"
+          style={{
+            boxShadow: `
+              0 0 0 1px rgba(0, 255, 255, 0.15),
+              0 0 30px rgba(0, 255, 255, 0.08),
+              0 20px 50px rgba(0, 0, 0, 0.6)
+            `,
+          }}
+        >
+          {/* Title bar with drag handle */}
+          <div 
+            className="h-9 flex items-center justify-between px-2 border-b border-white/10 bg-black/40 shrink-0 select-none cursor-grab active:cursor-grabbing"
+            onPointerDown={(e) => {
+              // Don't start drag if clicking on a button
+              if ((e.target as HTMLElement).closest('button')) return;
+              dragControls.start(e);
+            }}
           >
-            {icon}
-          </button>
-          <span className="text-[10px] font-medium text-white/70 uppercase tracking-wider">{title}</span>
-        </div>
-        <div className="flex items-center">
-          {showSettings && onSettingsClick && (
-            <button
-              onClick={onSettingsClick}
-              className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors touch-manipulation"
-              title="Panel settings"
-            >
-              <Settings className="w-3 h-3" />
-            </button>
-          )}
-          <div className="p-0.5 text-white/30">
-            <GripVertical className="w-3 h-3" />
+            <div className="flex items-center gap-1.5">
+              <GripVertical className="w-3 h-3 text-white/30" />
+              <span className="p-1 text-violet-400">
+                {icon}
+              </span>
+              <span className="text-[10px] font-bold text-white/70 uppercase tracking-wider">{title}</span>
+            </div>
+            <div className="flex items-center gap-0.5">
+              <button
+                onClick={toggleCollapse}
+                className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors"
+                title={collapsed ? 'Expand' : 'Minimize'}
+                data-testid={`button-minimize-${id}`}
+              >
+                <Minimize2 className="w-3 h-3" />
+              </button>
+              {showSettings && onSettingsClick && (
+                <button
+                  onClick={onSettingsClick}
+                  className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors"
+                  title="Panel settings"
+                >
+                  <Settings className="w-3 h-3" />
+                </button>
+              )}
+              <button
+                onClick={handleModeToggle}
+                className="p-1 rounded hover:bg-white/10 text-cyan-400/70 hover:text-cyan-300 transition-colors"
+                title="Dock panel"
+                data-testid={`button-dock-${id}`}
+              >
+                <Pin className="w-3 h-3" />
+              </button>
+              {onClose && (
+                <button
+                  onClick={onClose}
+                  className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-red-400 transition-colors"
+                  title="Close"
+                  data-testid={`button-close-${id}`}
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
           </div>
-          {onClose && (
-            <button
-              onClick={onClose}
-              className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-red-400 transition-colors touch-manipulation"
-              title="Close"
-              data-testid={`button-close-${id}`}
-            >
-              <X className="w-3 h-3" />
-            </button>
+          
+          {!collapsed && (
+            <div className="max-h-[70vh] overflow-auto">
+              {children}
+            </div>
           )}
+          
+          {!collapsed && ResizeHandle}
         </div>
-      </div>
-      {!state.collapsed && (
-        <div className="flex-1 overflow-auto max-h-[50vh]">
-          {children}
-        </div>
-      )}
-    </div>
+      </motion.div>
+    </>
   );
 }

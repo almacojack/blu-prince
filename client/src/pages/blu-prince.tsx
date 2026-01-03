@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  Save, Settings, Plus, Zap, 
+  Save, Settings, Plus, Zap, Layers,
   ChevronDown, ZoomIn, ZoomOut, MousePointer2,
   ArrowRight, FileJson, Download, Cloud, CloudOff, Users, Share2,
   Upload, Box, Trash2, Eye, Pencil, Music2, VolumeX, Volume2, SkipForward,
@@ -13,6 +13,7 @@ import { AtariDockPanel, AtariDockedPanel, AtariMiniPanel, Atari5200CartridgeSlo
 import { WinAmpPanel } from "@/components/WinAmpPanel";
 import { FritzingPanel, ElectronicPart } from "@/components/FritzingPanel";
 import { FlightControlsDashboard } from "@/components/FlightControlsDashboard";
+import { DockablePanel } from "@/components/DockablePanel";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -1258,43 +1259,47 @@ export default function BluPrince() {
       </Dialog>
 
       <div className="flex flex-1 overflow-hidden">
-        <div className="w-64 border-r border-white/10 bg-black/20 flex flex-col">
-          <div className="p-4 border-b border-white/5">
-            <h3 className="text-xs font-mono uppercase text-muted-foreground mb-4">Logic Primitives</h3>
-            
-            <div className="space-y-4">
-              <div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
-                  <span className="flex items-center"><ChevronDown className="w-3 h-3 mr-1" /> STATES</span>
+        {/* Left Panel - Logic Primitives & 3D Assets */}
+        <DockablePanel
+          id="logic-panel"
+          title="Logic"
+          icon={<Layers className="w-4 h-4" />}
+          defaultDocked={true}
+          defaultWidth={280}
+          minWidth={200}
+          maxWidth={450}
+          dockSide="left"
+        >
+          <div className="p-3 border-b border-white/5">
+            <h3 className="text-[10px] font-mono uppercase text-muted-foreground mb-3 flex items-center gap-1.5">
+              <ChevronDown className="w-3 h-3" /> States
+            </h3>
+            <div className="grid grid-cols-2 gap-2">
+              {["initial", "state", "compound", "final"].map((item) => (
+                <div 
+                  key={item} 
+                  onClick={() => handleAddNode(item as any)}
+                  className="p-2 rounded bg-white/5 hover:bg-white/10 border border-white/5 cursor-pointer flex flex-col items-center gap-1 transition-colors active:scale-95"
+                  data-testid={`add-state-${item}`}
+                >
+                  <div className={`w-6 h-6 rounded ${item === 'initial' ? 'bg-green-500/20' : 'bg-primary/20'}`} />
+                  <span className="text-[10px] text-muted-foreground capitalize">{item}</span>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {["initial", "state", "compound", "final"].map((item) => (
-                    <div 
-                      key={item} 
-                      onClick={() => handleAddNode(item as any)}
-                      className="p-2 rounded bg-white/5 hover:bg-white/10 border border-white/5 cursor-pointer flex flex-col items-center gap-1 transition-colors active:scale-95"
-                      data-testid={`add-state-${item}`}
-                    >
-                      <div className={`w-6 h-6 rounded ${item === 'initial' ? 'bg-green-500/20' : 'bg-primary/20'}`} />
-                      <span className="text-[10px] text-muted-foreground capitalize">{item}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-white/5">
-                 <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
-                  <span className="flex items-center"><Zap className="w-3 h-3 mr-1" /> EVENTS</span>
-                </div>
-                <Button variant="outline" size="sm" className="w-full text-xs justify-start border-dashed border-white/20">
-                  <Plus className="w-3 h-3 mr-2" /> Define Trigger
-                </Button>
-              </div>
+              ))}
             </div>
           </div>
           
-          <div className="p-4 border-t border-white/5 flex-1 flex flex-col min-h-0">
-            <h3 className="text-xs font-mono uppercase text-muted-foreground mb-4 flex items-center gap-2">
+          <div className="p-3 border-b border-white/5">
+            <h3 className="text-[10px] font-mono uppercase text-muted-foreground mb-3 flex items-center gap-1.5">
+              <Zap className="w-3 h-3" /> Events
+            </h3>
+            <Button variant="outline" size="sm" className="w-full text-xs justify-start border-dashed border-white/20">
+              <Plus className="w-3 h-3 mr-2" /> Define Trigger
+            </Button>
+          </div>
+          
+          <div className="p-3 flex-1 flex flex-col min-h-0">
+            <h3 className="text-[10px] font-mono uppercase text-muted-foreground mb-3 flex items-center gap-1.5">
               <Box className="w-3 h-3" /> 3D Assets
             </h3>
             
@@ -1422,7 +1427,7 @@ export default function BluPrince() {
               </div>
             </ScrollArea>
           </div>
-        </div>
+        </DockablePanel>
 
         <div 
           ref={canvasRef}
