@@ -10,6 +10,8 @@ TingOs is a virtual machine execution environment for TOSS files (ThingOs State 
 - **artsy.sale** - Art dealer auction platform
 - **coins.rip** - Crypto swing trade visualization
 
+**GitHub:** https://github.com/almacojack/blu-prince
+
 The killer feature is **game controller support as first-class objects** - zero-config detection, visual binding UI, haptic feedback, and cross-platform parity from MicroPython to web.
 
 ### Satellite Domains

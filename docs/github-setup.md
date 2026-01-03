@@ -1,5 +1,7 @@
 # GitHub Repository Setup for Blu-Prince
 
+**Repository:** https://github.com/almacojack/blu-prince
+
 ## Initial Setup (One-Time)
 
 Configure Git to use `main` as the default branch:
