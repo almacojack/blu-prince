@@ -5,11 +5,13 @@ import {
   Save, Settings, Plus, Zap, 
   ChevronDown, ZoomIn, ZoomOut, MousePointer2,
   ArrowRight, FileJson, Download, Cloud, CloudOff, Users, Share2,
-  Upload, Box, Trash2, Eye, Pencil, Music2, VolumeX, Volume2, SkipForward
+  Upload, Box, Trash2, Eye, Pencil, Music2, VolumeX, Volume2, SkipForward,
+  CircuitBoard
 } from "lucide-react";
 import { AtariResetKnob } from "@/components/AtariResetKnob";
 import { AtariDockPanel, AtariDockedPanel, AtariMiniPanel, Atari5200CartridgeSlot, AtariSilverRail } from "@/components/AtariDockPanel";
 import { WinAmpPanel } from "@/components/WinAmpPanel";
+import { FritzingPanel, ElectronicPart } from "@/components/FritzingPanel";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -548,6 +550,7 @@ export default function BluPrince() {
   const [zoom, setZoom] = useState(1);
   const [floatingPanels, setFloatingPanels] = useState<{ controls: boolean }>({ controls: false });
   const [showWinAmp, setShowWinAmp] = useState(true);
+  const [showFritzing, setShowFritzing] = useState(false);
   const [showStateSettings, setShowStateSettings] = useState(false);
   const [editingStateName, setEditingStateName] = useState<string | null>(null);
   const [showTransitionDialog, setShowTransitionDialog] = useState(false);
@@ -1459,6 +1462,22 @@ export default function BluPrince() {
                 </div>
               </AtariDockedPanel>
             )}
+            
+            {/* Fritzing Panel Toggle */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowFritzing(!showFritzing)}
+              className={`h-8 px-3 rounded-lg border ${
+                showFritzing 
+                  ? "bg-teal-600 text-white border-teal-400" 
+                  : "bg-gray-800/80 text-teal-400 border-teal-600/50 hover:bg-teal-600/20"
+              }`}
+              data-testid="button-toggle-fritzing"
+            >
+              <CircuitBoard className="w-4 h-4 mr-1.5" />
+              <span className="text-xs font-bold">FRITZING</span>
+            </Button>
 
           </div>
 
@@ -1510,7 +1529,23 @@ export default function BluPrince() {
               tracks={chiptune.trackList}
               currentTrackIndex={chiptune.currentTrack}
               onSelectTrack={chiptune.selectTrack}
+              panelTitle="tng.li/AMP"
               data-testid="panel-winamp"
+            />
+          )}
+
+          {/* Fritzing-Style Electronics Parts Panel */}
+          {showFritzing && (
+            <FritzingPanel
+              onSelectPart={(part: ElectronicPart) => {
+                toast({
+                  title: "Part Selected",
+                  description: `${part.name} - Drag to scene to place`,
+                });
+              }}
+              onClose={() => setShowFritzing(false)}
+              initialPosition={{ x: 16, y: 200 }}
+              data-testid="panel-fritzing"
             />
           )}
 

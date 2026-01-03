@@ -99,6 +99,7 @@ interface WinAmpPanelProps {
   tracks?: string[];
   currentTrackIndex?: number;
   onSelectTrack?: (index: number) => void;
+  panelTitle?: string;
   "data-testid"?: string;
 }
 
@@ -115,6 +116,7 @@ export function WinAmpPanel({
   tracks = [],
   currentTrackIndex = 0,
   onSelectTrack,
+  panelTitle = "tng.li/AMP",
   "data-testid": testId,
 }: WinAmpPanelProps) {
   const [showPlaylist, setShowPlaylist] = useState(false);
@@ -202,7 +204,7 @@ export function WinAmpPanel({
             <div className="flex items-center gap-1">
               <GripVertical className="w-3 h-3 text-gray-500" />
               <span className="text-[10px] font-bold text-cyan-400 tracking-wider uppercase">
-                WinAMP
+                {panelTitle}
               </span>
             </div>
             <div className="flex items-center gap-1">
