@@ -77,8 +77,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
-  // Delete cartridge
-  app.delete("/api/cartridges/:tngli_id", async (req, res) => {
+  // Delete cartridge by tngli_id
+  app.delete("/api/cartridges/by-tngli/:tngli_id", async (req, res) => {
     try {
       const success = await storage.deleteCartridge(req.params.tngli_id);
       if (!success) {
@@ -88,6 +88,34 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     } catch (error) {
       console.error("Error deleting cartridge:", error);
       res.status(500).json({ error: "Failed to delete cartridge" });
+    }
+  });
+  
+  // Delete cartridge by ID (primary key)
+  app.delete("/api/cartridges/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteCartridgeById(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Cartridge not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting cartridge:", error);
+      res.status(500).json({ error: "Failed to delete cartridge" });
+    }
+  });
+  
+  // Get cartridge by ID (primary key)
+  app.get("/api/cartridges/by-id/:id", async (req, res) => {
+    try {
+      const cartridge = await storage.getCartridgeById(req.params.id);
+      if (!cartridge) {
+        return res.status(404).json({ error: "Cartridge not found" });
+      }
+      res.json(cartridge);
+    } catch (error) {
+      console.error("Error fetching cartridge:", error);
+      res.status(500).json({ error: "Failed to fetch cartridge" });
     }
   });
 

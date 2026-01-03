@@ -182,6 +182,36 @@ export interface CommerceFields {
   weight_grams?: number;
 }
 
+// Controller button/axis mapping to scene actions
+export interface ControllerMappingEntry {
+  input: string;           // e.g., "A", "LEFT_STICK_X", "RIGHT_TRIGGER"
+  action: string;          // e.g., "select", "move_x", "zoom", "fire"
+  sensitivity?: number;    // For analog inputs (0-2, default 1)
+  deadzone?: number;       // For sticks (0-0.5, default 0.1)
+  inverted?: boolean;      // Flip axis direction
+}
+
+// A named controller mapping preset
+export interface ControllerPreset {
+  id: string;
+  name: string;                     // e.g., "Default", "Racing Mode", "Accessibility"
+  description?: string;
+  mappings: ControllerMappingEntry[];
+  isDefault?: boolean;              // Mark as the default preset for this cartridge
+  deviceProfile?: "xbox" | "playstation" | "switch" | "generic";
+  createdAt?: string;
+}
+
+// Cartridge preview metadata for 3D library display
+export interface CartridgePreview {
+  thumbnailBase64?: string;         // PNG thumbnail of cartridge contents
+  primaryColor?: string;            // Dominant color from contents
+  itemCount: number;                // Number of items in cartridge
+  assetCount: number;               // Number of 3D assets
+  lastModified?: string;            // ISO date
+  tags?: string[];                  // User-defined tags for organization
+}
+
 // Meta information
 export interface TossMeta {
   title: string;
@@ -212,12 +242,19 @@ export interface TossCartridge {
   // Test harness for validation
   tests?: TestHarness;
   
+  // Controller mapping presets (games/apps can have multiple)
+  controllerPresets?: ControllerPreset[];
+  
+  // Preview metadata for 3D library display
+  preview?: CartridgePreview;
+  
   // Editor-only metadata (stripped on export)
   _editor?: {
     mode: EditorMode;
     camera: { x: number; y: number; z: number; target: { x: number; y: number; z: number } };
     selected_ids: string[];
     gravity_enabled: boolean;
+    activeControllerPresetId?: string;  // Currently active preset
   };
 }
 
@@ -259,8 +296,44 @@ export const DEFAULT_ANIMATION: AnimationDefaults = {
   squash_recovery_speed: 8,
 };
 
+// Default controller preset for scene navigation
+export const DEFAULT_SCENE_CONTROLS: ControllerMappingEntry[] = [
+  { input: "LEFT_STICK_X", action: "camera_orbit_horizontal", sensitivity: 1, deadzone: 0.1 },
+  { input: "LEFT_STICK_Y", action: "camera_orbit_vertical", sensitivity: 1, deadzone: 0.1 },
+  { input: "RIGHT_STICK_X", action: "camera_pan_x", sensitivity: 0.5, deadzone: 0.1 },
+  { input: "RIGHT_STICK_Y", action: "camera_pan_y", sensitivity: 0.5, deadzone: 0.1 },
+  { input: "LEFT_TRIGGER", action: "camera_zoom_out", sensitivity: 1 },
+  { input: "RIGHT_TRIGGER", action: "camera_zoom_in", sensitivity: 1 },
+  { input: "A", action: "select" },
+  { input: "B", action: "deselect" },
+  { input: "X", action: "delete" },
+  { input: "Y", action: "add_object" },
+  { input: "LEFT_BUMPER", action: "previous_object" },
+  { input: "RIGHT_BUMPER", action: "next_object" },
+  { input: "DPAD_UP", action: "move_up" },
+  { input: "DPAD_DOWN", action: "move_down" },
+  { input: "DPAD_LEFT", action: "move_left" },
+  { input: "DPAD_RIGHT", action: "move_right" },
+  { input: "START", action: "toggle_menu" },
+  { input: "SELECT", action: "toggle_layers" },
+];
+
+// Create a default controller preset
+export function createDefaultControllerPreset(): ControllerPreset {
+  return {
+    id: `preset_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    name: "Default Scene Controls",
+    description: "Standard controller mapping for scene navigation and editing",
+    mappings: [...DEFAULT_SCENE_CONTROLS],
+    isDefault: true,
+    deviceProfile: "generic",
+    createdAt: new Date().toISOString(),
+  };
+}
+
 // Create a new empty cartridge
 export function createNewCartridge(): TossCartridge {
+  const defaultPreset = createDefaultControllerPreset();
   return {
     toss_version: "1.0",
     meta: {
@@ -276,11 +349,18 @@ export function createNewCartridge(): TossCartridge {
       assertions: [],
       all_passed: false,
     },
+    controllerPresets: [defaultPreset],
+    preview: {
+      itemCount: 0,
+      assetCount: 0,
+      primaryColor: "#7c3aed",
+    },
     _editor: {
       mode: "DESIGN",
       camera: { x: 5, y: 5, z: 10, target: { x: 0, y: 0, z: 0 } },
       selected_ids: [],
       gravity_enabled: true,
+      activeControllerPresetId: defaultPreset.id,
     },
   };
 }

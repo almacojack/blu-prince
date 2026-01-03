@@ -20,10 +20,11 @@ import {
   Triangle, Settings, Layers, Zap, Save, Upload, CheckCircle, XCircle,
   Plus, Trash2, ArrowRight, GitBranch, X, Gamepad2, Vibrate,
   Pentagon, Hexagon, Diamond, Cone, FileImage, Eye, EyeOff,
-  Palette, Move, RotateCw, Maximize2, Database, Wrench, Users, Share2, Copy
+  Palette, Move, RotateCw, Maximize2, Database, Wrench, Users, Share2, Copy, FolderOpen
 } from "lucide-react";
 import { DockablePanel } from "@/components/DockablePanel";
 import { ToolsPanel, type PhysicsTool } from "@/components/ToolsPanel";
+import { ControllerMappingsPanel } from "@/components/ControllerMappingsPanel";
 import {
   createGestureState, startGesture, updateGesture, endGesture,
   calculateFlickVelocity, calculatePoolCueImpulse, calculateSlingshotImpulse,
@@ -32,8 +33,8 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { 
-  TossCartridge, TossItem, EditorMode, UserAssertion, ItemFSM, ControllerBinding, Bounds,
-  createNewCartridge, createThing, DEFAULT_PHYSICS, CONTROLLER_BUTTONS
+  TossCartridge, TossItem, EditorMode, UserAssertion, ItemFSM, ControllerBinding, Bounds, ControllerPreset,
+  createNewCartridge, createThing, DEFAULT_PHYSICS, CONTROLLER_BUTTONS, createDefaultControllerPreset
 } from "@/lib/toss-v1";
 import { useToast } from "@/hooks/use-toast";
 import { useCollaboration, type CollabUser } from "@/hooks/use-collaboration";
@@ -1667,6 +1668,7 @@ export default function BluPrinceEditor() {
   const [testStatus, setTestStatus] = useState<"pending" | "running" | "pass" | "fail">("pending");
   const [showFSMEditor, setShowFSMEditor] = useState(false);
   const [showController, setShowController] = useState(false);
+  const [showControllerMappings, setShowControllerMappings] = useState(false);
   const [showLayers, setShowLayers] = useState(false);
   const [hiddenLayers, setHiddenLayers] = useState<Set<string>>(new Set());
   const [showPreferences, setShowPreferences] = useState(false);
@@ -1798,6 +1800,25 @@ export default function BluPrinceEditor() {
       )
     }));
   }, [selectedId, updateCartridgeWithSync]);
+
+  // Update controller presets (syncs to collab)
+  const updateControllerPresets = useCallback((presets: ControllerPreset[]) => {
+    updateCartridgeWithSync(prev => ({
+      ...prev,
+      controllerPresets: presets,
+    }));
+  }, [updateCartridgeWithSync]);
+
+  // Set active controller preset
+  const setActiveControllerPreset = useCallback((presetId: string) => {
+    updateCartridgeWithSync(prev => ({
+      ...prev,
+      _editor: {
+        ...prev._editor!,
+        activeControllerPresetId: presetId,
+      },
+    }));
+  }, [updateCartridgeWithSync]);
 
   // Handle transform updates from physics simulation
   const handleTransformUpdate = useCallback((id: string, position: { x: number; y: number; z: number }) => {
@@ -2157,8 +2178,27 @@ export default function BluPrinceEditor() {
                 className={showController ? "bg-secondary text-black" : "text-secondary"}
                 data-testid="button-controller"
               >
-                <Gamepad2 className="w-4 h-4 mr-1" /> Controller
+                <Gamepad2 className="w-4 h-4 mr-1" /> Bind
               </Button>
+              <Button 
+                size="sm" 
+                variant={showControllerMappings ? "default" : "ghost"}
+                onClick={() => setShowControllerMappings(!showControllerMappings)}
+                className={showControllerMappings ? "bg-orange-500 text-white" : "text-orange-400"}
+                data-testid="button-controller-mappings"
+              >
+                <Settings className="w-4 h-4 mr-1" /> Mappings
+              </Button>
+              <Link href="/library">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  className="text-amber-400 border-amber-400/50 hover:bg-amber-400/10"
+                  data-testid="button-library"
+                >
+                  <FolderOpen className="w-4 h-4 mr-1" /> Library
+                </Button>
+              </Link>
             </>
           )}
           <Separator orientation="vertical" className="h-6" />
@@ -2311,6 +2351,31 @@ export default function BluPrinceEditor() {
           onUpdate={updateItemController}
           onClose={() => setShowController(false)}
         />
+      )}
+
+      {/* Controller Mappings Panel */}
+      {showControllerMappings && (
+        <div className="fixed right-4 top-20 bottom-4 w-80 z-40">
+          <div className="h-full rounded-xl border border-zinc-700 overflow-hidden shadow-2xl">
+            <div className="flex items-center justify-between p-3 bg-zinc-800 border-b border-zinc-700">
+              <span className="text-sm font-medium text-white">Controller Mappings</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
+                onClick={() => setShowControllerMappings(false)}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            <ControllerMappingsPanel
+              presets={cartridge.controllerPresets || [createDefaultControllerPreset()]}
+              activePresetId={cartridge._editor?.activeControllerPresetId}
+              onPresetsChange={updateControllerPresets}
+              onActivePresetChange={setActiveControllerPreset}
+            />
+          </div>
+        </div>
       )}
 
       {/* Assertions Panel - shown in TEST mode */}
