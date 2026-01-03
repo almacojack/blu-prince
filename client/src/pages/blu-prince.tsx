@@ -592,19 +592,43 @@ export default function BluPrince() {
   const handleZoomReset = () => setZoom(1);
   
   const handleFSMReset = useCallback(() => {
-    const freshFile = createNewTossFile();
-    setFile(freshFile);
+    const initialState: TossState = {
+      id: "idle",
+      type: "initial",
+      transitions: [],
+    };
+    
+    const resetFile: TossFile = {
+      ...file,
+      logic: {
+        ...file.logic,
+        initial: "idle",
+        states: {
+          idle: initialState
+        }
+      },
+      _editor: {
+        nodes: [{
+          id: "idle",
+          x: 400,
+          y: 300
+        }],
+        viewport: { x: 0, y: 0, zoom: 1 }
+      }
+    };
+    
+    setFile(resetFile);
     setSelectedNodeId(null);
     setZoom(1);
     setEditingStateName(null);
     toast({ 
       title: "FSM Reset", 
-      description: "Canvas cleared. Ready for a fresh start!" 
+      description: "Canvas cleared. Cartridge info preserved." 
     });
     if (collaboration.isJoined) {
-      collaboration.sendFullState(freshFile);
+      collaboration.sendFullState(resetFile);
     }
-  }, [collaboration, toast]);
+  }, [file, collaboration, toast]);
 
   const handleAddTransition = () => {
     if (!selectedNodeId || !newTransitionEvent.trim() || !newTransitionTarget) {
