@@ -31,6 +31,8 @@ Preferred communication style: Simple, everyday language.
 - **Dual Theme System** - Cyberpunk Neon (default) and Victorian Brass themes available via theme switcher
 
 ### Recent Changes (January 2026)
+- **Input Mapping System** - Comprehensive keyboard/mouse/gamepad binding system with conflict detection engine, EmulationStation-style controller setup wizard, and settings page at `/input-settings`
+- **Context Menu Manager** - Schema-driven nested context menus with right-click-to-pan toggle, configurable delay when both features are enabled
 - **i18n Support** - Full internationalization with English and Russian languages via react-i18next, language picker in widget showcase
 - **Widget Library Expansion** - Added Submarine Sonar Scanner and Fish Finder simulator widgets with portable data models for TUI/MicroPython
 - **QR Color Customizer** - Reusable QR code component with 8 color presets and custom color picker (black/white default)
