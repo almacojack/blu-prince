@@ -102,72 +102,72 @@ function EventForm({
   };
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="title">Event Title *</Label>
+    <div className="space-y-2">
+      <div className="space-y-1">
+        <Label htmlFor="title" className="text-xs">Title *</Label>
         <Input
           id="title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Moon Landing"
-          className="bg-zinc-800 border-zinc-700"
+          className="bg-zinc-800 border-zinc-700 h-8 text-sm"
           data-testid="input-event-title"
         />
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="description">Description</Label>
+      <div className="space-y-1">
+        <Label htmlFor="description" className="text-xs">Description</Label>
         <Textarea
           id="description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="A brief description of the event..."
-          className="bg-zinc-800 border-zinc-700 min-h-[80px]"
+          placeholder="A brief description..."
+          className="bg-zinc-800 border-zinc-700 min-h-[60px] text-sm"
           data-testid="input-event-description"
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Category</Label>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-1">
+          <Label className="text-xs">Category</Label>
           <Select value={category} onValueChange={setCategory}>
-            <SelectTrigger className="bg-zinc-800 border-zinc-700">
+            <SelectTrigger className="bg-zinc-800 border-zinc-700 h-8 text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {categories.map(cat => (
-                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                <SelectItem key={cat} value={cat} className="text-xs">{cat}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
 
-        <div className="space-y-2">
-          <Label>Tenant / Site</Label>
+        <div className="space-y-1">
+          <Label className="text-xs">Site</Label>
           <Select value={tenant} onValueChange={setTenant}>
-            <SelectTrigger className="bg-zinc-800 border-zinc-700">
+            <SelectTrigger className="bg-zinc-800 border-zinc-700 h-8 text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {tenants.map(t => (
-                <SelectItem key={t} value={t}>{t}</SelectItem>
+                <SelectItem key={t} value={t} className="text-xs">{t}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
       </div>
 
-      <div className="space-y-2 p-3 rounded-lg bg-amber-950/30 border border-amber-700/30">
+      <div className="p-2 rounded bg-amber-950/30 border border-amber-700/30">
         <div className="flex items-center justify-between">
-          <Label className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-amber-400" />
+          <Label className="flex items-center gap-1.5 text-xs">
+            <Clock className="w-3 h-3 text-amber-400" />
             When & Where *
           </Label>
           <Button
             type="button"
             variant="ghost"
             size="sm"
-            className="h-6 text-xs text-amber-400"
+            className="h-5 text-[10px] px-2 text-amber-400"
             onClick={() => setSpacetimeOpen(true)}
           >
             {spacetime ? "Change" : "Set"}
@@ -198,64 +198,64 @@ function EventForm({
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label className="flex items-center gap-2">
-            <Image className="w-4 h-4" />
-            Image URL
+      <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-1">
+          <Label className="flex items-center gap-1.5 text-xs">
+            <Image className="w-3 h-3" />
+            Image
           </Label>
           <Input
             value={imageUrl}
             onChange={(e) => setImageUrl(e.target.value)}
             placeholder="https://..."
-            className="bg-zinc-800 border-zinc-700"
+            className="bg-zinc-800 border-zinc-700 h-8 text-xs"
           />
         </div>
 
-        <div className="space-y-2">
-          <Label className="flex items-center gap-2">
-            <LinkIcon className="w-4 h-4" />
-            Source URL
+        <div className="space-y-1">
+          <Label className="flex items-center gap-1.5 text-xs">
+            <LinkIcon className="w-3 h-3" />
+            Source
           </Label>
           <Input
             value={sourceUrl}
             onChange={(e) => setSourceUrl(e.target.value)}
             placeholder="https://..."
-            className="bg-zinc-800 border-zinc-700"
+            className="bg-zinc-800 border-zinc-700 h-8 text-xs"
           />
         </div>
       </div>
 
-      <div className="flex items-center justify-between p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
-        <div className="flex items-center gap-2">
-          <Star className="w-4 h-4 text-yellow-400" />
-          <Label htmlFor="featured" className="cursor-pointer">Featured Event</Label>
+      <div className="flex items-center justify-between p-1.5 rounded bg-yellow-500/10 border border-yellow-500/30">
+        <div className="flex items-center gap-1.5">
+          <Star className="w-3 h-3 text-yellow-400" />
+          <Label htmlFor="featured" className="cursor-pointer text-xs">Featured</Label>
         </div>
         <Switch
           id="featured"
           checked={isFeatured}
           onCheckedChange={setIsFeatured}
+          className="scale-75"
         />
       </div>
 
-      <div className="flex gap-2 pt-4">
+      <div className="flex gap-2 pt-2">
         <Button
           variant="outline"
           onClick={onCancel}
-          className="flex-1"
+          className="flex-1 h-8 text-xs"
           disabled={isLoading}
         >
-          <X className="w-4 h-4 mr-2" />
           Cancel
         </Button>
         <Button
           onClick={handleSubmit}
-          className="flex-1 bg-blue-600 hover:bg-blue-500"
+          className="flex-1 h-8 text-xs bg-blue-600 hover:bg-blue-500"
           disabled={!title || !spacetime || isLoading}
           data-testid="button-save-event"
         >
-          <Save className="w-4 h-4 mr-2" />
-          {isLoading ? "Saving..." : "Save Event"}
+          <Save className="w-3 h-3 mr-1" />
+          {isLoading ? "..." : "Save"}
         </Button>
       </div>
     </div>
@@ -369,83 +369,82 @@ export default function AdminEventsPage() {
   }
 
   return (
-    <div className="container mx-auto px-6 py-8">
-      <div className="flex items-center justify-between mb-8">
+    <div className="container mx-auto px-4 py-4">
+      <div className="flex items-center justify-between mb-4">
         <div>
-          <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-            <Calendar className="w-8 h-8 text-cyan-400" />
+          <h1 className="text-xl font-bold text-white flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-cyan-400" />
             Timeline Events
           </h1>
-          <p className="text-zinc-400 mt-1">Manage famous events for the timeline</p>
+          <p className="text-zinc-400 text-xs">Manage famous events</p>
         </div>
         
         <Button
           onClick={() => setIsCreating(true)}
-          className="bg-cyan-600 hover:bg-cyan-500"
+          className="bg-cyan-600 hover:bg-cyan-500 h-8 text-xs"
           data-testid="button-create-event"
         >
-          <Plus className="w-4 h-4 mr-2" />
-          Add Event
+          <Plus className="w-3 h-3 mr-1" />
+          Add
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         <Card className="bg-zinc-900/80 border-zinc-700">
-          <CardHeader className="pb-3">
+          <CardHeader className="p-3 pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-white flex items-center gap-2">
-                <Filter className="w-5 h-5" />
+              <CardTitle className="text-white flex items-center gap-1.5 text-sm">
+                <Filter className="w-4 h-4" />
                 Events ({events.length})
               </CardTitle>
-              <div className="flex gap-2">
+              <div className="flex gap-1">
                 <Select value={filterCategory} onValueChange={setFilterCategory}>
-                  <SelectTrigger className="w-[120px] h-8 text-xs bg-zinc-800 border-zinc-700">
+                  <SelectTrigger className="w-[90px] h-6 text-[10px] bg-zinc-800 border-zinc-700">
                     <SelectValue placeholder="Category" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
+                    <SelectItem value="all" className="text-xs">All</SelectItem>
                     {categories.map(cat => (
-                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                      <SelectItem key={cat} value={cat} className="text-xs">{cat}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 <Select value={filterTenant} onValueChange={setFilterTenant}>
-                  <SelectTrigger className="w-[100px] h-8 text-xs bg-zinc-800 border-zinc-700">
+                  <SelectTrigger className="w-[70px] h-6 text-[10px] bg-zinc-800 border-zinc-700">
                     <SelectValue placeholder="Site" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Sites</SelectItem>
+                    <SelectItem value="all" className="text-xs">All</SelectItem>
                     {tenants.map(t => (
-                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                      <SelectItem key={t} value={t} className="text-xs">{t}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
             </div>
           </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-[500px]">
+          <CardContent className="p-3 pt-0">
+            <ScrollArea className="h-[400px]">
               {eventsLoading ? (
-                <div className="flex items-center justify-center h-32">
-                  <div className="w-6 h-6 border-2 border-cyan-400/30 border-t-cyan-400 rounded-full animate-spin" />
+                <div className="flex items-center justify-center h-24">
+                  <div className="w-5 h-5 border-2 border-cyan-400/30 border-t-cyan-400 rounded-full animate-spin" />
                 </div>
               ) : events.length === 0 ? (
-                <div className="text-center py-12 text-zinc-500">
-                  <Calendar className="w-12 h-12 mx-auto mb-4 opacity-30" />
-                  <p>No events found</p>
-                  <p className="text-sm">Create your first event to get started</p>
+                <div className="text-center py-8 text-zinc-500">
+                  <Calendar className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                  <p className="text-sm">No events found</p>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <AnimatePresence>
                     {events.map((event) => (
                       <motion.div
                         key={event.id}
                         layout
-                        initial={{ opacity: 0, y: 10 }}
+                        initial={{ opacity: 0, y: 5 }}
                         animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className={`p-3 rounded-lg border transition-colors cursor-pointer
+                        exit={{ opacity: 0, y: -5 }}
+                        className={`p-2 rounded border transition-colors cursor-pointer
                           ${selectedEventId === event.id 
                             ? 'bg-cyan-500/20 border-cyan-500/50' 
                             : 'bg-zinc-800/50 border-zinc-700 hover:border-zinc-600'
@@ -456,44 +455,44 @@ export default function AdminEventsPage() {
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-medium text-white truncate">{event.title}</h3>
+                            <div className="flex items-center gap-1.5">
+                              <h3 className="text-sm font-medium text-white truncate">{event.title}</h3>
                               {event.is_featured && (
-                                <Star className="w-3 h-3 text-yellow-400 fill-yellow-400 flex-shrink-0" />
+                                <Star className="w-2.5 h-2.5 text-yellow-400 fill-yellow-400 flex-shrink-0" />
                               )}
                             </div>
-                            <div className="flex items-center gap-3 mt-1 text-xs text-zinc-400">
-                              <Badge variant="outline" className="text-[10px] h-4 px-1">
+                            <div className="flex items-center gap-2 mt-0.5 text-[10px] text-zinc-400">
+                              <Badge variant="outline" className="text-[9px] h-3.5 px-1">
                                 {event.category}
                               </Badge>
                               <span>{new Date(event.datetime).toLocaleDateString()}</span>
                               <span className="text-zinc-600">{event.tenant}</span>
                             </div>
                           </div>
-                          <div className="flex gap-1 ml-2">
+                          <div className="flex gap-0.5 ml-1">
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-7 w-7"
+                              className="h-6 w-6"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setEditingEvent(event);
                               }}
                               data-testid={`edit-event-${event.id}`}
                             >
-                              <Edit3 className="w-3 h-3" />
+                              <Edit3 className="w-2.5 h-2.5" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-7 w-7 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                              className="h-6 w-6 text-red-400 hover:text-red-300 hover:bg-red-500/10"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 deleteMutation.mutate(event.id);
                               }}
                               data-testid={`delete-event-${event.id}`}
                             >
-                              <Trash2 className="w-3 h-3" />
+                              <Trash2 className="w-2.5 h-2.5" />
                             </Button>
                           </div>
                         </div>
@@ -507,27 +506,27 @@ export default function AdminEventsPage() {
         </Card>
 
         <Card className="bg-zinc-900/80 border-zinc-700">
-          <CardHeader className="pb-3">
+          <CardHeader className="p-3 pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-white flex items-center gap-2">
-                <Layout className="w-5 h-5" />
-                Timeline Preview
+              <CardTitle className="text-white flex items-center gap-1.5 text-sm">
+                <Layout className="w-4 h-4" />
+                Preview
               </CardTitle>
-              <div className="flex gap-2">
+              <div className="flex gap-1">
                 <Select value={previewTheme} onValueChange={(v) => setPreviewTheme(v as TimelineTheme)}>
-                  <SelectTrigger className="w-[110px] h-8 text-xs bg-zinc-800 border-zinc-700">
+                  <SelectTrigger className="w-[80px] h-6 text-[10px] bg-zinc-800 border-zinc-700">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {themeOptions.map(opt => (
-                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      <SelectItem key={opt.value} value={opt.value} className="text-xs">{opt.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8"
+                  className="h-6 w-6 p-0"
                   onClick={() => setOrientation(o => o === "vertical" ? "horizontal" : "vertical")}
                 >
                   {orientation === "vertical" ? "→" : "↓"}
@@ -535,7 +534,7 @@ export default function AdminEventsPage() {
               </div>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-3 pt-0">
             <Timeline
               events={events}
               theme={previewTheme}
@@ -548,11 +547,11 @@ export default function AdminEventsPage() {
       </div>
 
       <Dialog open={isCreating} onOpenChange={setIsCreating}>
-        <DialogContent className="bg-zinc-900 border-zinc-700 max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="text-white flex items-center gap-2">
-              <Plus className="w-5 h-5 text-cyan-400" />
-              Add New Event
+        <DialogContent className="bg-zinc-900 border-zinc-700 max-w-sm p-4">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="text-white flex items-center gap-1.5 text-sm">
+              <Plus className="w-4 h-4 text-cyan-400" />
+              Add Event
             </DialogTitle>
           </DialogHeader>
           <EventForm
@@ -564,10 +563,10 @@ export default function AdminEventsPage() {
       </Dialog>
 
       <Dialog open={!!editingEvent} onOpenChange={() => setEditingEvent(null)}>
-        <DialogContent className="bg-zinc-900 border-zinc-700 max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="text-white flex items-center gap-2">
-              <Edit3 className="w-5 h-5 text-cyan-400" />
+        <DialogContent className="bg-zinc-900 border-zinc-700 max-w-sm p-4">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="text-white flex items-center gap-1.5 text-sm">
+              <Edit3 className="w-4 h-4 text-cyan-400" />
               Edit Event
             </DialogTitle>
           </DialogHeader>
