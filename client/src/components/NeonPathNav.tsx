@@ -43,7 +43,7 @@ const NAV_NODES: NavNode[] = [
   },
   { 
     id: "design", 
-    label: "DESIGN", 
+    label: "STATE MODEL", 
     icon: <Palette className="w-5 h-5" />, 
     path: "/blu-prince", 
     color: "#ec4899",
@@ -51,7 +51,7 @@ const NAV_NODES: NavNode[] = [
   },
   { 
     id: "editor3d", 
-    label: "3D WORLD", 
+    label: "3D MODEL", 
     icon: <Globe2 className="w-5 h-5" />, 
     path: "/editor", 
     color: "#06b6d4",

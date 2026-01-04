@@ -6,7 +6,7 @@ import {
   ChevronDown, ZoomIn, ZoomOut, MousePointer2,
   ArrowRight, FileJson, Download, Cloud, CloudOff, Users, Share2,
   Upload, Box, Trash2, Eye, Pencil, Music2, VolumeX, Volume2, SkipForward,
-  CircuitBoard, Maximize2
+  CircuitBoard, Maximize2, BookOpen, ExternalLink
 } from "lucide-react";
 import { AtariResetKnob } from "@/components/AtariResetKnob";
 import { AtariDockPanel, AtariDockedPanel, AtariMiniPanel, Atari5200CartridgeSlot, AtariSilverRail } from "@/components/AtariDockPanel";
@@ -1489,6 +1489,47 @@ export default function BluPrince() {
                       ))}
                     </>
                   )}
+                  
+                  {/* Learn about Statecharts */}
+                  <Separator className="my-3 bg-white/10" />
+                  <div className="text-[10px] uppercase text-muted-foreground font-bold mb-2 flex items-center gap-1.5">
+                    <BookOpen className="w-3 h-3" /> Learn Statecharts
+                  </div>
+                  <div className="space-y-1.5">
+                    <a 
+                      href="https://www.amazon.com/Constructing-User-Interface-Statecharts-Horrocks/dp/0201342782" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-purple-500/10 border border-transparent hover:border-purple-500/30 transition-colors group"
+                      data-testid="link-horrocks-book"
+                    >
+                      <BookOpen className="w-3 h-3 text-purple-400" />
+                      <span className="text-[10px] text-muted-foreground group-hover:text-purple-300 flex-1">Constructing the User Interface with Statecharts</span>
+                      <ExternalLink className="w-2.5 h-2.5 text-muted-foreground/50 group-hover:text-purple-400" />
+                    </a>
+                    <a 
+                      href="https://statecharts.dev/" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-cyan-500/10 border border-transparent hover:border-cyan-500/30 transition-colors group"
+                      data-testid="link-statecharts-dev"
+                    >
+                      <Zap className="w-3 h-3 text-cyan-400" />
+                      <span className="text-[10px] text-muted-foreground group-hover:text-cyan-300 flex-1">statecharts.dev - Visual Guide</span>
+                      <ExternalLink className="w-2.5 h-2.5 text-muted-foreground/50 group-hover:text-cyan-400" />
+                    </a>
+                    <a 
+                      href="https://xstate.js.org/docs/" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-amber-500/10 border border-transparent hover:border-amber-500/30 transition-colors group"
+                      data-testid="link-xstate-docs"
+                    >
+                      <Layers className="w-3 h-3 text-amber-400" />
+                      <span className="text-[10px] text-muted-foreground group-hover:text-amber-300 flex-1">XState Documentation</span>
+                      <ExternalLink className="w-2.5 h-2.5 text-muted-foreground/50 group-hover:text-amber-400" />
+                    </a>
+                  </div>
                 </div>
               </ScrollArea>
             </div>
