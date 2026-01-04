@@ -62,6 +62,7 @@ Preferred communication style: Simple, everyday language.
 - **Personal Pitch Document** - "Why This. Why Now. Why Us." in docs/ for owner's internal use with spouse/partners
 - **Revenue Calculator Page** - Interactive `/revenue` page with sliders for creator, platform operator, and educator revenue projections. "Seeing is believing" for stakeholders
 - **Shark Tank Pitch Scenario** - Fictional but realistic pitch narrative showing key angles, metrics, and negotiation strategies that would impress investors
+- **Launch Strategy Titles** - Complete 22+ cartridge launch lineup with ratings, pricing, and new concepts (Lost: GPS, Journal ecosystem, Kanban Flow, Demolition Bot, blu-jeans, Product Configurator)
 
 ## System Architecture
 
