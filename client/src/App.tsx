@@ -14,6 +14,7 @@ import { TutorialOverlay } from "@/components/TutorialOverlay";
 import { TutorialMenu } from "@/components/TutorialMenu";
 import { NeonPathNav } from "@/components/NeonPathNav";
 import { GlobalCommandPalette } from "@/components/GlobalCommandPalette";
+import { SiteMapViewer } from "@/components/SiteMapViewer";
 import { FlightControlsDashboard } from "@/components/FlightControlsDashboard";
 import { useFullscreen } from "@/hooks/useFullscreen";
 import Home from "@/pages/home";
@@ -121,9 +122,10 @@ function ConditionalBackground() {
   );
 }
 
-function ConditionalNav({ onCommandPaletteOpen, onFullscreenToggle, isFullscreen }: {
+function ConditionalNav({ onCommandPaletteOpen, onFullscreenToggle, onSiteMapOpen, isFullscreen }: {
   onCommandPaletteOpen: () => void;
   onFullscreenToggle: () => void;
+  onSiteMapOpen: () => void;
   isFullscreen: boolean;
 }) {
   const [location] = useLocation();
@@ -137,6 +139,7 @@ function ConditionalNav({ onCommandPaletteOpen, onFullscreenToggle, isFullscreen
     <NeonPathNav 
       onCommandPaletteOpen={onCommandPaletteOpen}
       onFullscreenToggle={onFullscreenToggle}
+      onSiteMapOpen={onSiteMapOpen}
       isFullscreen={isFullscreen}
     />
   );
@@ -166,6 +169,7 @@ function ContentWrapper({ children }: { children: ReactNode }) {
 function AppContent() {
   const { isFullscreen, toggleFullscreen } = useFullscreen();
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [siteMapOpen, setSiteMapOpen] = useState(false);
 
   const handleTutorialOpen = () => {
     const event = new CustomEvent("open-tutorial-menu");
@@ -179,6 +183,7 @@ function AppContent() {
       <ConditionalNav 
         onCommandPaletteOpen={() => setCommandPaletteOpen(true)}
         onFullscreenToggle={toggleFullscreen}
+        onSiteMapOpen={() => setSiteMapOpen(true)}
         isFullscreen={isFullscreen}
       />
       
@@ -196,6 +201,11 @@ function AppContent() {
         onOpenChange={setCommandPaletteOpen}
         onFullscreenToggle={toggleFullscreen}
         onTutorialOpen={handleTutorialOpen}
+      />
+      
+      <SiteMapViewer 
+        isOpen={siteMapOpen}
+        onClose={() => setSiteMapOpen(false)}
       />
     </div>
   );

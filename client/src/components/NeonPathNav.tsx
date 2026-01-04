@@ -15,6 +15,7 @@ import {
   FlaskConical,
   Globe2,
   Compass,
+  Map,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
@@ -78,6 +79,7 @@ const NAV_NODES: NavNode[] = [
 interface NeonPathNavProps {
   onCommandPaletteOpen?: () => void;
   onFullscreenToggle?: () => void;
+  onSiteMapOpen?: () => void;
   isFullscreen?: boolean;
 }
 
@@ -94,6 +96,7 @@ const isDevEnvironment = (): boolean => {
 export function NeonPathNav({ 
   onCommandPaletteOpen, 
   onFullscreenToggle,
+  onSiteMapOpen,
   isFullscreen = false 
 }: NeonPathNavProps) {
   const [location] = useLocation();
@@ -304,6 +307,17 @@ export function NeonPathNav({
 
         <div className="flex items-center gap-2">
           <ThemeSwitcher variant="toggle" />
+          
+          <motion.button
+            onClick={onSiteMapOpen}
+            className="flex items-center justify-center w-11 h-11 rounded-lg bg-white/5 border border-white/10 text-zinc-300 hover:text-white hover:bg-white/10 hover:border-amber-500/50 transition-all touch-manipulation"
+            whileHover={{ scale: 1.05, boxShadow: "0 0 20px rgba(245,158,11,0.3)" }}
+            whileTap={{ scale: 0.95 }}
+            data-testid="button-sitemap"
+            title="Site Map"
+          >
+            <Map className="w-5 h-5" />
+          </motion.button>
           
           <motion.button
             onClick={toggleFlight}

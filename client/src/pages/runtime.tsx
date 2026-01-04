@@ -385,7 +385,6 @@ const FullscreenContent = ({ engineState, cartridge, onButtonPress }: { engineSt
           <div className="flex items-center gap-4">
             {/* D-Pad */}
             <div className="relative w-20 h-20">
-              <div className="absolute inset-2 rounded-xl bg-gray-800 border-2 border-gray-600 shadow-inner" />
               <button
                 onClick={() => onButtonPress('UP')}
                 className="absolute top-0 left-1/2 -translate-x-1/2 w-7 h-7 rounded-t-lg bg-gradient-to-b from-gray-600 to-gray-700 hover:from-gray-500 hover:to-gray-600 active:scale-95 transition-all border border-gray-500 flex items-center justify-center"
