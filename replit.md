@@ -58,6 +58,7 @@ Preferred communication style: Simple, everyday language.
 - **Multi-Cart Loading** - Load multiple cartridges simultaneously with merged PATH namespaces. Docker-like interoperability between cartridges. Boot cartridge determines initial environment
 - **CommandRouter Service** - PATH resolution, command parsing/execution, permission checking, and alias support for cartridge commands
 - **Sales Document** - "The Opportunity If You Can Catch It" in docs/ targeting developers, tech managers, and marketing leadership
+- **Revenue Models Addendum** - Explores revenue sharing, affiliate programs (Amazon integration), training cartridges, and web hosting configurator vision with predictable pricing
 
 ## System Architecture
 
