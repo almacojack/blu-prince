@@ -9,6 +9,7 @@ import { UiScaleProvider } from "@/contexts/UiScaleContext";
 import { TutorialProvider } from "@/contexts/TutorialContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { FlightControlsProvider, useFlightControls } from "@/contexts/FlightControlsContext";
+import { PerformanceProvider, usePerformance } from "@/contexts/PerformanceContext";
 import { TutorialOverlay } from "@/components/TutorialOverlay";
 import { TutorialMenu } from "@/components/TutorialMenu";
 import { NeonPathNav } from "@/components/NeonPathNav";
@@ -91,6 +92,25 @@ function GlobalFlightControls() {
   );
 }
 
+function ConditionalBackground() {
+  const [location] = useLocation();
+  const { settings } = usePerformance();
+  
+  // Only show 3D background on homepage and if enabled in settings
+  const isHomepage = location === '/';
+  const show3D = isHomepage && settings.enable3DBackgrounds;
+  
+  if (!show3D) {
+    return <div className="fixed inset-0 bg-gradient-to-br from-[#050510] via-[#0a0a1f] to-[#050510]" />;
+  }
+  
+  return (
+    <Suspense fallback={<div className="fixed inset-0 bg-[#050510]" />}>
+      <BackgroundStage />
+    </Suspense>
+  );
+}
+
 function AppContent() {
   const { isFullscreen, toggleFullscreen } = useFullscreen();
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
@@ -102,9 +122,7 @@ function AppContent() {
 
   return (
     <div className="min-h-screen text-foreground antialiased selection:bg-primary/20 relative">
-      <Suspense fallback={<div className="fixed inset-0 bg-[#050510]" />}>
-        <BackgroundStage />
-      </Suspense>
+      <ConditionalBackground />
       
       <NeonPathNav 
         onCommandPaletteOpen={() => setCommandPaletteOpen(true)}
@@ -136,17 +154,19 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <UiScaleProvider>
-          <CartridgeProvider>
-            <TutorialProvider>
-              <FlightControlsProvider>
-                <TooltipProvider>
-                  <AppContent />
-                </TooltipProvider>
-              </FlightControlsProvider>
-            </TutorialProvider>
-          </CartridgeProvider>
-        </UiScaleProvider>
+        <PerformanceProvider>
+          <UiScaleProvider>
+            <CartridgeProvider>
+              <TutorialProvider>
+                <FlightControlsProvider>
+                  <TooltipProvider>
+                    <AppContent />
+                  </TooltipProvider>
+                </FlightControlsProvider>
+              </TutorialProvider>
+            </CartridgeProvider>
+          </UiScaleProvider>
+        </PerformanceProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );
