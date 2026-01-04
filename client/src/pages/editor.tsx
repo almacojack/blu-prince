@@ -2788,7 +2788,7 @@ export default function BluPrinceEditor() {
               { id: 'brass-gears', label: 'Brass Gear Assembly', type: 'gear', visible: showBrassGears },
               ...waterContainers.map(c => ({ 
                 id: c.id, 
-                label: c.containerType === 'beaker' ? 'Beaker' : c.containerType === 'flask' ? 'Flask' : 'Cylinder', 
+                label: `Water ${c.containerType.charAt(0).toUpperCase() + c.containerType.slice(1)}`, 
                 type: 'water' as const, 
                 visible: true 
               })),
