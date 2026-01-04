@@ -2116,17 +2116,32 @@ export default function BluPrinceEditor() {
       
       setImportProgress({ percent: 90, stage: 'Saving', message: 'Adding to cartridge...' });
       
+      // Create a mesh item that references this asset for the scene tree
+      const meshItem: TossMesh = {
+        id: `mesh_${newAsset.id}`,
+        label: newAsset.metadata.name,
+        component: 'imported_model',
+        props: {},
+        transform: { position: { x: 0, y: 1, z: 0 }, rotation: { x: 0, y: 0, z: 0 }, scale: { x: 1, y: 1, z: 1 } },
+        bounds: { type: 'box', width: 1, height: 1, depth: 1 },
+        material: { type: 'standard', color: '#ff8c00' },
+        asset_id: newAsset.id, // Link to the asset
+      };
+      
       updateCartridgeWithSync(prev => ({
         ...prev,
         assets: {
           ...prev.assets,
           models: [...(prev.assets?.models || []), newAsset],
         },
+        items: [...(prev.items || []), meshItem], // Add to scene tree
       }));
+      
+      setSelectedId(meshItem.id); // Select the newly imported item
       
       toast({
         title: "3D Asset Imported",
-        description: `${newAsset.metadata.name} (${ext.toUpperCase()}) added`,
+        description: `${newAsset.metadata.name} (${ext.toUpperCase()}) added to scene`,
       });
     } catch (error) {
       toast({

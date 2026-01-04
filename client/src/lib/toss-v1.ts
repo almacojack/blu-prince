@@ -276,6 +276,9 @@ export interface TossMesh {
   // Hierarchy
   parent_id?: string;        // for hierarchical grouping
   children_ids?: string[];   // child meshes
+  
+  // v1.1: Reference to imported 3D asset
+  asset_id?: string;         // Links to a Toss3DAsset for imported models
 }
 
 // Alias for backward compatibility

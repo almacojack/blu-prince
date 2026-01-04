@@ -12,7 +12,7 @@ import { AtariResetKnob } from "@/components/AtariResetKnob";
 import { AtariDockPanel, AtariDockedPanel, AtariMiniPanel, Atari5200CartridgeSlot, AtariSilverRail } from "@/components/AtariDockPanel";
 import { WinAmpPanel } from "@/components/WinAmpPanel";
 import { ScrollableButtonPanel } from "@/components/ScrollableButtonPanel";
-import { ViewportAnglesPanel, ViewportAngle } from "@/components/ViewportAnglesPanel";
+import { ViewportAngle } from "@/components/ViewportAnglesPanel";
 import { FritzingPanel, ElectronicPart } from "@/components/FritzingPanel";
 import { FlightControlsDashboard } from "@/components/FlightControlsDashboard";
 import { DockablePanel } from "@/components/DockablePanel";
@@ -35,7 +35,6 @@ import { Progress } from "@/components/ui/progress";
 import { Asset3DPreview } from "@/components/Asset3DPreview";
 import { QRIconButton } from "@/components/QRCodePopup";
 import { WolfensteinHealth } from "@/components/WolfensteinHealth";
-import { SceneTree } from "@/components/SceneTree";
 import bluPrinceLogo from "@assets/generated_images/jeweled_blue_deity_walnut_bg.png";
 
 const STORAGE_KEY = "blu-prince-cartridge";
@@ -1378,61 +1377,79 @@ export default function BluPrince() {
               )}
             </div>
             
-            {/* Scene Tree */}
-            <div className="flex-1 min-h-0">
-              <SceneTree
-                file={file}
-                selectedStateId={selectedNodeId}
-                selectedAssetId={selectedAssetId}
-                onSelectState={(id) => setSelectedNodeId(id)}
-                onSelectAsset={(id) => setSelectedAssetId(id)}
-                onRenameState={handleRenameState}
-                onRenameAsset={handleRenameAsset}
-                onAddState={handleAddNode}
-                onDeleteState={(id) => {
-                  const remainingCount = Object.keys(file.logic.states).length - 1;
-                  if (remainingCount < 1) {
-                    toast({ 
-                      title: "Cannot delete", 
-                      description: "State machine must have at least one state", 
-                      variant: "destructive" 
-                    });
-                    return;
-                  }
+            {/* FSM States List */}
+            <div className="flex-1 min-h-0 overflow-auto">
+              <ScrollArea className="h-full">
+                <div className="p-2 space-y-1">
+                  <div className="text-[10px] uppercase text-muted-foreground font-bold mb-2">States</div>
+                  {Object.entries(file.logic.states).map(([stateId, state]) => (
+                    <div
+                      key={stateId}
+                      className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer transition-colors ${
+                        selectedNodeId === stateId 
+                          ? 'bg-primary/20 border border-primary/50' 
+                          : 'hover:bg-white/5 border border-transparent'
+                      }`}
+                      onClick={() => setSelectedNodeId(stateId)}
+                      data-testid={`state-item-${stateId}`}
+                    >
+                      <div className={`w-2 h-2 rounded-full ${
+                        stateId === file.logic.initial ? 'bg-green-400' : 'bg-zinc-500'
+                      }`} />
+                      <span className="text-xs font-mono truncate flex-1">{stateId}</span>
+                      <Badge variant="outline" className="text-[8px] px-1 py-0 border-white/20">
+                        {(state as any).type || 'state'}
+                      </Badge>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="w-5 h-5 text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const remainingCount = Object.keys(file.logic.states).length - 1;
+                          if (remainingCount < 1) {
+                            toast({ title: "Cannot delete", description: "Must have at least one state", variant: "destructive" });
+                            return;
+                          }
+                          const newStates = { ...file.logic.states };
+                          delete newStates[stateId];
+                          setFile(prev => ({ ...prev, logic: { ...prev.logic, states: newStates } }));
+                          if (selectedNodeId === stateId) setSelectedNodeId(null);
+                        }}
+                        data-testid={`button-delete-state-${stateId}`}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ))}
                   
-                  const newStates = { ...file.logic.states };
-                  delete newStates[id];
-                  
-                  Object.values(newStates).forEach(state => {
-                    state.transitions = (state.transitions ?? []).filter(t => t.target !== id);
-                  });
-                  
-                  const remainingIds = Object.keys(newStates);
-                  let newInitial = file.logic.initial;
-                  if (file.logic.initial === id) {
-                    const initialState = remainingIds.find(sid => newStates[sid]?.type === 'initial');
-                    newInitial = initialState || remainingIds[0];
-                  }
-                  
-                  const updatedFile: TossFile = {
-                    ...file,
-                    logic: { 
-                      ...file.logic, 
-                      initial: newInitial,
-                      states: newStates 
-                    },
-                    _editor: {
-                      ...file._editor!,
-                      nodes: nodes.filter(n => n.id !== id)
-                    }
-                  };
-                  setFile(updatedFile);
-                  if (selectedNodeId === id) setSelectedNodeId(null);
-                  
-                  toast({ title: "State deleted", description: `Removed "${id}" from the state machine` });
-                }}
-                onDeleteAsset={handleDeleteAsset}
-              />
+                  {/* 3D Assets */}
+                  {(file.assets?.models?.length ?? 0) > 0 && (
+                    <>
+                      <Separator className="my-2 bg-white/10" />
+                      <div className="text-[10px] uppercase text-muted-foreground font-bold mb-2">3D Assets</div>
+                      {file.assets?.models?.map((asset) => (
+                        <div
+                          key={asset.id}
+                          className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer transition-colors ${
+                            selectedAssetId === asset.id 
+                              ? 'bg-orange-500/20 border border-orange-500/50' 
+                              : 'hover:bg-white/5 border border-transparent'
+                          }`}
+                          onClick={() => setSelectedAssetId(asset.id)}
+                          data-testid={`asset-item-${asset.id}`}
+                        >
+                          <Box className="w-3 h-3 text-orange-400" />
+                          <span className="text-xs font-mono truncate flex-1">{asset.metadata?.name || asset.id}</span>
+                          <Badge variant="outline" className="text-[8px] px-1 py-0 border-orange-500/30 text-orange-400">
+                            {asset.metadata?.format?.toUpperCase() || '3D'}
+                          </Badge>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </div>
+              </ScrollArea>
             </div>
           </div>
         </DockablePanel>
@@ -1493,14 +1510,6 @@ export default function BluPrince() {
               <span className="text-xs font-bold">FRITZING</span>
             </Button>
 
-          </div>
-          
-          {/* Viewport Angles Panel - Top Right */}
-          <div className="absolute top-4 right-4 z-40">
-            <ViewportAnglesPanel
-              currentAngle={viewportAngle}
-              onAngleChange={setViewportAngle}
-            />
           </div>
           
           {/* Prominent ZOOM TO FIT Button - Bottom Right */}
