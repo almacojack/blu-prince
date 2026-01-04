@@ -49,6 +49,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useCollaboration, type CollabUser } from "@/hooks/use-collaboration";
 import { useAuth } from "@/hooks/use-auth";
 import { EditorNav } from "@/components/EditorNav";
+import { PropertyPanel } from "@/components/PropertyPanel";
 // FSM 3D visualization is rendered inline with position hints
 // Full 3D editor would need dedicated Canvas - deferred to avoid WebGL context issues
 
@@ -2979,10 +2980,59 @@ export default function BluPrinceEditor() {
       {/* VS Code-style Right Sidebar - Properties & Environment */}
       <div className="absolute right-0 top-14 bottom-0 z-40">
         <VSCodeSidebar
-          defaultActivePanel="camera"
+          defaultActivePanel="properties"
           defaultCollapsed={false}
           side="right"
           panels={[
+            {
+              id: "properties",
+              title: "Properties",
+              icon: <Settings className="w-5 h-5" />,
+              badge: selectedItem ? 1 : undefined,
+              content: (
+                <PropertyPanel
+                  selectedItem={selectedItem || null}
+                  onUpdateItem={(id, updates) => {
+                    updateCartridgeWithSync(prev => ({
+                      ...prev,
+                      items: (prev.items || []).map(item => 
+                        item.id === id ? { ...item, ...updates } : item
+                      )
+                    }));
+                  }}
+                  onDeleteItem={(id) => {
+                    updateCartridgeWithSync(prev => ({
+                      ...prev,
+                      items: (prev.items || []).filter(item => item.id !== id)
+                    }));
+                    setSelectedId(null);
+                  }}
+                  onDuplicateItem={(id) => {
+                    const item = (cartridge.items || []).find(i => i.id === id);
+                    if (item) {
+                      const newItem = {
+                        ...item,
+                        id: `${item.id}_copy_${Date.now()}`,
+                        label: `${item.label || item.id} (copy)`,
+                        transform: {
+                          ...item.transform,
+                          position: {
+                            x: item.transform.position.x + 1,
+                            y: item.transform.position.y,
+                            z: item.transform.position.z,
+                          }
+                        }
+                      };
+                      updateCartridgeWithSync(prev => ({
+                        ...prev,
+                        items: [...(prev.items || []), newItem]
+                      }));
+                      setSelectedId(newItem.id);
+                    }
+                  }}
+                />
+              )
+            },
             {
               id: "camera",
               title: "Camera",
