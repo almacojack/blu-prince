@@ -27,46 +27,58 @@ function DPad({
     onPress(key, pressed);
   };
 
+  // Determine which direction is active for glow effect
+  const activeDirection = input.dpadUp ? "up" : input.dpadDown ? "down" : input.dpadLeft ? "left" : input.dpadRight ? "right" : null;
+
   return (
     <div className="relative w-20 h-20" data-testid="dpad">
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div className="w-16 h-16 bg-gray-900 rounded-lg shadow-inner border border-gray-700" />
-      </div>
-      <motion.button
-        className={`absolute top-0 left-1/2 -translate-x-1/2 w-6 h-7 rounded-t-md border border-gray-600 cursor-pointer select-none touch-none ${
-          input.dpadUp ? "bg-cyan-500 shadow-[0_0_10px_#0ff]" : "bg-gray-800 hover:bg-gray-700"
+      {/* Single circular/rounded background - the only visible shape */}
+      <div 
+        className={`absolute inset-1 rounded-xl bg-gray-900 border-2 border-gray-700 shadow-inner transition-all ${
+          activeDirection ? "border-cyan-500/50 shadow-[inset_0_0_12px_rgba(0,255,255,0.2)]" : ""
         }`}
-        animate={{ scale: input.dpadUp ? 0.95 : 1 }}
+      >
+        {/* Subtle direction indicators - just lines, not buttons */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          {/* Vertical line */}
+          <div className={`absolute w-0.5 h-8 rounded-full transition-colors ${
+            (input.dpadUp || input.dpadDown) ? "bg-cyan-500/60" : "bg-gray-700"
+          }`} />
+          {/* Horizontal line */}
+          <div className={`absolute w-8 h-0.5 rounded-full transition-colors ${
+            (input.dpadLeft || input.dpadRight) ? "bg-cyan-500/60" : "bg-gray-700"
+          }`} />
+          {/* Center dot */}
+          <div className={`absolute w-2 h-2 rounded-full transition-colors ${
+            activeDirection ? "bg-cyan-400 shadow-[0_0_8px_#0ff]" : "bg-gray-600"
+          }`} />
+        </div>
+      </div>
+      
+      {/* Invisible touch zones for each direction */}
+      <button
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-8 cursor-pointer select-none touch-none opacity-0"
         onPointerDown={handlePointer("dpadUp", true)}
         onPointerUp={handlePointer("dpadUp", false)}
         onPointerLeave={handlePointer("dpadUp", false)}
         data-testid="dpad-up"
       />
-      <motion.button
-        className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-7 rounded-b-md border border-gray-600 cursor-pointer select-none touch-none ${
-          input.dpadDown ? "bg-cyan-500 shadow-[0_0_10px_#0ff]" : "bg-gray-800 hover:bg-gray-700"
-        }`}
-        animate={{ scale: input.dpadDown ? 0.95 : 1 }}
+      <button
+        className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-8 cursor-pointer select-none touch-none opacity-0"
         onPointerDown={handlePointer("dpadDown", true)}
         onPointerUp={handlePointer("dpadDown", false)}
         onPointerLeave={handlePointer("dpadDown", false)}
         data-testid="dpad-down"
       />
-      <motion.button
-        className={`absolute left-0 top-1/2 -translate-y-1/2 w-7 h-6 rounded-l-md border border-gray-600 cursor-pointer select-none touch-none ${
-          input.dpadLeft ? "bg-cyan-500 shadow-[0_0_10px_#0ff]" : "bg-gray-800 hover:bg-gray-700"
-        }`}
-        animate={{ scale: input.dpadLeft ? 0.95 : 1 }}
+      <button
+        className="absolute left-0 top-1/2 -translate-y-1/2 w-8 h-8 cursor-pointer select-none touch-none opacity-0"
         onPointerDown={handlePointer("dpadLeft", true)}
         onPointerUp={handlePointer("dpadLeft", false)}
         onPointerLeave={handlePointer("dpadLeft", false)}
         data-testid="dpad-left"
       />
-      <motion.button
-        className={`absolute right-0 top-1/2 -translate-y-1/2 w-7 h-6 rounded-r-md border border-gray-600 cursor-pointer select-none touch-none ${
-          input.dpadRight ? "bg-cyan-500 shadow-[0_0_10px_#0ff]" : "bg-gray-800 hover:bg-gray-700"
-        }`}
-        animate={{ scale: input.dpadRight ? 0.95 : 1 }}
+      <button
+        className="absolute right-0 top-1/2 -translate-y-1/2 w-8 h-8 cursor-pointer select-none touch-none opacity-0"
         onPointerDown={handlePointer("dpadRight", true)}
         onPointerUp={handlePointer("dpadRight", false)}
         onPointerLeave={handlePointer("dpadRight", false)}

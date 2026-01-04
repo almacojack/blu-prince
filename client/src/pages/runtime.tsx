@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { RoundedBox, Text, Html, Float, PerspectiveCamera, Environment, ContactShadows } from "@react-three/drei";
+import { motion } from "framer-motion";
 import * as THREE from "three";
 import { TossFile } from "@/lib/toss";
 import { TingOsEngine, RuntimeState } from "@/lib/engine";
@@ -16,6 +17,148 @@ import { useSearch } from "wouter";
 import todoCartridge from "@/lib/toss-examples/todo-app.toss.json";
 import journalCartridge from "@/lib/toss-examples/journal.toss.json";
 import { Link } from "wouter";
+
+// --- SPLASH SCREEN ---
+
+interface SplashScreenProps {
+  title: string;
+  author: string;
+  onComplete: () => void;
+}
+
+const SplashScreen = ({ title, author, onComplete }: SplashScreenProps) => {
+  const [phase, setPhase] = useState<"rainbow" | "logo" | "done">("rainbow");
+  
+  useEffect(() => {
+    const timer1 = setTimeout(() => setPhase("logo"), 1200);
+    const timer2 = setTimeout(() => {
+      setPhase("done");
+      onComplete();
+    }, 2800);
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+    };
+  }, [onComplete]);
+
+  // Atari-style rainbow colors
+  const rainbowColors = [
+    "#ff0000", "#ff4400", "#ff8800", "#ffcc00", "#ffff00",
+    "#88ff00", "#00ff00", "#00ff88", "#00ffff", "#0088ff",
+    "#0000ff", "#4400ff", "#8800ff", "#ff00ff", "#ff0088"
+  ];
+
+  return (
+    <div className="absolute inset-0 z-50 bg-black flex flex-col items-center justify-center overflow-hidden">
+      {/* Rainbow Stripes Animation */}
+      <div className="absolute inset-0 overflow-hidden">
+        {rainbowColors.map((color, i) => (
+          <motion.div
+            key={i}
+            className="absolute left-0 right-0 h-8"
+            style={{
+              backgroundColor: color,
+              top: `${(i / rainbowColors.length) * 100}%`,
+              opacity: 0.9,
+            }}
+            initial={{ x: "-100%", opacity: 0 }}
+            animate={{ 
+              x: phase === "rainbow" ? "0%" : "100%",
+              opacity: phase === "rainbow" ? 0.8 : 0,
+            }}
+            transition={{
+              delay: i * 0.05,
+              duration: 0.8,
+              ease: "easeOut",
+            }}
+          />
+        ))}
+      </div>
+
+      {/* TingOs Logo & Cartridge Info */}
+      <motion.div
+        className="relative z-10 flex flex-col items-center gap-6"
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ 
+          opacity: phase !== "rainbow" ? 1 : 0,
+          scale: phase !== "rainbow" ? 1 : 0.8,
+        }}
+        transition={{ duration: 0.5 }}
+      >
+        {/* TingOs Branding */}
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center shadow-[0_0_30px_rgba(0,255,255,0.5)]">
+            <span className="text-3xl font-bold text-white">T</span>
+          </div>
+          <div className="text-left">
+            <div className="text-3xl font-bold tracking-tight">
+              <span className="text-cyan-400">Ting</span>
+              <span className="text-purple-400">Os</span>
+            </div>
+            <div className="text-xs text-gray-500 font-mono">RUNTIME v1.1</div>
+          </div>
+        </div>
+
+        {/* Cartridge Label - Paper texture style */}
+        <motion.div
+          className="relative"
+          initial={{ y: 50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+        >
+          {/* Paper label with texture */}
+          <div 
+            className="relative px-12 py-6 rounded-lg overflow-hidden"
+            style={{
+              background: "linear-gradient(135deg, #f5f0e6 0%, #e8e0d0 50%, #f0ebe2 100%)",
+              boxShadow: "inset 0 1px 2px rgba(255,255,255,0.8), inset 0 -1px 2px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.3)",
+            }}
+          >
+            {/* Horizontal ridges/lines for paper texture */}
+            <div className="absolute inset-0 pointer-events-none opacity-30">
+              {[...Array(12)].map((_, i) => (
+                <div 
+                  key={i} 
+                  className="absolute left-0 right-0 h-px bg-gray-400"
+                  style={{ top: `${8 + i * 8}%` }}
+                />
+              ))}
+            </div>
+            
+            {/* Title & Author */}
+            <div className="relative text-center">
+              <h1 className="text-2xl font-bold text-gray-800 tracking-wide mb-1">
+                {title}
+              </h1>
+              <p className="text-sm text-gray-600">
+                by <span className="font-medium">{author}</span>
+              </p>
+            </div>
+          </div>
+          
+          {/* Cartridge body behind label */}
+          <div 
+            className="absolute -inset-x-4 -inset-y-2 -z-10 rounded-xl"
+            style={{
+              background: "linear-gradient(145deg, #2a2a2a 0%, #1a1a1a 50%, #222222 100%)",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+            }}
+          />
+        </motion.div>
+
+        {/* Loading indicator */}
+        <motion.div
+          className="flex items-center gap-2 text-cyan-400/80 font-mono text-sm"
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ repeat: Infinity, duration: 1.5 }}
+        >
+          <Zap className="w-4 h-4" />
+          LOADING CARTRIDGE...
+        </motion.div>
+      </motion.div>
+    </div>
+  );
+};
 
 // --- 3D COMPONENTS ---
 
@@ -81,7 +224,7 @@ const DeviceButton = ({ position, color, label, onClick }: any) => {
 
 // --- SCREEN RENDERER (The "TingOs" UI Layer) ---
 
-const ScreenContent = ({ engineState, scale = 0.2 }: { engineState: RuntimeState | null; scale?: number }) => {
+const ScreenContent = ({ engineState, cartridge, scale = 0.2 }: { engineState: RuntimeState | null; cartridge?: any; scale?: number }) => {
   if (!engineState) return (
     <Html transform scale={scale} position={[0, 0, 0]}>
       <div className="w-[320px] h-[240px] bg-black flex items-center justify-center text-green-500 font-mono text-xs">
@@ -90,39 +233,50 @@ const ScreenContent = ({ engineState, scale = 0.2 }: { engineState: RuntimeState
     </Html>
   );
 
+  const title = cartridge?.title || "Cartridge";
+  const stateLabel = engineState.currentStateId.replace(/_/g, " ").toUpperCase();
+
   return (
     <Html transform scale={scale} position={[0, 0, 0]}>
       <div className="w-[320px] h-[240px] bg-black border-none p-0 font-mono text-xs text-white overflow-hidden relative flex flex-col">
         {/* Scanline Effect */}
         <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-10 bg-[length:100%_2px,3px_100%]" />
         
-        {/* Status Bar - Compact & Full Width */}
-        <div className="flex justify-between bg-white/10 px-2 py-1 text-[8px] uppercase tracking-wider shrink-0">
-          <span>TING_OS_RUNTIME</span>
-          <span>GRP:MAIN • ID:DEMO</span>
+        {/* Status Bar */}
+        <div className="flex justify-between bg-cyan-500/20 px-2 py-1 text-[8px] uppercase tracking-wider shrink-0 border-b border-cyan-500/30">
+          <span className="text-cyan-400">{title}</span>
+          <span className="text-cyan-400/60">v{cartridge?.version || "1.0"}</span>
         </div>
 
-        {/* Main Content Area - FILLS SPACE */}
+        {/* Main Content Area */}
         <div className="flex-1 flex flex-col p-2 overflow-y-auto">
-          {/* Example of "Collection" filling width */}
-          <div className="w-full bg-primary/20 border border-primary/50 p-2 mb-2 rounded flex items-center justify-between">
-             <span className="font-bold text-primary">{engineState.currentStateId.toUpperCase()}</span>
-             <span className="animate-pulse w-2 h-2 bg-primary rounded-full"></span>
+          {/* Current State Display */}
+          <div className="w-full bg-gradient-to-r from-cyan-500/20 to-purple-500/20 border border-cyan-500/40 p-2 mb-2 rounded flex items-center justify-between">
+             <span className="font-bold text-cyan-400">{stateLabel}</span>
+             <span className="animate-pulse w-2 h-2 bg-cyan-400 rounded-full shadow-[0_0_8px_#00ffff]"></span>
           </div>
 
-          <div className="w-full flex-1 border border-white/10 rounded p-2 bg-white/5 flex flex-col items-center justify-center text-center">
-             <p className="text-white/80 leading-relaxed">
-               Content centered and filling available viewport space.
-             </p>
-             <p className="text-[10px] text-muted-foreground mt-2">
-               Grouping Logic: Active
-             </p>
+          {/* Context Variables */}
+          <div className="w-full flex-1 border border-white/10 rounded p-2 bg-white/5 overflow-y-auto">
+            <div className="text-[8px] text-gray-500 uppercase mb-1">Context</div>
+            {Object.entries(engineState.context || {}).map(([key, value]) => (
+              <div key={key} className="flex justify-between text-[10px] py-0.5 border-b border-white/5 last:border-0">
+                <span className="text-gray-400">{key}:</span>
+                <span className="text-cyan-300 truncate max-w-[150px]">
+                  {typeof value === 'object' ? JSON.stringify(value).slice(0, 30) : String(value)}
+                </span>
+              </div>
+            ))}
+            {Object.keys(engineState.context || {}).length === 0 && (
+              <div className="text-gray-500 text-[10px] italic">No context variables</div>
+            )}
           </div>
         </div>
 
-        {/* Context Debug - Minimal Footer */}
-        <div className="shrink-0 bg-black border-t border-white/10 px-2 py-1 text-[8px] font-mono text-muted-foreground truncate">
-          CTX: {JSON.stringify(engineState.context)}
+        {/* Footer */}
+        <div className="shrink-0 bg-black border-t border-white/10 px-2 py-1 text-[8px] font-mono text-gray-600 flex justify-between">
+          <span>TingOs Runtime</span>
+          <span>Press A/B to interact</span>
         </div>
       </div>
     </Html>
@@ -130,12 +284,16 @@ const ScreenContent = ({ engineState, scale = 0.2 }: { engineState: RuntimeState
 };
 
 // Fullscreen 2D screen content (bypasses 3D device shell)
-const FullscreenContent = ({ engineState, onButtonPress }: { engineState: RuntimeState | null; onButtonPress: (btn: string) => void }) => {
+const FullscreenContent = ({ engineState, cartridge, onButtonPress }: { engineState: RuntimeState | null; cartridge?: any; onButtonPress: (btn: string) => void }) => {
   if (!engineState) return (
-    <div className="w-full h-full bg-black flex items-center justify-center text-green-500 font-mono text-2xl">
+    <div className="w-full h-full bg-black flex items-center justify-center text-cyan-500 font-mono text-2xl">
       <div className="animate-pulse">BOOTING KERNEL...</div>
     </div>
   );
+
+  const title = cartridge?.title || "Cartridge";
+  const author = cartridge?.toss_file?.manifest?.meta?.author || "Unknown";
+  const stateLabel = engineState.currentStateId.replace(/_/g, " ").toUpperCase();
 
   return (
     <div className="w-full h-full bg-black p-0 font-mono text-white overflow-hidden relative flex flex-col">
@@ -143,25 +301,41 @@ const FullscreenContent = ({ engineState, onButtonPress }: { engineState: Runtim
       <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-10 bg-[length:100%_2px,3px_100%]" />
       
       {/* Status Bar */}
-      <div className="flex justify-between bg-white/10 px-4 py-2 text-sm uppercase tracking-wider shrink-0">
-        <span>TING_OS_RUNTIME</span>
-        <span>GRP:MAIN • ID:DEMO</span>
+      <div className="flex justify-between bg-gradient-to-r from-cyan-500/20 to-purple-500/20 px-4 py-2 text-sm uppercase tracking-wider shrink-0 border-b border-cyan-500/30">
+        <span className="text-cyan-400">{title}</span>
+        <span className="text-cyan-400/60">by {author} • v{cartridge?.version || "1.0"}</span>
       </div>
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col p-6 overflow-y-auto">
-        <div className="w-full bg-primary/20 border border-primary/50 p-4 mb-4 rounded flex items-center justify-between">
-           <span className="font-bold text-primary text-2xl">{engineState.currentStateId.toUpperCase()}</span>
-           <span className="animate-pulse w-4 h-4 bg-primary rounded-full"></span>
+        {/* Current State */}
+        <div className="w-full bg-gradient-to-r from-cyan-500/20 to-purple-500/20 border border-cyan-500/40 p-4 mb-4 rounded-lg flex items-center justify-between">
+           <div className="flex items-center gap-3">
+             <span className="animate-pulse w-3 h-3 bg-cyan-400 rounded-full shadow-[0_0_12px_#00ffff]"></span>
+             <span className="font-bold text-cyan-400 text-2xl">{stateLabel}</span>
+           </div>
+           <span className="text-xs text-gray-500">Current State</span>
         </div>
 
-        <div className="w-full flex-1 border border-white/10 rounded p-6 bg-white/5 flex flex-col items-center justify-center text-center">
-           <p className="text-white/80 leading-relaxed text-xl">
-             Content centered and filling available viewport space.
-           </p>
-           <p className="text-sm text-muted-foreground mt-4">
-             Grouping Logic: Active
-           </p>
+        {/* Context Variables */}
+        <div className="w-full flex-1 border border-white/10 rounded-lg p-4 bg-white/5 overflow-y-auto">
+          <div className="text-xs text-gray-500 uppercase mb-3 flex items-center gap-2">
+            <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
+            Context Variables
+          </div>
+          <div className="grid gap-2">
+            {Object.entries(engineState.context || {}).map(([key, value]) => (
+              <div key={key} className="flex justify-between items-start py-2 px-3 bg-black/30 rounded border border-white/5">
+                <span className="text-gray-400 text-sm">{key}</span>
+                <span className="text-cyan-300 text-sm max-w-[60%] truncate text-right">
+                  {typeof value === 'object' ? JSON.stringify(value).slice(0, 50) : String(value)}
+                </span>
+              </div>
+            ))}
+            {Object.keys(engineState.context || {}).length === 0 && (
+              <div className="text-gray-500 italic text-center py-4">No context variables defined</div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -169,23 +343,24 @@ const FullscreenContent = ({ engineState, onButtonPress }: { engineState: Runtim
       <div className="shrink-0 bg-black/80 border-t border-white/10 px-6 py-4 flex items-center justify-center gap-6">
         <button
           onClick={() => onButtonPress('A')}
-          className="w-16 h-16 rounded-full bg-[#ff0055] hover:bg-[#ff3377] text-white font-bold text-xl shadow-lg shadow-[#ff0055]/30 active:scale-95 transition-all"
+          className="w-16 h-16 rounded-full bg-gradient-to-br from-pink-500 to-red-600 hover:from-pink-400 hover:to-red-500 text-white font-bold text-xl shadow-lg shadow-pink-500/30 active:scale-95 transition-all"
           data-testid="button-sim-a"
         >
           A
         </button>
         <button
           onClick={() => onButtonPress('B')}
-          className="w-16 h-16 rounded-full bg-[#00ccff] hover:bg-[#33ddff] text-white font-bold text-xl shadow-lg shadow-[#00ccff]/30 active:scale-95 transition-all"
+          className="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xl shadow-lg shadow-cyan-500/30 active:scale-95 transition-all"
           data-testid="button-sim-b"
         >
           B
         </button>
       </div>
 
-      {/* Context Debug Footer */}
-      <div className="shrink-0 bg-black border-t border-white/10 px-4 py-2 text-xs font-mono text-muted-foreground truncate">
-        CTX: {JSON.stringify(engineState.context)}
+      {/* Footer */}
+      <div className="shrink-0 bg-black border-t border-white/10 px-4 py-2 text-xs font-mono text-gray-600 flex justify-between">
+        <span>TingOs Runtime v1.1</span>
+        <span>Press A/B to trigger transitions</span>
       </div>
     </div>
   );
@@ -407,6 +582,8 @@ export default function RuntimeSimulator() {
   const [isLoading, setIsLoading] = useState(true);
   const [fullscreenMode, setFullscreenMode] = useState(true);
   const [cliOpen, setCliOpen] = useState(false);
+  const [showSplash, setShowSplash] = useState(false);
+  const [splashCartridge, setSplashCartridge] = useState<any>(null);
   const router = getCommandRouter();
   
   const searchString = useSearch();
@@ -485,6 +662,10 @@ export default function RuntimeSimulator() {
       setMountedCartridgeIds([selectedCartridgeId]);
     }
 
+    // Show splash screen for this cartridge
+    setSplashCartridge(selectedCartridge);
+    setShowSplash(true);
+
     // 1. Load the selected cartridge's TOSS file
     const tossFile: TossFile = selectedCartridge.toss_file;
 
@@ -544,8 +725,19 @@ export default function RuntimeSimulator() {
     }
   };
 
+  const selectedCartridge = cartridges.find(c => c.tngli_id === selectedCartridgeId);
+
   return (
     <div className="w-full h-screen bg-[#050505] relative overflow-hidden">
+      {/* Splash Screen */}
+      {showSplash && splashCartridge && (
+        <SplashScreen
+          title={splashCartridge.title || "Cartridge"}
+          author={splashCartridge.toss_file?.manifest?.meta?.author || "Unknown"}
+          onComplete={() => setShowSplash(false)}
+        />
+      )}
+
       {/* Top Controls */}
       <div className="absolute top-4 left-4 right-4 z-50 flex gap-4 items-center justify-between">
         <div className="flex gap-4 items-center">
@@ -641,7 +833,7 @@ export default function RuntimeSimulator() {
       {fullscreenMode ? (
         <div className="absolute inset-0 top-14 flex flex-col">
           <div className="flex-1 overflow-hidden">
-            <FullscreenContent engineState={engineState} onButtonPress={handleButtonPress} />
+            <FullscreenContent engineState={engineState} cartridge={selectedCartridge} onButtonPress={handleButtonPress} />
           </div>
           <CliPanel isOpen={cliOpen} onToggle={() => setCliOpen(!cliOpen)} />
         </div>
@@ -658,7 +850,7 @@ export default function RuntimeSimulator() {
 
             <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5}>
               <DeviceShell>
-                <ScreenContent engineState={engineState} />
+                <ScreenContent engineState={engineState} cartridge={selectedCartridge} />
                 
                 {/* Interactive Areas mapped to 3D space */}
                 <group position={[0, -1.8, 0.26]}>
