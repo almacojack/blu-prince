@@ -11,7 +11,9 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Play, RefreshCw, Zap, Maximize2, Minimize2, Terminal, ChevronUp, ChevronDown, Plus, X, Package } from "lucide-react";
+import { ArrowLeft, Play, RefreshCw, Zap, Maximize2, Minimize2, Terminal, ChevronUp, ChevronDown, Plus, X, Package, Gamepad2 } from "lucide-react";
+import { VirtualHandheld } from "@/components/VirtualHandheld";
+import { GamepadInput } from "@/hooks/use-gamepad";
 import { useSearch } from "wouter";
 
 import todoCartridge from "@/lib/toss-examples/todo-app.toss.json";
@@ -339,22 +341,158 @@ const FullscreenContent = ({ engineState, cartridge, onButtonPress }: { engineSt
         </div>
       </div>
 
-      {/* Control Buttons */}
-      <div className="shrink-0 bg-black/80 border-t border-white/10 px-6 py-4 flex items-center justify-center gap-6">
-        <button
-          onClick={() => onButtonPress('A')}
-          className="w-16 h-16 rounded-full bg-gradient-to-br from-pink-500 to-red-600 hover:from-pink-400 hover:to-red-500 text-white font-bold text-xl shadow-lg shadow-pink-500/30 active:scale-95 transition-all"
-          data-testid="button-sim-a"
-        >
-          A
-        </button>
-        <button
-          onClick={() => onButtonPress('B')}
-          className="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xl shadow-lg shadow-cyan-500/30 active:scale-95 transition-all"
-          data-testid="button-sim-b"
-        >
-          B
-        </button>
+      {/* Full Controller Layout - Anbernic/Ayaneo Style */}
+      <div className="shrink-0 bg-gradient-to-t from-gray-900 to-black/80 border-t border-white/10 px-4 py-3">
+        {/* Shoulder Buttons */}
+        <div className="flex justify-between mb-3">
+          <div className="flex gap-2">
+            <button
+              onClick={() => onButtonPress('LB')}
+              className="px-4 py-1.5 rounded-t-lg bg-gradient-to-b from-gray-600 to-gray-700 hover:from-gray-500 hover:to-gray-600 text-white text-xs font-bold shadow-lg active:scale-95 transition-all border border-gray-500"
+              data-testid="button-sim-lb"
+            >
+              LB
+            </button>
+            <button
+              onClick={() => onButtonPress('LT')}
+              className="px-4 py-1.5 rounded-lg bg-gradient-to-b from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-gray-300 text-xs font-bold shadow-lg active:scale-95 transition-all border border-gray-600"
+              data-testid="button-sim-lt"
+            >
+              LT
+            </button>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => onButtonPress('RT')}
+              className="px-4 py-1.5 rounded-lg bg-gradient-to-b from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-gray-300 text-xs font-bold shadow-lg active:scale-95 transition-all border border-gray-600"
+              data-testid="button-sim-rt"
+            >
+              RT
+            </button>
+            <button
+              onClick={() => onButtonPress('RB')}
+              className="px-4 py-1.5 rounded-t-lg bg-gradient-to-b from-gray-600 to-gray-700 hover:from-gray-500 hover:to-gray-600 text-white text-xs font-bold shadow-lg active:scale-95 transition-all border border-gray-500"
+              data-testid="button-sim-rb"
+            >
+              RB
+            </button>
+          </div>
+        </div>
+
+        {/* Main Controls Row */}
+        <div className="flex justify-between items-center">
+          {/* Left Side: D-Pad + Left Analog */}
+          <div className="flex items-center gap-4">
+            {/* D-Pad */}
+            <div className="relative w-20 h-20">
+              <div className="absolute inset-2 rounded-xl bg-gray-800 border-2 border-gray-600 shadow-inner" />
+              <button
+                onClick={() => onButtonPress('UP')}
+                className="absolute top-0 left-1/2 -translate-x-1/2 w-7 h-7 rounded-t-lg bg-gradient-to-b from-gray-600 to-gray-700 hover:from-gray-500 hover:to-gray-600 active:scale-95 transition-all border border-gray-500 flex items-center justify-center"
+                data-testid="button-sim-up"
+              >
+                <ChevronUp className="w-4 h-4 text-white" />
+              </button>
+              <button
+                onClick={() => onButtonPress('DOWN')}
+                className="absolute bottom-0 left-1/2 -translate-x-1/2 w-7 h-7 rounded-b-lg bg-gradient-to-b from-gray-600 to-gray-700 hover:from-gray-500 hover:to-gray-600 active:scale-95 transition-all border border-gray-500 flex items-center justify-center"
+                data-testid="button-sim-down"
+              >
+                <ChevronDown className="w-4 h-4 text-white" />
+              </button>
+              <button
+                onClick={() => onButtonPress('LEFT')}
+                className="absolute left-0 top-1/2 -translate-y-1/2 w-7 h-7 rounded-l-lg bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-500 hover:to-gray-600 active:scale-95 transition-all border border-gray-500 flex items-center justify-center"
+                data-testid="button-sim-left"
+              >
+                <ChevronUp className="w-4 h-4 text-white -rotate-90" />
+              </button>
+              <button
+                onClick={() => onButtonPress('RIGHT')}
+                className="absolute right-0 top-1/2 -translate-y-1/2 w-7 h-7 rounded-r-lg bg-gradient-to-l from-gray-600 to-gray-700 hover:from-gray-500 hover:to-gray-600 active:scale-95 transition-all border border-gray-500 flex items-center justify-center"
+                data-testid="button-sim-right"
+              >
+                <ChevronUp className="w-4 h-4 text-white rotate-90" />
+              </button>
+            </div>
+
+            {/* Left Analog Stick */}
+            <div className="flex flex-col items-center">
+              <div className="w-14 h-14 rounded-full bg-gray-800 border-2 border-gray-600 shadow-inner flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-600 to-gray-700 border border-gray-500 shadow-lg hover:from-gray-500 hover:to-gray-600 cursor-pointer" />
+              </div>
+              <span className="text-[8px] text-gray-500 mt-1 font-mono">L3</span>
+            </div>
+          </div>
+
+          {/* Center: Select/Start */}
+          <div className="flex flex-col items-center gap-2">
+            <div className="flex gap-4">
+              <button
+                onClick={() => onButtonPress('SELECT')}
+                className="px-3 py-1.5 rounded-lg bg-gradient-to-b from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-gray-400 text-[10px] font-bold shadow-lg active:scale-95 transition-all border border-gray-600"
+                data-testid="button-sim-select"
+              >
+                SELECT
+              </button>
+              <button
+                onClick={() => onButtonPress('START')}
+                className="px-3 py-1.5 rounded-lg bg-gradient-to-b from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-gray-400 text-[10px] font-bold shadow-lg active:scale-95 transition-all border border-gray-600"
+                data-testid="button-sim-start"
+              >
+                START
+              </button>
+            </div>
+            <Gamepad2 className="w-5 h-5 text-gray-600" />
+          </div>
+
+          {/* Right Side: Right Analog + Face Buttons */}
+          <div className="flex items-center gap-4">
+            {/* Right Analog Stick */}
+            <div className="flex flex-col items-center">
+              <div className="w-14 h-14 rounded-full bg-gray-800 border-2 border-gray-600 shadow-inner flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-600 to-gray-700 border border-gray-500 shadow-lg hover:from-gray-500 hover:to-gray-600 cursor-pointer" />
+              </div>
+              <span className="text-[8px] text-gray-500 mt-1 font-mono">R3</span>
+            </div>
+
+            {/* Face Buttons (ABXY) */}
+            <div className="relative w-20 h-20">
+              {/* Y - Top */}
+              <button
+                onClick={() => onButtonPress('Y')}
+                className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 hover:from-yellow-300 hover:to-yellow-500 text-black font-bold text-sm shadow-lg shadow-yellow-500/30 active:scale-95 transition-all"
+                data-testid="button-sim-y"
+              >
+                Y
+              </button>
+              {/* X - Left */}
+              <button
+                onClick={() => onButtonPress('X')}
+                className="absolute left-0 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 hover:from-blue-300 hover:to-blue-500 text-white font-bold text-sm shadow-lg shadow-blue-500/30 active:scale-95 transition-all"
+                data-testid="button-sim-x"
+              >
+                X
+              </button>
+              {/* B - Right */}
+              <button
+                onClick={() => onButtonPress('B')}
+                className="absolute right-0 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-gradient-to-br from-red-400 to-red-600 hover:from-red-300 hover:to-red-500 text-white font-bold text-sm shadow-lg shadow-red-500/30 active:scale-95 transition-all"
+                data-testid="button-sim-b"
+              >
+                B
+              </button>
+              {/* A - Bottom */}
+              <button
+                onClick={() => onButtonPress('A')}
+                className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-green-600 hover:from-green-300 hover:to-green-500 text-white font-bold text-sm shadow-lg shadow-green-500/30 active:scale-95 transition-all"
+                data-testid="button-sim-a"
+              >
+                A
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Footer */}
@@ -584,6 +722,7 @@ export default function RuntimeSimulator() {
   const [cliOpen, setCliOpen] = useState(false);
   const [showSplash, setShowSplash] = useState(false);
   const [splashCartridge, setSplashCartridge] = useState<any>(null);
+  const [showController, setShowController] = useState(false);
   const router = getCommandRouter();
   
   const searchString = useSearch();
@@ -724,6 +863,25 @@ export default function RuntimeSimulator() {
       engine.send(`BUTTON_${btn}`);
     }
   };
+
+  // Handle full gamepad input from VirtualHandheld
+  const handleGamepadInput = useCallback((input: GamepadInput) => {
+    if (!engine) return;
+    
+    // Map gamepad buttons to engine events
+    if (input.a) engine.send("BUTTON_A");
+    if (input.b) engine.send("BUTTON_B");
+    if (input.x) engine.send("BUTTON_X");
+    if (input.y) engine.send("BUTTON_Y");
+    if (input.start) engine.send("BUTTON_START");
+    if (input.select) engine.send("BUTTON_SELECT");
+    if (input.leftBumper) engine.send("BUTTON_LB");
+    if (input.rightBumper) engine.send("BUTTON_RB");
+    if (input.dpadUp) engine.send("DPAD_UP");
+    if (input.dpadDown) engine.send("DPAD_DOWN");
+    if (input.dpadLeft) engine.send("DPAD_LEFT");
+    if (input.dpadRight) engine.send("DPAD_RIGHT");
+  }, [engine]);
 
   const selectedCartridge = cartridges.find(c => c.tngli_id === selectedCartridgeId);
 

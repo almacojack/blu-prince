@@ -126,6 +126,12 @@ export default function Home() {
                   PLAYGROUND
                 </Button>
               </Link>
+              <Link href="/widgets">
+                <Button size="lg" className="min-h-11 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-mono cursor-pointer border-2 border-purple-400/50 hover:border-white/40 transition-all touch-manipulation shadow-[0_0_20px_rgba(168,85,247,0.5)] hover:shadow-[0_0_30px_rgba(168,85,247,0.7)]" data-testid="button-components-showcase">
+                  <Layers className="mr-2 h-4 w-4" />
+                  COMPONENTS SHOWCASE
+                </Button>
+              </Link>
             </div>
           </motion.div>
 
