@@ -61,6 +61,7 @@ Preferred communication style: Simple, everyday language.
 - **Revenue Models Addendum** - Explores revenue sharing, affiliate programs (Amazon integration), training cartridges, and web hosting configurator vision with predictable pricing
 - **Personal Pitch Document** - "Why This. Why Now. Why Us." in docs/ for owner's internal use with spouse/partners
 - **Revenue Calculator Page** - Interactive `/revenue` page with sliders for creator, platform operator, and educator revenue projections. "Seeing is believing" for stakeholders
+- **Shark Tank Pitch Scenario** - Fictional but realistic pitch narrative showing key angles, metrics, and negotiation strategies that would impress investors
 
 ## System Architecture
 
