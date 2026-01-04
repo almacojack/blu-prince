@@ -21,12 +21,12 @@ export function CameraHelper({
   color = '#4fc3f7',
   label = 'Camera',
   fov = 60,
-  near = 0.1,
-  far = 10,
+  near = 0.5,
+  far = 25,
   selected = false,
   onClick,
 }: CameraHelperProps) {
-  const frustumLines = useMemo(() => {
+  const frustumData = useMemo(() => {
     const aspect = 1.5;
     const halfFovRad = (fov / 2) * (Math.PI / 180);
     const nearHeight = 2 * Math.tan(halfFovRad) * near;
@@ -44,6 +44,20 @@ export function CameraHelper({
     const farBL: [number, number, number] = [-farWidth / 2, -farHeight / 2, -far];
     const farBR: [number, number, number] = [farWidth / 2, -farHeight / 2, -far];
 
+    const vertices = new Float32Array([
+      ...nearTL, ...nearTR, ...nearBR, ...nearBL,
+      ...farTL, ...farTR, ...farBR, ...farBL,
+    ]);
+
+    const indices = new Uint16Array([
+      0, 1, 2, 0, 2, 3,
+      4, 6, 5, 4, 7, 6,
+      0, 4, 5, 0, 5, 1,
+      2, 6, 7, 2, 7, 3,
+      1, 5, 6, 1, 6, 2,
+      0, 3, 7, 0, 7, 4,
+    ]);
+
     return {
       nearRect: [nearTL, nearTR, nearBR, nearBL, nearTL],
       farRect: [farTL, farTR, farBR, farBL, farTL],
@@ -53,8 +67,18 @@ export function CameraHelper({
         [nearBL, farBL],
         [nearBR, farBR],
       ],
+      vertices,
+      indices,
     };
   }, [fov, near, far]);
+
+  const frustumGeometry = useMemo(() => {
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(frustumData.vertices, 3));
+    geo.setIndex(new THREE.BufferAttribute(frustumData.indices, 1));
+    geo.computeVertexNormals();
+    return geo;
+  }, [frustumData]);
 
   return (
     <group 
@@ -77,31 +101,38 @@ export function CameraHelper({
         <meshStandardMaterial color={color} roughness={0.4} />
       </mesh>
 
+      <mesh geometry={frustumGeometry}>
+        <meshBasicMaterial 
+          color={color} 
+          transparent 
+          opacity={selected ? 0.15 : 0.08} 
+          side={THREE.DoubleSide}
+          depthWrite={false}
+        />
+      </mesh>
+
       <Line
-        points={frustumLines.nearRect as [number, number, number][]}
+        points={frustumData.nearRect as [number, number, number][]}
         color={color}
-        lineWidth={selected ? 2 : 1}
+        lineWidth={selected ? 3 : 2}
+        opacity={0.9}
+        transparent
+      />
+      <Line
+        points={frustumData.farRect as [number, number, number][]}
+        color={color}
+        lineWidth={selected ? 3 : 2}
         opacity={0.6}
         transparent
       />
-      <Line
-        points={frustumLines.farRect as [number, number, number][]}
-        color={color}
-        lineWidth={selected ? 2 : 1}
-        opacity={0.3}
-        transparent
-      />
-      {frustumLines.edges.map((edge, i) => (
+      {frustumData.edges.map((edge, i) => (
         <Line
           key={i}
           points={edge as [number, number, number][]}
           color={color}
-          lineWidth={selected ? 2 : 1}
-          opacity={0.4}
+          lineWidth={selected ? 3 : 2}
+          opacity={0.7}
           transparent
-          dashed
-          dashSize={0.5}
-          gapSize={0.3}
         />
       ))}
 
