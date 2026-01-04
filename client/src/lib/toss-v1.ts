@@ -432,6 +432,79 @@ export interface TestHarness {
   all_passed: boolean;
 }
 
+// ============================================
+// COMMAND SYSTEM - CLI-like executable commands
+// ============================================
+
+// Argument type definitions for command parameters
+export type CommandArgType = "string" | "number" | "boolean" | "item_id" | "state_id" | "json";
+
+// A single command argument
+export interface CommandArg {
+  name: string;
+  type: CommandArgType;
+  required?: boolean;
+  default?: any;
+  description?: string;
+}
+
+// Permission levels for commands
+export type CommandPermission = "public" | "authenticated" | "owner" | "admin";
+
+// A command exposed by a cartridge (like a CLI executable)
+export interface CommandDefinition {
+  id: string;                          // Internal ID (unique within cartridge)
+  tngli_id: string;                    // The "command name" in virtual PATH (e.g., "spawn", "reset", "buy")
+  description: string;                 // Human-readable description
+  args?: CommandArg[];                 // Command arguments
+  permission?: CommandPermission;      // Who can run this command
+  
+  // What happens when command runs
+  entrypoint: {
+    type: "fsm_event" | "action" | "script";
+    target?: string;                   // FSM event name or action ID
+    handler?: string;                  // For scripts: function name or inline code
+  };
+  
+  // Output configuration
+  output?: {
+    type: "void" | "json" | "text" | "item";
+    schema?: Record<string, any>;      // JSON schema for structured output
+  };
+  
+  // Aliases (alternative names for the command)
+  aliases?: string[];
+}
+
+// Exports section - what the cartridge makes available to other carts
+export interface CartridgeExports {
+  commands?: CommandDefinition[];       // CLI-like commands
+  items?: string[];                     // Item IDs available for external reference
+  actions?: string[];                   // Action names that can be called
+  events?: string[];                    // Events that can be subscribed to
+}
+
+// Boot configuration for bootable cartridges
+export interface BootConfig {
+  bootable: boolean;                    // Can this cart be used as boot cart?
+  isDefaultBoot?: boolean;              // Is this the default boot cart for this user/project?
+  bootPriority?: number;                // Priority when multiple boot carts available
+  
+  // What happens on boot
+  onBoot?: {
+    loadCartridges?: string[];          // Other cartridge tngli_ids to auto-load
+    runCommand?: string;                // Command to run after boot
+    setContext?: Record<string, any>;   // Initial context values
+  };
+  
+  // Shell configuration
+  shell?: {
+    prompt?: string;                    // CLI prompt (e.g., "tingos> ")
+    welcomeMessage?: string;            // Message shown on boot
+    aliases?: Record<string, string>;   // Global command aliases
+  };
+}
+
 // The full TOSS v1.0 cartridge
 export interface TossCartridge {
   toss_version: "1.0";
@@ -459,6 +532,16 @@ export interface TossCartridge {
   
   // Preview metadata for 3D library display
   preview?: CartridgePreview;
+  
+  // ============================================
+  // COMMAND SYSTEM (NEW)
+  // ============================================
+  
+  // Exports - commands and resources this cartridge exposes
+  exports?: CartridgeExports;
+  
+  // Boot configuration - for bootable cartridges
+  boot?: BootConfig;
   
   // Editor-only metadata (stripped on export)
   _editor?: {
