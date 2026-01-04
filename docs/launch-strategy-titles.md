@@ -615,7 +615,240 @@ interface HardwareProfile {
 
 ---
 
-*Document Version: 1.2*
+## WOODY: WOODWORKING CARTRIDGE
+
+### Concept
+
+"Woody" is a mountable accessory cart that adds professional woodworking features to Blu-Prince. When loaded, it injects lumber, hardware, and power tool simulations into the 3D editor.
+
+**Branding:** Cart labels should have strong visual branding. "Woody" gets a wood-grain themed label with sawdust particle effects.
+
+### Parametric Lumber Library
+
+Space-efficient, procedural materials—not heavy textures:
+
+```typescript
+interface LumberPrimitive {
+  species: 'oak' | 'pine' | 'walnut' | 'maple' | 'cherry' | 'plywood' | 'mdf';
+  dimensions: {
+    thickness: number; // in inches: 0.75 (3/4"), 1.5 (2x), etc.
+    width: number;
+    length: number;
+  };
+  grain: {
+    pattern: 'straight' | 'cathedral' | 'quartersawn' | 'birdseye';
+    density: number; // lines per inch
+    variation: number; // 0-1 randomness
+  };
+  finish: 'raw' | 'sanded' | 'sealed' | 'stained' | 'varnished';
+}
+```
+
+**SVG-like Grain Generation:**
+- Grain patterns generated procedurally from parameters
+- No heavy textures—just math
+- Cache generated textures for performance
+- Swap LOD based on camera distance
+
+### Declarative Transformation Props
+
+All operations are declarative—describe what you want, the cart figures out how:
+
+```typescript
+// Install a wood screw
+woodScrew({
+  type: '#8 x 1.5in',
+  position: [12, 0.5, 3],
+  rotation: [0, 0, 0],
+  countersunk: true,
+  pilot_hole: true
+})
+
+// Apply varnish (changes material props)
+varnish({
+  type: 'polyurethane',
+  coats: 3,
+  sheen: 'satin' // matte, satin, semi-gloss, gloss
+})
+// Effect: darkens wood 15%, increases reflectivity
+
+// Router cut (decorative edge)
+routerCut({
+  profile: 'ogee', // roundover, chamfer, ogee, cove, roman-ogee
+  depth: 0.25,
+  path: 'edge-top' // or SVG path for custom
+})
+
+// Table saw cut (splits the board)
+tableSawCut({
+  position: 24, // inches from end
+  angle: 0, // 0 = straight, 45 = miter
+  kerf: 0.125 // blade thickness
+})
+```
+
+### WoodOps Service Layer
+
+Power tool simulations abstracted into reusable functions:
+
+```typescript
+interface WoodOps {
+  // Cutting operations
+  renderTableSawCutSimulation(board: Board, cut: CutSpec): CutResult;
+  renderRouterCutSimulation(board: Board, profile: RouterProfile): Board;
+  renderMiterSawCutSimulation(board: Board, angle: number): [Board, Board];
+  
+  // Joining operations
+  applyWoodScrew(board: Board, screw: ScrewSpec): Board;
+  applyWoodGlue(joint: JointSpec): Bond;
+  applyDowel(boards: [Board, Board], dowel: DowelSpec): Joint;
+  
+  // Finishing operations
+  applyVarnishFinish(board: Board, varnish: VarnishSpec): Board;
+  applySandFinish(board: Board, grit: number): Board;
+  applyStain(board: Board, stain: StainSpec): Board;
+}
+```
+
+### Lazy Panel Activation
+
+**Design goal:** Hide panels unless needed. High-traffic editors stay clean.
+
+- Woody panels only appear when:
+  1. A lumber primitive is selected
+  2. User right-clicks and selects "Woodworking" submenu
+  3. User explicitly opens from View → Panels → Woodworking
+- Panels auto-collapse when focus moves away
+- Remember panel state in user preferences
+
+---
+
+## CART MANAGEMENT UI
+
+### PATH Dashboard
+
+A menu/panel showing all loaded carts and their contributions:
+
+```
+┌─────────────────────────────────────────────────┐
+│ LOADED CARTS                           [+ Add]  │
+├─────────────────────────────────────────────────┤
+│ ☑ woody          │ cut, router, screw, varnish │
+│ ☑ journal        │ note, screenshot, log       │
+│ ☑ lost-gps       │ waypoint, track, navigate   │
+│ ☐ cloud-sync     │ sync, backup, restore       │
+└─────────────────────────────────────────────────┘
+│ PATH: woody:journal:lost-gps                    │
+└─────────────────────────────────────────────────┘
+```
+
+**Features:**
+- Checkbox to enable/disable carts without unloading
+- Shows commands each cart adds to PATH
+- Drag to reorder priority
+- Click cart name to expand details (statecharts, panels, assets)
+
+---
+
+## CLI COMMAND SIMPLICITY
+
+### Design Goal: Subject + Object
+
+Commands should read like natural language:
+
+```bash
+# Good: Subject + Object + Modifier
+cut board1 at 24in
+screw board1 to board2 with #8x1.5
+varnish table satin 3coats
+route edge ogee 0.25in
+
+# Bad: Verbose flag syntax
+executeTableSawCutOperation --target=board1 --position=24in --angle=0
+```
+
+### CommandRouter Alias Rules
+
+```typescript
+// Register simple aliases
+commandRouter.alias('cut', {
+  handler: 'woody:tableSawCut',
+  syntax: 'cut <target> at <position>',
+  transform: (args) => ({ target: args[0], position: parseDistance(args[2]) })
+});
+
+commandRouter.alias('screw', {
+  handler: 'woody:woodScrew',
+  syntax: 'screw <board1> to <board2> with <screw-type>',
+  transform: (args) => ({ 
+    board1: args[0], 
+    board2: args[2], 
+    screwType: args[4] 
+  })
+});
+```
+
+---
+
+## XPATH-LITE DATA QUERIES
+
+### The Problem
+
+Carts need to share structured data. Example: open-meteo returns temperature array, user wants to chart it or compute average.
+
+### Minimal Viable Syntax
+
+```
+/path/to/data[selector].operation
+
+Examples:
+/temps[0:7].avg          → Average of first 7 temps
+/temps[-1]               → Last temperature
+/boards.length           → Count of boards
+/board1.dimensions.width → Specific property
+/waypoints[*].name       → All waypoint names
+/orders[status=pending]  → Filter by property
+```
+
+### Implementation
+
+```typescript
+interface XPathLite {
+  query(path: string, context: CartState): any;
+}
+
+// Examples
+xpath.query('/temps[0:7].avg', weatherCart.state);
+// → 72.5
+
+xpath.query('/boards[*].species', woodyCart.state);
+// → ['oak', 'pine', 'walnut']
+
+xpath.query('/waypoints[name~"camp"]', lostCart.state);
+// → [{ name: 'campsite-1', ... }, { name: 'base-camp', ... }]
+```
+
+### Time Series as Spreadsheet
+
+When a cart has time series data, user can treat it like a spreadsheet:
+
+```
+/temps.plot               → Render line chart
+/temps.table              → Render as table
+/temps[0:24].export(csv)  → Export slice to CSV
+/temps.resample(hourly)   → Resample to hourly
+```
+
+This makes weather data, sensor logs, trade history—anything with timestamps—immediately usable without custom code.
+
+---
+
+**Blu-Prince is the inventor's playground.** Every product you imagine can be simulated, sold, and shipped—from the same source of truth.
+
+---
+
+*Document Version: 1.4*
 *Last Updated: January 2026*
 *Added: Blossom Squared, Offline Queue, LoRa Communicator, StatusState spec*
 *Added: Hardware Workshop, Multi-Statechart support, Physics forces, Product Configurator touch-and-feel*
+*Added: Woody Woodworking Cartridge, Cart Management UI, CLI simplicity, XPATH-lite queries*
