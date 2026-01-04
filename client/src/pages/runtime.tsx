@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Play, RefreshCw, Zap, Maximize2, Minimize2, Terminal, ChevronUp, ChevronDown, Plus, X, Package, Gamepad2, FlaskConical, Timer, Wifi, Thermometer, Mouse, Send, Sparkles, Eye, Activity, Layers } from "lucide-react";
 import { EventConsole } from "@/components/EventConsole";
+import { DraggablePanel } from "@/components/DraggablePanel";
 import { VirtualHandheld } from "@/components/VirtualHandheld";
 import { GamepadInput } from "@/hooks/use-gamepad";
 import { useSearch } from "wouter";
@@ -1157,19 +1158,44 @@ export default function RuntimeSimulator() {
         onSendEvent={handleTestEvent}
       />
 
-      {/* Event Console - Shows cartridge events with PATH */}
-      <div className="absolute top-16 left-4 z-10">
-        <EventConsole
-          cartridges={mountedCartridgeIds.map(id => {
-            const cart = cartridges.find(c => c.tngli_id === id);
-            return cart ? { id: cart.tngli_id, label: cart.title || cart.tngli_id, toss: cart.toss_file } : null;
-          }).filter(Boolean) as any[]}
-          currentState={engineState?.currentStateId || ""}
-          onTriggerEvent={handleEventConsoleTrigger}
-          collapsed={!eventConsoleOpen}
-          onToggleCollapse={() => setEventConsoleOpen(!eventConsoleOpen)}
-        />
-      </div>
+      {/* Event Console - Draggable & Dockable */}
+      {eventConsoleOpen && (
+        <DraggablePanel
+          title="Event Console"
+          icon={<Zap className="w-4 h-4 text-purple-400" />}
+          defaultPosition={{ x: 16, y: 64 }}
+          minWidth={420}
+          onClose={() => setEventConsoleOpen(false)}
+          storageKey="event-console"
+        >
+          <EventConsole
+            cartridges={mountedCartridgeIds.map(id => {
+              const cart = cartridges.find(c => c.tngli_id === id);
+              return cart ? { id: cart.tngli_id, label: cart.title || cart.tngli_id, toss: cart.toss_file } : null;
+            }).filter(Boolean) as any[]}
+            currentState={engineState?.currentStateId || ""}
+            onTriggerEvent={handleEventConsoleTrigger}
+            collapsed={false}
+            onToggleCollapse={() => setEventConsoleOpen(false)}
+          />
+        </DraggablePanel>
+      )}
+      
+      {/* Event Console Toggle Button (when closed) */}
+      {!eventConsoleOpen && (
+        <div className="absolute top-16 left-4 z-10">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setEventConsoleOpen(true)}
+            className="h-8 px-3 gap-2 bg-purple-900/30 border border-purple-500/30 text-purple-300 hover:bg-purple-900/50"
+            data-testid="button-expand-event-console"
+          >
+            <Zap className="w-4 h-4" />
+            Events
+          </Button>
+        </div>
+      )}
 
       {/* Fullscreen Mode - Tabbed simulator with Preview/State/Timeline */}
       {fullscreenMode ? (
