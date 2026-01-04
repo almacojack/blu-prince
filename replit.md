@@ -67,6 +67,7 @@ Preferred communication style: Simple, everyday language.
 - **TOSS v1.1 Multi-Statechart** - Multiple FSMs per cartridge with event bus coordination. Roles: ui, physics, network, logic
 - **Physics Forces Expansion** - magnet_attract, magnet_repel, spring_joint, hinge_joint, damper for interactive product configurators
 - **Hardware Cartridge Profiles** - Manufacturing data (STL, BOM, assembly notes), firmware targets (ESP32, RP2040), packaging specs
+- **Marketing & Dev Plan** - Magazine ads, radio spots, 3-week build sequence with dependency graph
 
 ## System Architecture
 
