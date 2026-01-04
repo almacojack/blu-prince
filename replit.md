@@ -54,6 +54,10 @@ Preferred communication style: Simple, everyday language.
 - **QR Code System** - QRCodePopup, TngliLink, QRIconButton components for tng.li URL sharing with IoT/mobile badges
 - **Cartridge Protocol** - Agent can programmatically create TOSS cartridges and save to database via POST /api/cartridges
 - **tng.li Business Plan** - Strategic document in docs/tngly-business-plan.md for URL namespace marketing
+- **Command System & CLI** - Cartridges expose executable commands via tngli_ids, forming a virtual PATH. Runtime simulator includes CLI shell with command history, tab completion patterns, and multi-cart mounting
+- **Multi-Cart Loading** - Load multiple cartridges simultaneously with merged PATH namespaces. Docker-like interoperability between cartridges. Boot cartridge determines initial environment
+- **CommandRouter Service** - PATH resolution, command parsing/execution, permission checking, and alias support for cartridge commands
+- **Sales Document** - "The Opportunity If You Can Catch It" in docs/ targeting developers, tech managers, and marketing leadership
 
 ## System Architecture
 
