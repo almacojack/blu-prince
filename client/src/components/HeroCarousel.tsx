@@ -157,27 +157,6 @@ export function HeroCarousel() {
 
   const slides: Slide[] = [
     {
-      id: "vector-arcade",
-      title: "Vector Arcade Statecharts",
-      description: "Experience your state machines in stunning 3D. Classic 80s Asteroids-style vector graphics bring your FSMs to life.",
-      link: "/statechart",
-      linkText: "OPEN VECTOR ARCADE",
-      renderContent: () => (
-        <div className="w-full h-full bg-[#000008] overflow-hidden">
-          <Canvas
-            onCreated={({ gl }) => {
-              const canvas = gl.domElement;
-              canvas.addEventListener('webglcontextlost', (e) => e.preventDefault());
-            }}
-            gl={{ antialias: true, powerPreference: 'default' }}
-          >
-            <color attach="background" args={["#000008"]} />
-            <VectorArcadePreview />
-          </Canvas>
-        </div>
-      ),
-    },
-    {
       id: "tingos-cartridge",
       title: "TingOS Cartridges",
       description: "Portable state machines you can share, remix, and deploy anywhere. Like game cartridges for the modern web.",
@@ -209,6 +188,27 @@ export function HeroCarousel() {
         </div>
       ),
     },
+    {
+      id: "design-tools",
+      title: "Innovative 3D Design and Automation Tools",
+      description: "Experience your state machines in stunning 3D. Classic 80s Asteroids-style vector graphics bring your FSMs to life.",
+      link: "/statechart",
+      linkText: "EXPLORE TOOLS",
+      renderContent: () => (
+        <div className="w-full h-full bg-[#000008] overflow-hidden">
+          <Canvas
+            onCreated={({ gl }) => {
+              const canvas = gl.domElement;
+              canvas.addEventListener('webglcontextlost', (e) => e.preventDefault());
+            }}
+            gl={{ antialias: true, powerPreference: 'default' }}
+          >
+            <color attach="background" args={["#000008"]} />
+            <VectorArcadePreview />
+          </Canvas>
+        </div>
+      ),
+    },
   ];
 
   const nextSlide = useCallback(() => {
@@ -227,8 +227,8 @@ export function HeroCarousel() {
 
   const slide = slides[currentSlide];
 
-  const slideIcons = [GitBranch, Box, Radio];
-  const SlideIcon = slideIcons[currentSlide] || GitBranch;
+  const slideIcons = [Box, Radio, GitBranch];
+  const SlideIcon = slideIcons[currentSlide] || Box;
 
   return (
     <div className="relative w-full" data-testid="hero-carousel">
