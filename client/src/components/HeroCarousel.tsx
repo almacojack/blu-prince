@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, GitBranch, Play, Pause } from "lucide-react";
+import { ChevronLeft, ChevronRight, GitBranch, Play, Pause, Box, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Text, Billboard, Line, PerspectiveCamera } from "@react-three/drei";
 import * as THREE from "three";
 import { useRef, useMemo } from "react";
+import tossCartridgeImg from "@assets/generated_images/retro_futuristic_data_cartridge.png";
+import loraDeviceImg from "@assets/generated_images/lora_handheld_with_pc_screen.png";
 
 // Mini Vector Arcade Preview Scene
 const VECTOR_THEME = {
@@ -161,7 +163,7 @@ export function HeroCarousel() {
       link: "/statechart",
       linkText: "OPEN VECTOR ARCADE",
       renderContent: () => (
-        <div className="w-full h-full bg-[#000008] rounded-xl overflow-hidden border border-cyan-500/30">
+        <div className="w-full h-full bg-[#000008] overflow-hidden">
           <Canvas
             onCreated={({ gl }) => {
               const canvas = gl.domElement;
@@ -172,6 +174,38 @@ export function HeroCarousel() {
             <color attach="background" args={["#000008"]} />
             <VectorArcadePreview />
           </Canvas>
+        </div>
+      ),
+    },
+    {
+      id: "toss-cartridge",
+      title: "TOSS Cartridges",
+      description: "Portable state machines you can share, remix, and deploy anywhere. Like game cartridges for the modern web.",
+      link: "/editor",
+      linkText: "CREATE CARTRIDGE",
+      renderContent: () => (
+        <div className="w-full h-full bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f0f23] overflow-hidden flex items-center justify-center p-8">
+          <img 
+            src={tossCartridgeImg} 
+            alt="TOSS Cartridge" 
+            className="max-h-full max-w-full object-contain drop-shadow-2xl"
+          />
+        </div>
+      ),
+    },
+    {
+      id: "lora-defense",
+      title: "Cross-Platform Deployment",
+      description: "From handhelds with LoRa antennas to browser windows and terminal interfaces. TingOs runs everywhere.",
+      link: "/playground",
+      linkText: "TRY PLAYGROUND",
+      renderContent: () => (
+        <div className="w-full h-full bg-gradient-to-br from-[#0a0a0a] via-[#1a1a2e] to-[#0d1b2a] overflow-hidden flex items-center justify-center">
+          <img 
+            src={loraDeviceImg} 
+            alt="LoRa Device with Defense Tower" 
+            className="w-full h-full object-cover"
+          />
         </div>
       ),
     },
@@ -193,16 +227,27 @@ export function HeroCarousel() {
 
   const slide = slides[currentSlide];
 
+  const slideIcons = [GitBranch, Box, Radio];
+  const SlideIcon = slideIcons[currentSlide] || GitBranch;
+
   return (
     <div className="relative w-full" data-testid="hero-carousel">
-      <div className="relative aspect-video max-h-[400px] w-full overflow-hidden rounded-xl">
+      {/* Soft glow behind carousel */}
+      <div className="absolute -inset-4 bg-gradient-to-r from-cyan-500/10 via-purple-500/10 to-orange-500/10 blur-3xl rounded-[3rem] pointer-events-none" />
+      
+      <div className="relative aspect-[16/10] w-full overflow-hidden rounded-[2rem] shadow-2xl shadow-black/50">
+        {/* Soft vignette overlay */}
+        <div className="absolute inset-0 pointer-events-none z-10 rounded-[2rem]" style={{
+          boxShadow: 'inset 0 0 60px 20px rgba(0,0,0,0.4)'
+        }} />
+        
         <AnimatePresence mode="wait">
           <motion.div
             key={slide.id}
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -50 }}
-            transition={{ duration: 0.5 }}
+            initial={{ opacity: 0, scale: 1.05 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
             className="absolute inset-0"
           >
             {slide.renderContent()}
@@ -210,20 +255,20 @@ export function HeroCarousel() {
         </AnimatePresence>
         
         {/* Overlay Info */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
-          <div className="flex items-end justify-between">
-            <div>
-              <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                <GitBranch className="w-5 h-5 text-cyan-400" />
-                {slide.title}
+        <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 via-black/60 to-transparent z-20">
+          <div className="flex items-end justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <h3 className="text-xl md:text-2xl font-bold text-white flex items-center gap-2">
+                <SlideIcon className="w-5 h-5 text-cyan-400 shrink-0" />
+                <span className="truncate">{slide.title}</span>
               </h3>
-              <p className="text-sm text-white/70 max-w-md mt-1">
+              <p className="text-sm text-white/70 max-w-lg mt-1 line-clamp-2">
                 {slide.description}
               </p>
             </div>
             <Link href={slide.link}>
               <Button 
-                className="bg-cyan-500 hover:bg-cyan-400 text-black font-mono shadow-lg"
+                className="bg-cyan-500 hover:bg-cyan-400 text-black font-mono shadow-lg shrink-0"
                 data-testid="button-carousel-cta"
               >
                 {slide.linkText}

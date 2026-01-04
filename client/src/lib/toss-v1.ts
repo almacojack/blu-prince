@@ -336,13 +336,83 @@ export interface TossDatabaseAsset {
   data: string; // base64 encoded SQLite file
 }
 
+// ============================================
+// AUDIO ASSETS - Soundboard and sound effects
+// ============================================
+
+// Audio formats supported
+export type AudioAssetFormat = "mp3" | "wav" | "ogg" | "webm";
+
+// Audio asset metadata
+export interface TossAudioMetadata {
+  name: string;
+  format: AudioAssetFormat;
+  fileSize: number;           // bytes
+  duration?: number;          // seconds
+  sampleRate?: number;        // Hz
+  channels?: number;          // 1 = mono, 2 = stereo
+  importedAt?: string;        // ISO date
+  originalFilename?: string;
+  category?: string;          // "ui", "action", "ambient", "retro", etc.
+  tags?: string[];            // for searchability
+}
+
+// Audio asset stored in TOSS
+export interface TossAudioAsset {
+  id: string;
+  type: "audio";
+  metadata: TossAudioMetadata;
+  data: string;               // base64-encoded audio binary
+}
+
+// Built-in retro sound categories
+export type RetroSoundCategory = 
+  | "blip"      // UI feedback sounds
+  | "coin"      // Collection/reward sounds
+  | "jump"      // Action sounds
+  | "powerup"   // Power-up/boost sounds
+  | "hit"       // Impact/damage sounds
+  | "select"    // Menu selection sounds
+  | "start"     // Game start sounds
+  | "gameover"  // End sounds
+  | "win"       // Victory sounds
+  | "error"     // Error/fail sounds
+  | "whoosh"    // Movement sounds
+  | "laser"     // Projectile sounds
+  | "explosion" // Explosion sounds
+  | "magic";    // Magic/special sounds
+
+// Reference to a built-in or custom sound
+export interface SoundReference {
+  type: "builtin" | "custom";
+  id: string;                  // Built-in sound ID or custom asset ID
+  volume?: number;             // 0.0 to 1.0, default 1.0
+  pitch?: number;              // Playback rate multiplier, default 1.0
+}
+
+// Transition sound binding - maps transition to sound
+export interface TransitionSoundBinding {
+  transitionId: string;        // Format: "stateId:eventName"
+  sound: SoundReference;
+  enabled?: boolean;           // Can be temporarily disabled
+}
+
+// Soundboard configuration in cartridge
+export interface SoundboardConfig {
+  enabled: boolean;
+  masterVolume: number;        // 0.0 to 1.0
+  muted: boolean;
+  bindings: TransitionSoundBinding[];
+}
+
 // General asset union (expandable for audio, images, etc.)
-export type TossAsset = TossAsset3D | TossDatabaseAsset;
+export type TossAsset = TossAsset3D | TossDatabaseAsset | TossAudioAsset;
 
 // Asset registry in cartridge
 export interface TossAssetRegistry {
   models: TossAsset3D[];
   databases?: TossDatabaseAsset[];
+  audio?: TossAudioAsset[];
 }
 
 // Commerce fields (for artsy.sale, unwanted.ad)

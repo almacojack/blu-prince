@@ -229,6 +229,44 @@ export interface TossSculptedModel {
   data: string; // compiled mesh as base64
 }
 
+// Audio asset for soundboard
+export interface TossAudioAsset {
+  id: string;
+  type: "audio";
+  metadata: {
+    name: string;
+    format: "mp3" | "wav" | "ogg" | "webm";
+    fileSize: number;
+    duration?: number;
+    category?: string;
+    tags?: string[];
+  };
+  data: string; // base64-encoded audio
+}
+
+// Sound reference (builtin or custom)
+export interface SoundReference {
+  type: "builtin" | "custom";
+  id: string;
+  volume?: number;
+  pitch?: number;
+}
+
+// Transition sound binding
+export interface TransitionSoundBinding {
+  transitionId: string; // "stateId:eventName"
+  sound: SoundReference;
+  enabled?: boolean;
+}
+
+// Soundboard configuration
+export interface SoundboardConfig {
+  enabled: boolean;
+  masterVolume: number;
+  muted: boolean;
+  bindings: TransitionSoundBinding[];
+}
+
 export interface TossAssetRegistry {
   // Legacy keyed assets (external refs)
   refs?: Record<string, TossAssetRef>;
@@ -244,6 +282,8 @@ export interface TossAssetRegistry {
   images?: TossImageAsset[];
   // Sprite sheets for animation
   spriteSheets?: TossSpriteSheetAsset[];
+  // Audio assets for soundboard
+  audio?: TossAudioAsset[];
 }
 
 // THE FILE (The Portable Payload)
@@ -252,6 +292,9 @@ export interface TossFile {
   logic: TossFSM;
   memory: TossContext;
   assets: TossAssetRegistry;
+  
+  // Soundboard configuration for transition sound effects
+  soundboard?: SoundboardConfig;
   
   // Editor-only metadata (Stripped before 'Burning' the cartridge if desired, 
   // but often kept for "Open Source" cartridges that can be remixed)

@@ -35,6 +35,9 @@ import { Progress } from "@/components/ui/progress";
 import { Asset3DPreview } from "@/components/Asset3DPreview";
 import { QRIconButton } from "@/components/QRCodePopup";
 import { WolfensteinHealth } from "@/components/WolfensteinHealth";
+import { SoundboardPanel } from "@/components/SoundboardPanel";
+import { playRetroSound } from "@/lib/retro-sounds";
+import type { SoundboardConfig } from "@/lib/toss";
 import bluPrinceLogo from "@assets/generated_images/jeweled_blue_deity_walnut_bg.png";
 
 const STORAGE_KEY = "blu-prince-cartridge";
@@ -576,6 +579,8 @@ export default function BluPrince() {
   const [newTransitionEvent, setNewTransitionEvent] = useState("");
   const [newTransitionTarget, setNewTransitionTarget] = useState("");
   const [viewportAngle, setViewportAngle] = useState<ViewportAngle>("perspective");
+  const [showSoundboard, setShowSoundboard] = useState(false);
+  const [selectedTransitionId, setSelectedTransitionId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const chiptune = useChiptune();
