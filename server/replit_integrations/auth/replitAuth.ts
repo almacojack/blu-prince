@@ -6,13 +6,20 @@ import session from "express-session";
 import type { Express, RequestHandler } from "express";
 import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
+import createMemoryStore from "memorystore";
 import { authStorage } from "./storage";
+
+// Check if running on Replit (has required env vars)
+export const isReplitEnvironment = () => Boolean(process.env.REPL_ID);
 
 const getOidcConfig = memoize(
   async () => {
+    if (!process.env.REPL_ID) {
+      throw new Error("REPL_ID not set - cannot initialize OIDC in local environment");
+    }
     return await client.discovery(
       new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
-      process.env.REPL_ID!
+      process.env.REPL_ID
     );
   },
   { maxAge: 3600 * 1000 }
@@ -20,6 +27,23 @@ const getOidcConfig = memoize(
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
+  
+  // Use memory store for local development, pg store for Replit
+  if (!isReplitEnvironment()) {
+    const MemoryStore = createMemoryStore(session);
+    return session({
+      secret: process.env.SESSION_SECRET || "local-dev-secret-change-in-prod",
+      store: new MemoryStore({ checkPeriod: sessionTtl }),
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        httpOnly: true,
+        secure: false, // Allow HTTP for local dev
+        maxAge: sessionTtl,
+      },
+    });
+  }
+  
   const pgStore = connectPg(session);
   const sessionStore = new pgStore({
     conString: process.env.DATABASE_URL,
@@ -65,6 +89,32 @@ export async function setupAuth(app: Express) {
   app.use(getSession());
   app.use(passport.initialize());
   app.use(passport.session());
+
+  // Skip OIDC setup for local development
+  if (!isReplitEnvironment()) {
+    console.log("[Auth] Running in local mode - Replit auth disabled");
+    
+    // Register dummy routes for local dev
+    app.get("/api/login", (req, res) => {
+      res.status(503).json({ 
+        error: "Authentication not available in local development",
+        hint: "Run on Replit to enable authentication"
+      });
+    });
+    
+    app.get("/api/callback", (req, res) => {
+      res.redirect("/");
+    });
+    
+    app.get("/api/logout", (req, res) => {
+      req.logout(() => res.redirect("/"));
+    });
+    
+    passport.serializeUser((user: Express.User, cb) => cb(null, user));
+    passport.deserializeUser((user: Express.User, cb) => cb(null, user));
+    
+    return;
+  }
 
   const config = await getOidcConfig();
 
