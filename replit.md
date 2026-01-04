@@ -133,11 +133,33 @@ The cartridge format contains:
 - **Session storage** via `connect-pg-simple` for Express sessions
 - Database URL configured via `DATABASE_URL` environment variable
 
-### Third-Party APIs
-- **TingOs Platform API** (documented in attached assets):
-  - Base: `https://tingos.org/platform/v1`
-  - Auth via `X-API-Key` header
-  - Scopes: `read:users`, `read:locations`, `read:cartridges`
+### TingOS Platform API (FINALIZED CONTRACT)
+- **Base URL**: `https://thingos.org/platform/v1` (Production) | `https://test.thingos.org/platform/v1` (Staging)
+- **Auth**: `X-API-Key` header
+- **Scopes**: `read:users`, `read:locations`, `read:cartridges`, `write:cartridges`, `admin`
+- **Key Endpoints**:
+  - `GET /components` - List 24 built-in components
+  - `GET /cartridges` - User's cartridges
+  - `GET /cartridges/nearby?lat=&lng=&radius_km=` - Location-based cartridges
+  - `GET /locations/{id}/weather` - Weather data for location-aware cartridges
+- **24 Built-in Components**: Layout (4), Media (3), Text (3), Input (6), Action (3), Commerce (3), Creative (2)
+- **Platform Targets**: Web (Svelte 5), Desktop (Electron), Mobile (Capacitor), MicroPython (Pico W/ESP32), Terminal (Textual TUI)
+- **MicroPython Constraints**: MAX_ITEMS=50, MAX_PARTICLES=200, MAX_MESH_TRIANGLES=500, 264KB RAM, 60fps
+
+### TOSS Schema Versions
+- **toss.ts** - FSM-oriented schema for States editor (TossFile, TossState, TossTransition)
+- **toss-v1.ts** - 3D runtime schema for Designer (TossCartridge, TossItem, TossMesh)
+- **toss-v1.1.ts** - AUTHORITATIVE v1.1 spec from TingOS backend with:
+  - `items` → `meshes` rename
+  - Multi-statechart system with event bus
+  - Physics joints (spring, hinge, damper)
+  - SpacetimeAnchor for weather/location context
+  - Hardware profiles for physical products
+  - Accessory cart metadata and pricing
+
+### Critical Documentation
+- **docs/TINGOS_HANDOFF.md** - Full technical handoff from TingOS backend (BINDING CONTRACT)
+- **client/src/lib/toss-v1.1.ts** - Authoritative TypeScript schema
 
 ### Key NPM Packages
 - **@react-three/fiber, @react-three/drei, @react-three/rapier** - 3D rendering and physics
