@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Play, RefreshCw, Zap, Maximize2, Minimize2, Terminal, ChevronUp, ChevronDown, Plus, X, Package, Gamepad2 } from "lucide-react";
+import { ArrowLeft, Play, RefreshCw, Zap, Maximize2, Minimize2, Terminal, ChevronUp, ChevronDown, Plus, X, Package, Gamepad2, FlaskConical, Timer, Wifi, Thermometer, Mouse, Send } from "lucide-react";
 import { VirtualHandheld } from "@/components/VirtualHandheld";
 import { GamepadInput } from "@/hooks/use-gamepad";
 import { useSearch } from "wouter";
@@ -704,6 +704,124 @@ const CliPanel = ({ isOpen, onToggle }: CliPanelProps) => {
   );
 };
 
+// --- EVENT TESTER PANEL ---
+
+interface EventTesterPanelProps {
+  isOpen: boolean;
+  onToggle: () => void;
+  onSendEvent: (event: string) => void;
+}
+
+const TEST_EVENTS = {
+  "Timer": [
+    { id: "TICK", label: "Tick", icon: Timer },
+    { id: "TIMEOUT", label: "Timeout", icon: Timer },
+    { id: "INTERVAL", label: "Interval", icon: Timer },
+    { id: "DELAY_COMPLETE", label: "Delay Complete", icon: Timer },
+  ],
+  "Sensors": [
+    { id: "TEMPERATURE_HIGH", label: "Temp High", icon: Thermometer },
+    { id: "TEMPERATURE_LOW", label: "Temp Low", icon: Thermometer },
+    { id: "MOTION_DETECTED", label: "Motion", icon: Mouse },
+    { id: "PROXIMITY_NEAR", label: "Proximity Near", icon: Mouse },
+    { id: "PROXIMITY_FAR", label: "Proximity Far", icon: Mouse },
+  ],
+  "Network": [
+    { id: "NETWORK_CONNECTED", label: "Connected", icon: Wifi },
+    { id: "NETWORK_DISCONNECTED", label: "Disconnected", icon: Wifi },
+    { id: "DATA_RECEIVED", label: "Data Received", icon: Wifi },
+    { id: "SYNC_COMPLETE", label: "Sync Complete", icon: Wifi },
+  ],
+  "System": [
+    { id: "POWER_LOW", label: "Low Battery", icon: Zap },
+    { id: "POWER_CHARGING", label: "Charging", icon: Zap },
+    { id: "ERROR", label: "Error", icon: Zap },
+    { id: "RESET", label: "Reset", icon: RefreshCw },
+  ],
+};
+
+const EventTesterPanel = ({ isOpen, onToggle, onSendEvent }: EventTesterPanelProps) => {
+  const [customEvent, setCustomEvent] = useState("");
+
+  const handleCustomEventSend = () => {
+    if (customEvent.trim()) {
+      onSendEvent(customEvent.trim().toUpperCase());
+      setCustomEvent("");
+    }
+  };
+
+  return (
+    <div 
+      className={`absolute top-16 right-4 bg-black/95 border border-yellow-500/30 rounded-lg transition-all duration-300 overflow-hidden ${isOpen ? "w-80" : "w-auto"}`}
+      data-testid="event-tester-panel"
+    >
+      <button
+        onClick={onToggle}
+        className="w-full px-4 py-2 flex items-center justify-between text-yellow-500/80 hover:text-yellow-500 hover:bg-white/5 transition-colors"
+        data-testid="button-toggle-event-tester"
+      >
+        <div className="flex items-center gap-2">
+          <FlaskConical className="w-4 h-4" />
+          <span className="font-mono text-sm">Event Tester</span>
+        </div>
+        {isOpen && <X className="w-4 h-4" />}
+      </button>
+
+      {isOpen && (
+        <div className="p-3 max-h-[60vh] overflow-y-auto">
+          {Object.entries(TEST_EVENTS).map(([category, events]) => (
+            <div key={category} className="mb-3">
+              <div className="text-[10px] uppercase text-yellow-500/60 font-mono mb-1.5 tracking-wider">
+                {category}
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {events.map((evt) => {
+                  const Icon = evt.icon;
+                  return (
+                    <button
+                      key={evt.id}
+                      onClick={() => onSendEvent(evt.id)}
+                      className="flex items-center gap-1 px-2 py-1 rounded bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/20 hover:border-yellow-500/40 text-yellow-400 text-xs font-mono transition-all active:scale-95"
+                      data-testid={`button-event-${evt.id.toLowerCase()}`}
+                    >
+                      <Icon className="w-3 h-3" />
+                      {evt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+
+          <div className="border-t border-yellow-500/20 pt-3 mt-3">
+            <div className="text-[10px] uppercase text-yellow-500/60 font-mono mb-1.5 tracking-wider">
+              Custom Event
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={customEvent}
+                onChange={(e) => setCustomEvent(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleCustomEventSend()}
+                placeholder="EVENT_NAME"
+                className="flex-1 bg-black/50 border border-yellow-500/30 rounded px-2 py-1.5 text-yellow-400 font-mono text-sm placeholder:text-yellow-500/30 outline-none focus:border-yellow-500/60"
+                data-testid="input-custom-event"
+              />
+              <button
+                onClick={handleCustomEventSend}
+                className="px-3 py-1.5 rounded bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/30 text-yellow-400 transition-all active:scale-95"
+                data-testid="button-send-custom-event"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // --- MAIN PAGE COMPONENT ---
 
 const EXAMPLE_CARTRIDGES = [
@@ -720,6 +838,7 @@ export default function RuntimeSimulator() {
   const [isLoading, setIsLoading] = useState(true);
   const [fullscreenMode, setFullscreenMode] = useState(true);
   const [cliOpen, setCliOpen] = useState(false);
+  const [eventTesterOpen, setEventTesterOpen] = useState(false);
   const [showSplash, setShowSplash] = useState(false);
   const [splashCartridge, setSplashCartridge] = useState<any>(null);
   const [showController, setShowController] = useState(false);
@@ -864,6 +983,12 @@ export default function RuntimeSimulator() {
     }
   };
 
+  const handleTestEvent = (event: string) => {
+    if (engine) {
+      engine.send(event);
+    }
+  };
+
   // Handle full gamepad input from VirtualHandheld
   const handleGamepadInput = useCallback((input: GamepadInput) => {
     if (!engine) return;
@@ -986,6 +1111,13 @@ export default function RuntimeSimulator() {
           </Button>
         </div>
       </div>
+
+      {/* Event Tester Panel */}
+      <EventTesterPanel 
+        isOpen={eventTesterOpen} 
+        onToggle={() => setEventTesterOpen(!eventTesterOpen)} 
+        onSendEvent={handleTestEvent}
+      />
 
       {/* Fullscreen Mode - 2D content fills screen */}
       {fullscreenMode ? (
