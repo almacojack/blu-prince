@@ -59,6 +59,8 @@ Preferred communication style: Simple, everyday language.
 - **CommandRouter Service** - PATH resolution, command parsing/execution, permission checking, and alias support for cartridge commands
 - **Sales Document** - "The Opportunity If You Can Catch It" in docs/ targeting developers, tech managers, and marketing leadership
 - **Revenue Models Addendum** - Explores revenue sharing, affiliate programs (Amazon integration), training cartridges, and web hosting configurator vision with predictable pricing
+- **Personal Pitch Document** - "Why This. Why Now. Why Us." in docs/ for owner's internal use with spouse/partners
+- **Revenue Calculator Page** - Interactive `/revenue` page with sliders for creator, platform operator, and educator revenue projections. "Seeing is believing" for stakeholders
 
 ## System Architecture
 

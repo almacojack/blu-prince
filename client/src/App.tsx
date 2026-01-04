@@ -34,6 +34,7 @@ import Playground from "@/pages/playground";
 import Widgets from "@/pages/widgets";
 import Pricing from "@/pages/pricing";
 import InputSettings from "@/pages/input-settings";
+import RevenueCalculator from "@/pages/revenue-calculator";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -57,6 +58,7 @@ function Router() {
       <Route path="/widgets" component={Widgets} />
       <Route path="/pricing" component={Pricing} />
       <Route path="/input-settings" component={InputSettings} />
+      <Route path="/revenue" component={RevenueCalculator} />
       <Route component={NotFound} />
     </Switch>
   );
