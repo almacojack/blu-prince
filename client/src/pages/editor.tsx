@@ -44,7 +44,7 @@ import { Switch } from "@/components/ui/switch";
 import { 
   TossCartridge, TossItem, EditorMode, UserAssertion, ItemFSM, ControllerBinding, Bounds, ControllerPreset,
   createNewCartridge, createThing, DEFAULT_PHYSICS, CONTROLLER_BUTTONS, createDefaultControllerPreset
-} from "@/lib/toss-v1";
+} from "@/lib/toss";
 import { useToast } from "@/hooks/use-toast";
 import { useCollaboration, type CollabUser } from "@/hooks/use-collaboration";
 import { useAuth } from "@/hooks/use-auth";

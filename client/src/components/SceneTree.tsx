@@ -33,7 +33,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import type { TossItem, Bounds } from "@/lib/toss-v1";
+import type { TossItem, Bounds } from "@/lib/toss";
 
 // v1.1: Scene-level FSM info for display
 export interface SceneFsmInfo {

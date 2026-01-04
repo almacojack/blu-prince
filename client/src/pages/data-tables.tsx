@@ -30,7 +30,7 @@ import {
   type QueryResult,
   type SQLiteError
 } from "@/lib/sqlite-service";
-import type { TossDatabaseAsset, TossDatabaseMetadata } from "@/lib/toss-v1";
+import type { TossDatabaseAsset, TossDatabaseMetadata } from "@/lib/toss";
 
 interface QueryHistoryItem {
   id: string;

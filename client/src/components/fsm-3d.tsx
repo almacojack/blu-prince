@@ -5,7 +5,7 @@ import {
   Sphere, Box as DreiBox, Billboard
 } from "@react-three/drei";
 import * as THREE from "three";
-import { ItemFSM } from "@/lib/toss-v1";
+import { ItemFSM } from "@/lib/toss";
 
 interface StatePosition {
   name: string;

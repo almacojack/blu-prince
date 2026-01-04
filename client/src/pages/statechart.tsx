@@ -12,7 +12,7 @@ import {
   ArrowLeft, Plus, Trash2, Play, GitBranch, Save, 
   Zap, Circle, ArrowRight, Palette, Maximize2
 } from "lucide-react";
-import { ItemFSM } from "@/lib/toss-v1";
+import { ItemFSM } from "@/lib/toss";
 
 // 3D THEMES - Motion behaviors and visual styles
 interface Theme3D {

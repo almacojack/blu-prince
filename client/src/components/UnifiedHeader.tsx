@@ -42,7 +42,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { TossCartridge } from "@/lib/toss-v1";
+import { TossCartridge } from "@/lib/toss";
 import { TutorialMenu } from "@/components/TutorialMenu";
 import { useTutorial } from "@/contexts/TutorialContext";
 import { GraduationCap } from "lucide-react";

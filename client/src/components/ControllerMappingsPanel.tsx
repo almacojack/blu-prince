@@ -43,7 +43,7 @@ import {
   ControllerMappingEntry,
   CONTROLLER_BUTTONS,
   createDefaultControllerPreset 
-} from "@/lib/toss-v1";
+} from "@/lib/toss";
 import { useGamepad, GamepadInput } from "@/hooks/use-gamepad";
 import { useToast } from "@/hooks/use-toast";
 

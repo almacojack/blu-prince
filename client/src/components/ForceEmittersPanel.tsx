@@ -45,7 +45,7 @@ import {
   ForceEmitter, 
   ForceType,
   DEFAULT_TRANSFORM,
-} from "@/lib/toss-v1";
+} from "@/lib/toss";
 import { useToast } from "@/hooks/use-toast";
 
 interface ForceEmittersPanelProps {
