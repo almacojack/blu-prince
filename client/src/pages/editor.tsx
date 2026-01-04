@@ -2798,6 +2798,7 @@ export default function BluPrinceEditor() {
                 setShowBrassGears(prev => !prev);
               }
             }}
+            hiddenItemIds={hiddenLayers}
           />
         </DockablePanel>
 

@@ -27,6 +27,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import type { TossItem, Bounds } from "@/lib/toss-v1";
 
@@ -46,6 +48,7 @@ interface SceneTreeProps {
   onReorderItems?: (itemIds: string[]) => void;
   decorations?: SceneDecoration[];
   onToggleDecorationVisibility?: (id: string) => void;
+  hiddenItemIds?: Set<string>;
 }
 
 type DragItemType = "item" | "light" | "camera";
@@ -461,10 +464,16 @@ export function SceneTree({
   onReorderItems,
   decorations = [],
   onToggleDecorationVisibility,
+  hiddenItemIds = new Set(),
 }: SceneTreeProps) {
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
+  const [hideInvisibleItems, setHideInvisibleItems] = useState(false);
+  
+  const visibleItems = hideInvisibleItems 
+    ? items.filter(item => !hiddenItemIds.has(item.id))
+    : items;
 
   const handleItemRename = useCallback(
     (id: string, newName: string) => {
@@ -509,6 +518,28 @@ export function SceneTree({
   return (
     <ScrollArea className="h-full">
       <div className="p-2 space-y-1">
+        {/* Filter checkbox */}
+        <div className="flex items-center gap-2 px-2 py-1.5 rounded bg-zinc-800/50 border border-zinc-700/50 mb-2">
+          <Checkbox 
+            id="hide-invisible"
+            checked={hideInvisibleItems}
+            onCheckedChange={(checked) => setHideInvisibleItems(checked === true)}
+            className="h-3.5 w-3.5"
+            data-testid="checkbox-hide-invisible"
+          />
+          <Label 
+            htmlFor="hide-invisible" 
+            className="text-[10px] text-zinc-400 cursor-pointer select-none"
+          >
+            Hide invisible items
+          </Label>
+          {hideInvisibleItems && hiddenItemIds.size > 0 && (
+            <span className="text-[9px] text-amber-400 ml-auto">
+              {hiddenItemIds.size} hidden
+            </span>
+          )}
+        </div>
+
         <TreeNode
           icon={<Layers3 className="w-4 h-4 text-cyan-400" />}
           label="Scene Objects"
@@ -516,16 +547,16 @@ export function SceneTree({
           defaultExpanded
           badge={
             <span className="text-[10px] text-zinc-500 font-mono">
-              {items.length}
+              {visibleItems.length}{hideInvisibleItems && items.length !== visibleItems.length ? `/${items.length}` : ''}
             </span>
           }
         >
-          {items.length === 0 ? (
+          {visibleItems.length === 0 ? (
             <div className="px-4 py-3 text-center text-zinc-500 text-[10px]">
-              No objects in scene
+              {hideInvisibleItems && items.length > 0 ? 'All items hidden' : 'No objects in scene'}
             </div>
           ) : (
-            items.map((item, index) => (
+            visibleItems.map((item, index) => (
               <DraggableTreeNode
                 key={item.id}
                 icon={getComponentIcon(item.component, item.bounds)}
