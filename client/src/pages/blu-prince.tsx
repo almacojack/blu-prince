@@ -1550,6 +1550,22 @@ export default function BluPrince() {
               <CircuitBoard className="w-4 h-4 mr-1.5" />
               <span className="text-xs font-bold">FRITZING</span>
             </Button>
+            
+            {/* Soundboard Panel Toggle */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowSoundboard(!showSoundboard)}
+              className={`h-8 px-3 rounded-lg border ${
+                showSoundboard 
+                  ? "bg-orange-600 text-white border-orange-400" 
+                  : "bg-gray-800/80 text-orange-400 border-orange-600/50 hover:bg-orange-600/20"
+              }`}
+              data-testid="button-toggle-soundboard"
+            >
+              <Music2 className="w-4 h-4 mr-1.5" />
+              <span className="text-xs font-bold">SOUNDS</span>
+            </Button>
 
           </div>
           
@@ -1635,6 +1651,44 @@ export default function BluPrince() {
               initialPosition={{ x: 16, y: 200 }}
               data-testid="panel-fritzing"
             />
+          )}
+
+          {/* Soundboard Panel */}
+          {showSoundboard && (
+            <div 
+              className="absolute right-4 top-4 z-50 w-80 max-h-[calc(100vh-120px)] bg-[#1a1a1e] border border-orange-500/30 rounded-xl shadow-2xl overflow-hidden"
+              data-testid="panel-soundboard"
+            >
+              <div className="flex items-center justify-between px-3 py-2 bg-gradient-to-r from-orange-600/30 to-amber-600/20 border-b border-orange-500/20">
+                <div className="flex items-center gap-2">
+                  <Music2 className="w-4 h-4 text-orange-400" />
+                  <span className="text-sm font-bold text-orange-200">Soundboard</span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 text-orange-300 hover:text-white hover:bg-orange-500/20"
+                  onClick={() => setShowSoundboard(false)}
+                  data-testid="button-close-soundboard"
+                >
+                  <VolumeX className="w-4 h-4" />
+                </Button>
+              </div>
+              <SoundboardPanel
+                file={file}
+                selectedTransitionId={selectedNodeId}
+                onUpdateSoundboard={(config) => {
+                  const updatedFile: TossFile = {
+                    ...file,
+                    soundboard: config
+                  };
+                  setFile(updatedFile);
+                  if (collaboration.isJoined) {
+                    collaboration.sendFullState(updatedFile);
+                  }
+                }}
+              />
+            </div>
           )}
 
           <div 
