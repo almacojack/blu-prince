@@ -7,7 +7,7 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Text, Billboard, Line, PerspectiveCamera } from "@react-three/drei";
 import * as THREE from "three";
 import { useRef, useMemo } from "react";
-import tossCartridgeImg from "@assets/generated_images/retro_futuristic_data_cartridge.png";
+import tingosCartridgeImg from "@assets/generated_images/tingos_cartridge_cosmic_scene.png";
 import loraDeviceImg from "@assets/generated_images/lora_handheld_with_pc_screen.png";
 
 // Mini Vector Arcade Preview Scene
@@ -178,17 +178,17 @@ export function HeroCarousel() {
       ),
     },
     {
-      id: "toss-cartridge",
-      title: "TOSS Cartridges",
+      id: "tingos-cartridge",
+      title: "TingOS Cartridges",
       description: "Portable state machines you can share, remix, and deploy anywhere. Like game cartridges for the modern web.",
       link: "/editor",
       linkText: "CREATE CARTRIDGE",
       renderContent: () => (
-        <div className="w-full h-full bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f0f23] overflow-hidden flex items-center justify-center p-8">
+        <div className="w-full h-full overflow-hidden">
           <img 
-            src={tossCartridgeImg} 
-            alt="TOSS Cartridge" 
-            className="max-h-full max-w-full object-contain drop-shadow-2xl"
+            src={tingosCartridgeImg} 
+            alt="TingOS Cartridge" 
+            className="w-full h-full object-cover"
           />
         </div>
       ),
