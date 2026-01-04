@@ -69,6 +69,17 @@ The platform features a performance system that auto-detects device capabilities
 - **Quality Toggle System**: Rendering presets (Low/Medium/High) with auto-detection.
 - **Orthographic Camera Mode**: Toggle between perspective and isometric views.
 - **Track Laying Tool**: Spline-based road/path painting.
+- **Parametric Enclosure Generator**: Hollow boxes for 3D printing with wall thickness, optional lid, and tolerance settings.
+- **OpenSCAD Interpreter**: Native JavaScript subset interpreter for OpenSCAD scripts:
+  - Primitives: cube, sphere, cylinder, cone, polyhedron
+  - Transforms: translate, rotate, scale, mirror, color
+  - CSG: union, difference, intersection, hull
+  - Control: for loops, if/else, let bindings
+  - Modules and functions with parameters
+  - Special variables ($fn, $fa, $fs)
+- **OpenSCAD Documentation**: Interactive docs panel with yellow 3D rendered previews for each primitive/operation.
+- **Camera/Light Helpers**: 3D editor shows cameras with frustum visualization, lights with type-specific icons, color-matched labels from scene tree.
+- **Font System**: Load fonts from Google Fonts (no API key needed), user uploads (TTF, OTF, WOFF, WOFF2), and system fonts. Font picker UI with search, categories, and live preview.
 
 ## External Dependencies
 
