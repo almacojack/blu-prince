@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { ArrowLeft, Copy, Check, Zap, Radio, Gauge, Monitor, Music, QrCode, Download, Plane } from "lucide-react";
+import { ArrowLeft, Copy, Check, Zap, Radio, Gauge, Monitor, Music, QrCode, Download, Plane, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GeigerCounter } from "@/components/GeigerCounter";
@@ -9,6 +9,8 @@ import { NixieDisplay, MagicEyeTube, TubeArray, VacuumTube } from "@/components/
 import { VUMeter, StereoVUMeter } from "@/components/VUMeter";
 import { SonarScanner, FishFinder } from "@/components/SonarWidgets";
 import { DronePilotDemo } from "@/components/DronePilotDemo";
+import { GuardBuilder } from "@/components/GuardBuilder";
+import { GuardExpression } from "@/lib/guard-system";
 import { QRColorCustomizer } from "@/components/QRColorCustomizer";
 import { useTranslation } from "react-i18next";
 import { Anchor } from "lucide-react";
@@ -407,6 +409,10 @@ export default function WidgetsPage() {
               <Plane className="w-4 h-4 mr-2" />
               Drone
             </TabsTrigger>
+            <TabsTrigger value="guards" className="data-[state=active]:bg-purple-900/30">
+              <ShieldCheck className="w-4 h-4 mr-2" />
+              Guards
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="radiation" className="space-y-6">
@@ -681,6 +687,10 @@ export default function WidgetsPage() {
                 <span className="ml-4">🎮 Gamepad supported (dual stick)</span>
               </div>
             </div>
+          </TabsContent>
+
+          <TabsContent value="guards" className="space-y-6">
+            <GuardBuilderDemo />
           </TabsContent>
         </Tabs>
 

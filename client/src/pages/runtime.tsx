@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Play, RefreshCw, Zap, Maximize2, Minimize2, Terminal, ChevronUp, ChevronDown, Plus, X, Package, Gamepad2, FlaskConical, Timer, Wifi, Thermometer, Mouse, Send } from "lucide-react";
+import { ArrowLeft, Play, RefreshCw, Zap, Maximize2, Minimize2, Terminal, ChevronUp, ChevronDown, Plus, X, Package, Gamepad2, FlaskConical, Timer, Wifi, Thermometer, Mouse, Send, Sparkles } from "lucide-react";
+import { EventConsole } from "@/components/EventConsole";
 import { VirtualHandheld } from "@/components/VirtualHandheld";
 import { GamepadInput } from "@/hooks/use-gamepad";
 import { useSearch } from "wouter";
@@ -838,6 +839,7 @@ export default function RuntimeSimulator() {
   const [fullscreenMode, setFullscreenMode] = useState(true);
   const [cliOpen, setCliOpen] = useState(false);
   const [eventTesterOpen, setEventTesterOpen] = useState(false);
+  const [eventConsoleOpen, setEventConsoleOpen] = useState(false);
   const [showSplash, setShowSplash] = useState(false);
   const [splashCartridge, setSplashCartridge] = useState<any>(null);
   const [showController, setShowController] = useState(false);
@@ -988,6 +990,41 @@ export default function RuntimeSimulator() {
     }
   };
 
+  const handleEventConsoleTrigger = useCallback((eventId: string, path: string) => {
+    if (!engine || !engineState) {
+      return { success: false, message: "Engine not running" };
+    }
+    
+    const previousState = engineState.currentStateId;
+    const currentStates = engineState.currentStateId;
+    
+    const tossFile = cartridges.find(c => c.tngli_id === selectedCartridgeId)?.toss_file;
+    if (!tossFile?.logic?.states) {
+      return { success: false, message: "No cartridge loaded" };
+    }
+    
+    const stateObj = tossFile.logic.states[currentStates];
+    const hasTransition = stateObj?.transitions?.some((t: any) => t.event === eventId);
+    
+    if (!hasTransition) {
+      return { 
+        success: false, 
+        message: `Event "${eventId}" not applicable from state "${currentStates}"`,
+        previousState 
+      };
+    }
+    
+    engine.send(eventId);
+    
+    const newState = engine.getState().currentStateId;
+    return { 
+      success: true, 
+      message: `Transitioned from "${previousState}" to "${newState}"`,
+      previousState,
+      newState
+    };
+  }, [engine, engineState, cartridges, selectedCartridgeId]);
+
   // Handle full gamepad input from VirtualHandheld
   const handleGamepadInput = useCallback((input: GamepadInput) => {
     if (!engine) return;
@@ -1117,6 +1154,20 @@ export default function RuntimeSimulator() {
         onToggle={() => setEventTesterOpen(!eventTesterOpen)} 
         onSendEvent={handleTestEvent}
       />
+
+      {/* Event Console - Shows cartridge events with PATH */}
+      <div className="absolute top-16 left-4 z-10">
+        <EventConsole
+          cartridges={mountedCartridgeIds.map(id => {
+            const cart = cartridges.find(c => c.tngli_id === id);
+            return cart ? { id: cart.tngli_id, label: cart.title || cart.tngli_id, toss: cart.toss_file } : null;
+          }).filter(Boolean) as any[]}
+          currentState={engineState?.currentStateId || ""}
+          onTriggerEvent={handleEventConsoleTrigger}
+          collapsed={!eventConsoleOpen}
+          onToggleCollapse={() => setEventConsoleOpen(!eventConsoleOpen)}
+        />
+      </div>
 
       {/* Fullscreen Mode - 2D content fills screen */}
       {fullscreenMode ? (
