@@ -205,6 +205,7 @@ export interface ItemFSM {
 // A single Thing/Item in the scene
 export interface TossItem {
   id: string;
+  label?: string;          // Human-readable display name
   component: string;       // e.g., "plain_button", "mesh_glyph"
   props: Record<string, any>;
   

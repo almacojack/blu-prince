@@ -426,7 +426,7 @@ function TreeNode({
 }
 
 export function SceneTree({
-  items,
+  items = [],
   selectedItemId,
   onSelectItem,
   onRenameItem,
