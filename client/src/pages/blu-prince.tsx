@@ -39,6 +39,7 @@ import { SoundboardPanel } from "@/components/SoundboardPanel";
 import { playRetroSound } from "@/lib/retro-sounds";
 import type { SoundboardConfig } from "@/lib/toss";
 import bluPrinceLogo from "@assets/generated_images/jeweled_blue_deity_walnut_bg.png";
+import { EditorNav } from "@/components/EditorNav";
 
 const STORAGE_KEY = "blu-prince-cartridge";
 
@@ -1059,6 +1060,11 @@ export default function BluPrince() {
 
   return (
     <div className="flex flex-col h-screen bg-[#09090b] text-foreground overflow-hidden font-sans">
+      {/* Hamburger Navigation - fixed position */}
+      <div className="absolute top-3 left-3 z-[60]">
+        <EditorNav />
+      </div>
+      
       <CartridgeBezel 
         title={file.manifest.meta.title}
         version={file.manifest.meta.version}

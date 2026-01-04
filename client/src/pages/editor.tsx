@@ -48,6 +48,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useCollaboration, type CollabUser } from "@/hooks/use-collaboration";
 import { useAuth } from "@/hooks/use-auth";
+import { EditorNav } from "@/components/EditorNav";
 // FSM 3D visualization is rendered inline with position hints
 // Full 3D editor would need dedicated Canvas - deferred to avoid WebGL context issues
 
@@ -2600,11 +2601,7 @@ export default function BluPrinceEditor() {
       {/* Top Bar */}
       <header className="absolute top-0 left-0 right-0 z-50 h-14 flex items-center justify-between px-4 bg-black/40 backdrop-blur border-b border-white/10">
         <div className="flex items-center gap-4">
-          <Link href="/">
-            <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground">
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-          </Link>
+          <EditorNav />
           <Separator orientation="vertical" className="h-6" />
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-primary rounded flex items-center justify-center">
