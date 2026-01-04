@@ -11,11 +11,13 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Play, RefreshCw, Zap, Maximize2, Minimize2, Terminal, ChevronUp, ChevronDown, Plus, X, Package, Gamepad2, FlaskConical, Timer, Wifi, Thermometer, Mouse, Send, Sparkles } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft, Play, RefreshCw, Zap, Maximize2, Minimize2, Terminal, ChevronUp, ChevronDown, Plus, X, Package, Gamepad2, FlaskConical, Timer, Wifi, Thermometer, Mouse, Send, Sparkles, Eye, Activity, Layers } from "lucide-react";
 import { EventConsole } from "@/components/EventConsole";
 import { VirtualHandheld } from "@/components/VirtualHandheld";
 import { GamepadInput } from "@/hooks/use-gamepad";
 import { useSearch } from "wouter";
+import { SimulatorPreview } from "@/components/SimulatorPreview";
 
 import todoCartridge from "@/lib/toss-examples/todo-app.toss.json";
 import journalCartridge from "@/lib/toss-examples/journal.toss.json";
@@ -1169,18 +1171,32 @@ export default function RuntimeSimulator() {
         />
       </div>
 
-      {/* Fullscreen Mode - 2D content fills screen */}
+      {/* Fullscreen Mode - Tabbed simulator with Preview/State/Timeline */}
       {fullscreenMode ? (
         <div className="absolute inset-0 top-14 flex flex-col">
           <div className="flex-1 overflow-hidden">
-            <FullscreenContent engineState={engineState} cartridge={selectedCartridge} onButtonPress={handleButtonPress} />
+            <SimulatorPreview 
+              cartridge={selectedCartridge}
+              currentState={engineState?.currentStateId || 'idle'}
+              context={engineState?.context || {}}
+              onStateChange={(state) => engine?.send(`STATE_${state}`)}
+            />
           </div>
           <CliPanel isOpen={cliOpen} onToggle={() => setCliOpen(!cliOpen)} />
         </div>
       ) : (
         /* Device Mode - 3D handheld mockup */
         <>
-          <Canvas shadows camera={{ position: [0, 0, 10], fov: 45 }}>
+          <Canvas 
+            shadows 
+            camera={{ position: [0, 0, 10], fov: 45 }}
+            gl={{ 
+              antialias: true, 
+              powerPreference: "high-performance",
+              failIfMajorPerformanceCaveat: false
+            }}
+            frameloop="demand"
+          >
             <color attach="background" args={['#050505']} />
             <fog attach="fog" args={['#050505', 10, 20]} />
             

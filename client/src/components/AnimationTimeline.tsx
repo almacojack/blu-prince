@@ -9,6 +9,7 @@ import {
   Circle,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Diamond,
   Layers,
   Volume2,
@@ -25,12 +26,15 @@ import {
   ZoomIn,
   ZoomOut,
   Repeat,
+  Wand2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { ANIMATION_PATTERNS, PRINCIPLE_NAMES, AnimationPattern } from "@/lib/animation-patterns";
 
 export type KeyframeType = "transform" | "audio" | "text" | "effect" | "event";
 
@@ -545,6 +549,54 @@ export function AnimationTimeline({
 
           <div className="w-px h-4 bg-zinc-700 mx-1" />
 
+          <PatternLibraryDropdown onApplyPattern={(pattern: AnimationPattern) => {
+            const validEasings: Keyframe['easing'][] = ['linear', 'ease-in', 'ease-out', 'ease-in-out', 'spring'];
+            const easingMap: Record<string, Keyframe['easing']> = {
+              'linear': 'linear',
+              'ease-in': 'ease-in',
+              'ease-out': 'ease-out',
+              'ease-in-out': 'ease-in-out',
+              'bounce': 'ease-out',
+              'elastic': 'ease-in-out',
+              'back': 'ease-out',
+              'anticipate': 'ease-in',
+            };
+            
+            const timestamp = Date.now();
+            const newKeyframes: Keyframe[] = pattern.keyframes.map((kf, i) => {
+              const mappedEasing = easingMap[kf.easing || 'linear'] || 'linear';
+              return {
+                id: `${pattern.id}-${timestamp}-kf-${i}`,
+                time: kf.time,
+                type: 'transform' as KeyframeType,
+                label: `${pattern.name} #${i + 1}`,
+                value: {
+                  position: kf.position || [0, 0, 0],
+                  rotation: kf.rotation || [0, 0, 0],
+                  scale: kf.scale || [1, 1, 1],
+                },
+                easing: validEasings.includes(mappedEasing) ? mappedEasing : 'linear',
+              };
+            });
+            
+            const transformTrack = tracks.find(t => t.type === 'transform');
+            if (transformTrack) {
+              onTrackUpdate(transformTrack.id, { 
+                keyframes: newKeyframes,
+                name: pattern.name 
+              });
+            } else if (tracks.length > 0) {
+              onTrackUpdate(tracks[0].id, { 
+                keyframes: newKeyframes,
+                name: pattern.name 
+              });
+            } else {
+              onAddTrack('transform');
+            }
+          }} />
+
+          <div className="w-px h-4 bg-zinc-700 mx-1" />
+
           <Button
             variant="outline"
             size="sm"
@@ -607,6 +659,61 @@ export function AnimationTimeline({
           )}
         </AnimatePresence>
       </div>
+    </div>
+  );
+}
+
+function PatternLibraryDropdown({ onApplyPattern }: { onApplyPattern: (pattern: AnimationPattern) => void }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="relative">
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant={open ? "default" : "ghost"}
+              size="sm"
+              className={cn("h-6 text-[10px] gap-1", open ? "bg-purple-600" : "text-purple-400")}
+              onClick={() => setOpen(!open)}
+              data-testid="pattern-library-toggle"
+            >
+              <Wand2 className="w-3 h-3" />
+              Patterns
+              <ChevronDown className={cn("w-3 h-3 transition-transform", open && "rotate-180")} />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent className="bg-zinc-900 border-zinc-700 text-xs">
+            12 Principles of Animation Presets
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+
+      {open && (
+        <div className="absolute top-8 right-0 z-50 w-80 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl p-2">
+          <div className="text-[10px] text-zinc-400 uppercase tracking-wider mb-2 px-2">
+            ✨ One-Click Animation Presets
+          </div>
+          <ScrollArea className="h-48">
+            <div className="grid grid-cols-2 gap-1 pr-2">
+              {ANIMATION_PATTERNS.map(pattern => (
+                <button
+                  key={pattern.id}
+                  className="p-2 rounded text-left transition-all hover:bg-zinc-800 border border-transparent hover:border-zinc-600"
+                  style={{ borderLeftColor: pattern.color, borderLeftWidth: 3 }}
+                  onClick={() => { onApplyPattern(pattern); setOpen(false); }}
+                  data-testid={`apply-pattern-${pattern.id}`}
+                >
+                  <div className="text-xs font-medium text-white truncate">{pattern.name}</div>
+                  <div className="text-[9px] text-zinc-500 truncate">
+                    {PRINCIPLE_NAMES[pattern.principle]}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </ScrollArea>
+        </div>
+      )}
     </div>
   );
 }

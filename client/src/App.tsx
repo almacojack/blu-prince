@@ -96,7 +96,7 @@ function GlobalFlightControls() {
 }
 
 // Routes that should take full viewport (no nav padding, no background)
-const FULLSCREEN_ROUTES = ['/editor', '/blu-prince', '/statechart'];
+const FULLSCREEN_ROUTES = ['/editor', '/blu-prince', '/statechart', '/runtime'];
 
 function ConditionalBackground() {
   const [location] = useLocation();

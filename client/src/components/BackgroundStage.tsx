@@ -1,4 +1,4 @@
-import { useRef, useMemo } from "react";
+import { useRef, useMemo, useEffect } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { 
   Float, 
@@ -312,9 +312,24 @@ function SceneContent({ themeVariant }: { themeVariant: 'cyberpunk' | 'victorian
 }
 
 function BackgroundStageInner({ themeVariant }: { themeVariant: 'cyberpunk' | 'victorian' }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  
+  useEffect(() => {
+    return () => {
+      if (canvasRef.current) {
+        const gl = canvasRef.current.getContext('webgl2') || canvasRef.current.getContext('webgl');
+        if (gl) {
+          const ext = gl.getExtension('WEBGL_lose_context');
+          if (ext) ext.loseContext();
+        }
+      }
+    };
+  }, []);
+
   return (
     <div className="fixed inset-0 z-0" data-testid="background-stage">
       <Canvas
+        ref={canvasRef}
         camera={{ 
           position: [0, 0.5, 6], 
           fov: 60,
@@ -324,9 +339,14 @@ function BackgroundStageInner({ themeVariant }: { themeVariant: 'cyberpunk' | 'v
         gl={{ 
           antialias: true,
           alpha: false,
-          powerPreference: "high-performance"
+          powerPreference: "high-performance",
+          failIfMajorPerformanceCaveat: false
         }}
         dpr={[1, 1.5]}
+        onCreated={({ gl }) => {
+          gl.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+        }}
+        frameloop="demand"
       >
         <SceneContent themeVariant={themeVariant} />
       </Canvas>

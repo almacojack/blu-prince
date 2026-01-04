@@ -213,7 +213,7 @@ export function NeonPathNav({
                   ? "font-serif italic text-amber-300/70" 
                   : "font-mono text-cyan-400/60"
               )}>
-                the little engine that could
+                {isVictorian ? "design • animate • deploy" : "cartridges for everything"}
               </span>
             </div>
           </motion.div>

@@ -38,7 +38,7 @@ import { WolfensteinHealth } from "@/components/WolfensteinHealth";
 import { SoundboardPanel } from "@/components/SoundboardPanel";
 import { playRetroSound } from "@/lib/retro-sounds";
 import type { SoundboardConfig } from "@/lib/toss";
-import bluPrinceLogo from "@assets/generated_images/jeweled_blue_deity_walnut_bg.png";
+import bluPrinceLogo from "@assets/generated_images/blu-prince_geometric_compass-pencil_logo.png";
 import { EditorNav } from "@/components/EditorNav";
 
 const STORAGE_KEY = "blu-prince-cartridge";
