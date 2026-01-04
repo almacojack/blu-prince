@@ -63,6 +63,10 @@ Preferred communication style: Simple, everyday language.
 - **Revenue Calculator Page** - Interactive `/revenue` page with sliders for creator, platform operator, and educator revenue projections. "Seeing is believing" for stakeholders
 - **Shark Tank Pitch Scenario** - Fictional but realistic pitch narrative showing key angles, metrics, and negotiation strategies that would impress investors
 - **Launch Strategy Titles** - Complete 22+ cartridge launch lineup with ratings, pricing, and new concepts (Lost: GPS, Journal ecosystem, Kanban Flow, Demolition Bot, blu-jeans, Product Configurator)
+- **Hardware Workshop** - Blu-Prince as inventor's playground: design → prototype → sell → manufacture loop. Magnetic desk systems, modular sensor controls, Solder Party keyboard partnership
+- **TOSS v1.1 Multi-Statechart** - Multiple FSMs per cartridge with event bus coordination. Roles: ui, physics, network, logic
+- **Physics Forces Expansion** - magnet_attract, magnet_repel, spring_joint, hinge_joint, damper for interactive product configurators
+- **Hardware Cartridge Profiles** - Manufacturing data (STL, BOM, assembly notes), firmware targets (ESP32, RP2040), packaging specs
 
 ## System Architecture
 

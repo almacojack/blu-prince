@@ -459,6 +459,163 @@ statusState.subscribe('sync', (sync) => {
 
 ---
 
-*Document Version: 1.1*
+## HARDWARE WORKSHOP: THE INVENTOR'S PLAYGROUND
+
+### The Vision
+
+Blu-Prince is not just a design tool—it's the **canvas where physical products are born**. Products designed in Blu-Prince can be:
+1. **Prototyped** - 3D print directly from the editor
+2. **Demonstrated** - Interactive physics simulation for sales
+3. **Sold** - The same 3D model becomes the shopping experience
+4. **Manufactured** - Export to CNC, laser cutter, robotic arm
+
+### Physical Products in Development
+
+| Product | Description | Status |
+|---------|-------------|--------|
+| **Gameboy-like Handheld** | Custom Linux handheld running TingOS | In development |
+| **Modular Sensor Controls** | Magnetic-bonding input modules | Prototyping |
+| **Keyboard Clamp** | Seats mini keyboard on handhelds | Design phase |
+| **Magnetic Desk System** | Flexible arms + magnetic bases for metal desks | Conceptual |
+| **Cup Holder Mount** | Fits cup holders, holds phones/devices | Conceptual |
+
+### Partnership Target: Solder Party (Sweden)
+
+- Professional keyboard designer
+- Makes excellent small form-factor keyboards
+- Potential collaboration on keyboard clamp accessory
+
+### Product Configurator: Touch-and-Feel Physics
+
+The killer feature: **customers can FEEL the product before buying.**
+
+**New Physics Forces:**
+| Force Type | Behavior | Use Case |
+|------------|----------|----------|
+| `magnet_attract` | Pulls toward magnetic surfaces | Magnetic bases gripping desk |
+| `magnet_repel` | Pushes away from like poles | Snap-together orientation |
+| `spring_joint` | Elastic force when stretched/compressed | Flexible arms, tensioned mounts |
+| `hinge_joint` | Rotates around axis with limits | Folding stands, adjustable arms |
+| `damper` | Resists motion smoothly | Smooth rotation, premium feel |
+
+**Interactive Shopping Experience:**
+1. **Rotate** - Spin product with mouse/touch/gamepad
+2. **Pull** - Stretch springs, feel tension feedback
+3. **Snap** - Magnetic surfaces attract and lock
+4. **Fold** - Hinges rotate with physics
+5. **Drop** - See how it lands, test stability
+6. **Mount** - Place on virtual desk surface
+
+```typescript
+// Example: Magnetic desk arm in Product Configurator
+const magneticArm = {
+  base: {
+    forces: [
+      { type: 'magnet_attract', target: 'metal_surface', strength: 50 }
+    ]
+  },
+  arm: {
+    joints: [
+      { type: 'hinge_joint', axis: 'y', limits: [-45, 45] }
+    ]
+  },
+  deviceMount: {
+    forces: [
+      { type: 'spring_joint', stiffness: 100, damping: 0.3 }
+    ]
+  }
+};
+```
+
+### Why This Sells
+
+1. **See the magnet snap** - Watch the base grip the desk
+2. **Feel the spring tension** - Drag the arm, see it bounce back
+3. **Test stability** - Drop a virtual phone in the holder
+4. **Customize options** - Pick colors, arm lengths, accessories
+5. **Instant confidence** - "I know exactly what I'm buying"
+
+**Traditional e-commerce:** Static photos, trust the description
+**Blu-Prince commerce:** Physics simulation, experience before purchase
+
+### Multiple Statecharts Per Cart
+
+**TOSS v1.1 Schema Update:**
+
+Products with complex behavior need multiple coordinated state machines:
+
+```typescript
+interface TOSSv1_1 {
+  version: '1.1';
+  manifest: {...};
+  
+  // NEW: Multiple named statecharts
+  statecharts: {
+    [chartId: string]: {
+      role: 'ui' | 'physics' | 'network' | 'logic' | 'custom';
+      fsm: FSMDefinition;
+      context: Record<string, any>;
+    }
+  };
+  
+  // Event bus for cross-chart communication
+  eventBus: {
+    channels: string[];
+    subscriptions: { chartId: string; channel: string; event: string }[];
+  };
+  
+  // Backward compat: legacy single FSM still works
+  fsm?: FSMDefinition;
+}
+```
+
+**Example: Magnetic Desk Arm Cart**
+- `ui` chart: Controls what screen shows (product view, checkout, customization)
+- `physics` chart: Manages force states (gripping, releasing, bouncing)
+- `config` chart: Tracks user selections (color, size, accessories)
+
+All three coordinate via event bus without coupling.
+
+### Hardware Cartridge Profile
+
+For physical products, carts include manufacturing data:
+
+```typescript
+interface HardwareProfile {
+  productId: string;
+  manufacturingData: {
+    stlFiles: Asset3D[];
+    bomItems: { partNumber: string; quantity: number }[];
+    assemblyNotes: string;
+  };
+  firmwareTarget?: {
+    mcu: 'esp32' | 'rp2040' | 'stm32';
+    radioStack?: 'lora' | 'ble' | 'wifi';
+    calibration: Record<string, number>;
+  };
+  packaging: {
+    boxDimensions: [number, number, number];
+    weight: number;
+    shippingClass: 'standard' | 'oversized' | 'fragile';
+  };
+}
+```
+
+### The Full Loop
+
+1. **Invent** in Blu-Prince (3D + physics + statecharts)
+2. **Prototype** via 3D print export
+3. **Iterate** with physics simulation
+4. **Sell** using interactive configurator
+5. **Manufacture** with exported BOM and STL
+6. **Ship** hardware cart with firmware pre-loaded
+7. **Support** via software cart updates
+
+**Blu-Prince is the inventor's playground.** Every product you imagine can be simulated, sold, and shipped—from the same source of truth.
+
+---
+
+*Document Version: 1.2*
 *Last Updated: January 2026*
 *Added: Blossom Squared, Offline Queue, LoRa Communicator, StatusState spec*
+*Added: Hardware Workshop, Multi-Statechart support, Physics forces, Product Configurator touch-and-feel*
