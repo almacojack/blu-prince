@@ -1841,13 +1841,13 @@ export default function BluPrince() {
                 const isEditing = editingStateName === node.id;
                 return (
                   <motion.div
-                    key={node.id}
+                    key={`${node.id}-${node.x}-${node.y}`}
                     drag
                     dragMomentum={false}
                     dragElastic={0}
                     onDragEnd={(_, info) => handleNodeDragEnd(node.id, info)}
-                    initial={{ scale: 0, opacity: 0, x: 0, y: 0 }}
-                    animate={{ scale: 1, opacity: 1, x: 0, y: 0 }}
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
                     whileHover={{ scale: 1.02 }}
                     whileDrag={{ scale: 1.05, zIndex: 100 }}
                     transition={{ scale: { type: "spring", stiffness: 300, damping: 20 }, opacity: { duration: 0.2 } }}
