@@ -107,32 +107,6 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-3">
-              <Link href="/editor">
-                <Button size="lg" className="min-h-11 bg-secondary hover:bg-secondary/90 text-black font-mono cursor-pointer border-2 border-transparent hover:border-white/20 transition-all touch-manipulation" data-testid="button-open-editor">
-                  <Hexagon className="mr-2 h-4 w-4" />
-                  BLU-PRINCE EDITOR
-                </Button>
-              </Link>
-              <Link href="/runtime">
-                <Button size="lg" className="min-h-11 bg-primary/10 hover:bg-primary/20 text-primary font-mono cursor-pointer border border-primary/50 touch-manipulation" data-testid="button-launch-simulator">
-                  <Terminal className="mr-2 h-4 w-4" />
-                  SIMULATOR
-                </Button>
-              </Link>
-              <Link href="/playground">
-                <Button size="lg" className="min-h-11 bg-[#7fff00] hover:bg-[#9fff33] text-black font-mono cursor-pointer border-2 border-[#7fff00] hover:border-white/40 transition-all touch-manipulation shadow-[0_0_20px_#7fff00aa] hover:shadow-[0_0_30px_#7fff00cc]" data-testid="button-playground">
-                  <Play className="mr-2 h-4 w-4" />
-                  PLAYGROUND
-                </Button>
-              </Link>
-              <Link href="/widgets">
-                <Button size="lg" className="min-h-11 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-mono cursor-pointer border-2 border-purple-400/50 hover:border-white/40 transition-all touch-manipulation shadow-[0_0_20px_rgba(168,85,247,0.5)] hover:shadow-[0_0_30px_rgba(168,85,247,0.7)]" data-testid="button-components-showcase">
-                  <Layers className="mr-2 h-4 w-4" />
-                  COMPONENTS SHOWCASE
-                </Button>
-              </Link>
-            </div>
           </motion.div>
 
           <motion.div 
@@ -144,6 +118,86 @@ export default function Home() {
             <HeroCarousel />
           </motion.div>
         </div>
+
+        {/* Navigation Dock - Polished horizontal bar below carousel */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="mt-8"
+        >
+          <div className="relative mx-auto max-w-4xl">
+            {/* Glow effect behind */}
+            <div className="absolute inset-0 bg-gradient-to-r from-secondary/20 via-primary/20 to-purple-500/20 blur-2xl opacity-60" />
+            
+            {/* The dock itself */}
+            <div className="relative bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl p-2 shadow-2xl">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <Link href="/editor">
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="group relative flex flex-col items-center justify-center p-4 sm:p-5 rounded-xl bg-gradient-to-br from-secondary/20 to-secondary/5 border border-secondary/30 hover:border-secondary hover:bg-secondary/30 transition-all cursor-pointer overflow-hidden"
+                    data-testid="button-open-editor"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-t from-secondary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <Hexagon className="w-6 h-6 sm:w-7 sm:h-7 text-secondary mb-2 relative z-10 group-hover:scale-110 transition-transform" />
+                    <span className="text-[10px] sm:text-xs font-mono font-bold text-secondary/90 group-hover:text-secondary relative z-10 text-center leading-tight">
+                      BLU-PRINCE
+                      <span className="hidden sm:inline"> EDITOR</span>
+                    </span>
+                  </motion.div>
+                </Link>
+
+                <Link href="/runtime">
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="group relative flex flex-col items-center justify-center p-4 sm:p-5 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 hover:border-primary hover:bg-primary/30 transition-all cursor-pointer overflow-hidden"
+                    data-testid="button-launch-simulator"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-t from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <Terminal className="w-6 h-6 sm:w-7 sm:h-7 text-primary mb-2 relative z-10 group-hover:scale-110 transition-transform" />
+                    <span className="text-[10px] sm:text-xs font-mono font-bold text-primary/90 group-hover:text-primary relative z-10">
+                      SIMULATOR
+                    </span>
+                  </motion.div>
+                </Link>
+
+                <Link href="/playground">
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="group relative flex flex-col items-center justify-center p-4 sm:p-5 rounded-xl bg-gradient-to-br from-[#7fff00]/20 to-[#7fff00]/5 border border-[#7fff00]/30 hover:border-[#7fff00] hover:bg-[#7fff00]/30 transition-all cursor-pointer overflow-hidden"
+                    data-testid="button-playground"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#7fff00]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <Play className="w-6 h-6 sm:w-7 sm:h-7 text-[#7fff00] mb-2 relative z-10 group-hover:scale-110 transition-transform" />
+                    <span className="text-[10px] sm:text-xs font-mono font-bold text-[#7fff00]/90 group-hover:text-[#7fff00] relative z-10">
+                      PLAYGROUND
+                    </span>
+                  </motion.div>
+                </Link>
+
+                <Link href="/widgets">
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="group relative flex flex-col items-center justify-center p-4 sm:p-5 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/10 border border-purple-400/30 hover:border-purple-400 hover:bg-purple-500/30 transition-all cursor-pointer overflow-hidden"
+                    data-testid="button-components-showcase"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-t from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <Layers className="w-6 h-6 sm:w-7 sm:h-7 text-purple-400 mb-2 relative z-10 group-hover:scale-110 transition-transform" />
+                    <span className="text-[10px] sm:text-xs font-mono font-bold text-purple-400/90 group-hover:text-purple-400 relative z-10 text-center leading-tight">
+                      <span className="sm:hidden">WIDGETS</span>
+                      <span className="hidden sm:inline">COMPONENTS</span>
+                    </span>
+                  </motion.div>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </motion.div>
       </section>
 
       {/* Core Pillars - Comic Book Style Forces */}
