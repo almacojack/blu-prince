@@ -20,9 +20,8 @@ import {
   Hexagon,
   Cylinder,
   Triangle,
-  Cog,
-  Droplets,
-  Sparkles,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -32,23 +31,38 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import type { TossItem, Bounds } from "@/lib/toss-v1";
 
-export interface SceneDecoration {
-  id: string;
-  label: string;
-  type: 'gear' | 'water' | 'effect' | 'environment';
-  visible?: boolean;
+// v1.1: Scene-level FSM info for display
+export interface SceneFsmInfo {
+  currentState: string;
+  hasStates: boolean;
+}
+
+// v1.1: Mesh FSM indicator
+export interface MeshFsmInfo {
+  meshId: string;
+  hasStatechart: boolean;
+  currentState?: string;
 }
 
 interface SceneTreeProps {
-  items: TossItem[];
+  items: TossItem[];                           // v1.1: These are meshes
   selectedItemId: string | null;
   onSelectItem: (id: string) => void;
   onRenameItem?: (id: string, newLabel: string) => void;
   onDeleteItem?: (id: string) => void;
   onReorderItems?: (itemIds: string[]) => void;
-  decorations?: SceneDecoration[];
-  onToggleDecorationVisibility?: (id: string) => void;
   hiddenItemIds?: Set<string>;
+  // v1.1: FSM-related props
+  sceneFsmInfo?: SceneFsmInfo;
+  meshFsmInfos?: Map<string, MeshFsmInfo>;
+  onEditSceneFsm?: () => void;
+  onEditMeshFsm?: (meshId: string) => void;
+  // Viewport culling
+  visibleInViewportIds?: Set<string>;
+  onHideOutsideViewChange?: (hide: boolean) => void;
+  hideOutsideView?: boolean;
+  // Generic object interaction
+  onObjectClick?: (objectId: string, objectType: 'mesh' | 'light' | 'camera') => void;
 }
 
 type DragItemType = "item" | "light" | "camera";
@@ -440,19 +454,31 @@ function TreeNode({
   );
 }
 
-function getDecorationIcon(type: SceneDecoration['type']) {
-  switch (type) {
-    case 'gear':
-      return <Cog className="w-4 h-4 text-amber-400" />;
-    case 'water':
-      return <Droplets className="w-4 h-4 text-blue-400" />;
-    case 'effect':
-      return <Sparkles className="w-4 h-4 text-purple-400" />;
-    case 'environment':
-      return <Sun className="w-4 h-4 text-orange-400" />;
-    default:
-      return <Box className="w-4 h-4 text-zinc-400" />;
+// v1.1: FSM indicator component
+function FsmBadge({ hasFsm, currentState, onClick, meshId }: { hasFsm: boolean; currentState?: string; onClick?: () => void; meshId?: string }) {
+  const testIdSuffix = meshId ? `-${meshId}` : '-scene';
+  if (!hasFsm) {
+    return (
+      <button
+        onClick={(e) => { e.stopPropagation(); onClick?.(); }}
+        className="text-[8px] px-1 py-0.5 rounded bg-zinc-700/50 text-zinc-500 font-mono hover:bg-cyan-500/20 hover:text-cyan-400 transition-colors"
+        title="Add FSM"
+        data-testid={`button-add-fsm${testIdSuffix}`}
+      >
+        +FSM
+      </button>
+    );
   }
+  return (
+    <button
+      onClick={(e) => { e.stopPropagation(); onClick?.(); }}
+      className="text-[8px] px-1 py-0.5 rounded bg-green-500/20 text-green-400 font-mono hover:bg-green-500/30 transition-colors"
+      title="Edit FSM"
+      data-testid={`button-edit-fsm${testIdSuffix}`}
+    >
+      {currentState || 'FSM'}
+    </button>
+  );
 }
 
 export function SceneTree({
@@ -462,18 +488,30 @@ export function SceneTree({
   onRenameItem,
   onDeleteItem,
   onReorderItems,
-  decorations = [],
-  onToggleDecorationVisibility,
   hiddenItemIds = new Set(),
+  sceneFsmInfo,
+  meshFsmInfos,
+  onEditSceneFsm,
+  onEditMeshFsm,
+  visibleInViewportIds,
+  onHideOutsideViewChange,
+  hideOutsideView = false,
+  onObjectClick,
 }: SceneTreeProps) {
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
   const [hideInvisibleItems, setHideInvisibleItems] = useState(false);
   
-  const visibleItems = hideInvisibleItems 
-    ? items.filter(item => !hiddenItemIds.has(item.id))
-    : items;
+  // Filter items based on visibility settings
+  const visibleItems = items.filter(item => {
+    // Filter out manually hidden items if setting is enabled
+    if (hideInvisibleItems && hiddenItemIds.has(item.id)) return false;
+    // Filter out items outside viewport if setting is enabled
+    // Only apply filter when both hideOutsideView is true AND visibleInViewportIds is provided
+    if (hideOutsideView && visibleInViewportIds && visibleInViewportIds.size > 0 && !visibleInViewportIds.has(item.id)) return false;
+    return true;
+  });
 
   const handleItemRename = useCallback(
     (id: string, newName: string) => {
@@ -518,39 +556,87 @@ export function SceneTree({
   return (
     <ScrollArea className="h-full">
       <div className="p-2 space-y-1">
-        {/* Filter checkbox */}
-        <div className="flex items-center gap-2 px-2 py-1.5 rounded bg-zinc-800/50 border border-zinc-700/50 mb-2">
-          <Checkbox 
-            id="hide-invisible"
-            checked={hideInvisibleItems}
-            onCheckedChange={(checked) => setHideInvisibleItems(checked === true)}
-            className="h-3.5 w-3.5"
-            data-testid="checkbox-hide-invisible"
-          />
-          <Label 
-            htmlFor="hide-invisible" 
-            className="text-[10px] text-zinc-400 cursor-pointer select-none"
+        {/* Filter controls */}
+        <div className="space-y-1 mb-2">
+          {/* Hide outside view toggle - prominent at top */}
+          <button
+            onClick={() => onHideOutsideViewChange?.(!hideOutsideView)}
+            className={cn(
+              "w-full flex items-center gap-2 px-2 py-1.5 rounded border transition-colors",
+              hideOutsideView 
+                ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-400" 
+                : "bg-zinc-800/50 border-zinc-700/50 text-zinc-400 hover:bg-zinc-700/50"
+            )}
+            data-testid="button-hide-outside-view"
           >
-            Hide invisible items
-          </Label>
-          {hideInvisibleItems && hiddenItemIds.size > 0 && (
-            <span className="text-[9px] text-amber-400 ml-auto">
-              {hiddenItemIds.size} hidden
+            {hideOutsideView ? (
+              <EyeOff className="w-3.5 h-3.5" />
+            ) : (
+              <Eye className="w-3.5 h-3.5" />
+            )}
+            <span className="text-[10px] font-medium select-none">
+              {hideOutsideView ? 'Showing only visible' : 'Hide outside view'}
             </span>
-          )}
+            {hideOutsideView && visibleInViewportIds && (
+              <span className="text-[9px] ml-auto opacity-70">
+                {visibleInViewportIds.size}/{items.length}
+              </span>
+            )}
+          </button>
+
+          {/* Hide invisible items checkbox */}
+          <div className="flex items-center gap-2 px-2 py-1 rounded bg-zinc-800/30 border border-zinc-700/30">
+            <Checkbox 
+              id="hide-invisible"
+              checked={hideInvisibleItems}
+              onCheckedChange={(checked) => setHideInvisibleItems(checked === true)}
+              className="h-3 w-3"
+              data-testid="checkbox-hide-invisible"
+            />
+            <Label 
+              htmlFor="hide-invisible" 
+              className="text-[9px] text-zinc-500 cursor-pointer select-none"
+            >
+              Hide manually hidden
+            </Label>
+            {hideInvisibleItems && hiddenItemIds.size > 0 && (
+              <span className="text-[8px] text-amber-400 ml-auto">
+                {hiddenItemIds.size}
+              </span>
+            )}
+          </div>
         </div>
 
+        {/* v1.1: Scene FSM at the root level */}
         <TreeNode
-          icon={<Layers3 className="w-4 h-4 text-cyan-400" />}
-          label="Scene Objects"
+          icon={<FileCode className="w-4 h-4 text-purple-400" />}
+          label="Scene"
           expandable
           defaultExpanded
+          onClick={onEditSceneFsm}
           badge={
-            <span className="text-[10px] text-zinc-500 font-mono">
-              {visibleItems.length}{hideInvisibleItems && items.length !== visibleItems.length ? `/${items.length}` : ''}
-            </span>
+            sceneFsmInfo ? (
+              <FsmBadge 
+                hasFsm={sceneFsmInfo.hasStates} 
+                currentState={sceneFsmInfo.currentState} 
+                onClick={onEditSceneFsm}
+              />
+            ) : undefined
           }
         >
+          {/* Meshes (formerly "Scene Objects") */}
+          <TreeNode
+            icon={<Layers3 className="w-4 h-4 text-cyan-400" />}
+            label="Meshes"
+            expandable
+            defaultExpanded
+            depth={1}
+            badge={
+              <span className="text-[10px] text-zinc-500 font-mono">
+                {visibleItems.length}{hideInvisibleItems && items.length !== visibleItems.length ? `/${items.length}` : ''}
+              </span>
+            }
+          >
           {visibleItems.length === 0 ? (
             <div className="px-4 py-3 text-center text-zinc-500 text-[10px]">
               {hideInvisibleItems && items.length > 0 ? 'All items hidden' : 'No objects in scene'}
@@ -565,9 +651,12 @@ export function SceneTree({
                 itemType="item"
                 index={index}
                 selected={selectedItemId === item.id}
-                depth={1}
+                depth={2}
                 isEditing={editingItemId === item.id}
-                onSelect={() => onSelectItem(item.id)}
+                onSelect={() => {
+                  onSelectItem(item.id);
+                  onObjectClick?.(item.id, 'mesh');
+                }}
                 onStartEdit={onRenameItem ? () => setEditingItemId(item.id) : undefined}
                 onRename={(newName) => handleItemRename(item.id, newName)}
                 onCancelEdit={() => setEditingItemId(null)}
@@ -579,126 +668,111 @@ export function SceneTree({
                 onDragEnd={handleDragEnd}
                 onDrop={handleItemDrop}
                 badge={
-                  <span 
-                    className="text-[8px] px-1 py-0.5 rounded font-mono uppercase"
-                    style={{
-                      backgroundColor: `${item.material?.color || '#666'}20`,
-                      color: item.material?.color || '#888',
-                    }}
-                  >
-                    {item.bounds?.type || 'mesh'}
-                  </span>
+                  <div className="flex items-center gap-1">
+                    <span 
+                      className="text-[8px] px-1 py-0.5 rounded font-mono uppercase"
+                      style={{
+                        backgroundColor: `${item.material?.color || '#666'}20`,
+                        color: item.material?.color || '#888',
+                      }}
+                    >
+                      {item.bounds?.type || 'mesh'}
+                    </span>
+                    {/* v1.1: FSM badge for each mesh */}
+                    <FsmBadge 
+                      hasFsm={meshFsmInfos?.get(item.id)?.hasStatechart ?? false}
+                      currentState={meshFsmInfos?.get(item.id)?.currentState}
+                      onClick={() => onEditMeshFsm?.(item.id)}
+                      meshId={item.id}
+                    />
+                  </div>
                 }
               />
             ))
           )}
-        </TreeNode>
+          </TreeNode>
 
-        <TreeNode
-          icon={<Lightbulb className="w-4 h-4 text-yellow-300" />}
-          label="Lights"
-          expandable
-          defaultExpanded
-          badge={
-            <span className="text-[10px] text-zinc-500 font-mono">3</span>
-          }
-        >
+          {/* Lights nested under Scene */}
           <TreeNode
-            icon={<Sun className="w-3.5 h-3.5 text-amber-400" />}
-            label="Ambient Light"
-            depth={1}
-            badge={
-              <span className="text-[8px] px-1 py-0.5 rounded bg-amber-500/20 text-amber-400 font-mono">
-                0.1
-              </span>
-            }
-          />
-          <TreeNode
-            icon={<Lightbulb className="w-3.5 h-3.5 text-purple-400" />}
-            label="Point Light 1"
-            depth={1}
-            badge={
-              <span className="text-[8px] px-1 py-0.5 rounded bg-purple-500/20 text-purple-400 font-mono">
-                KEY
-              </span>
-            }
-          />
-          <TreeNode
-            icon={<Lightbulb className="w-3.5 h-3.5 text-pink-400" />}
-            label="Point Light 2"
-            depth={1}
-            badge={
-              <span className="text-[8px] px-1 py-0.5 rounded bg-pink-500/20 text-pink-400 font-mono">
-                FILL
-              </span>
-            }
-          />
-        </TreeNode>
-
-        <TreeNode
-          icon={<Camera className="w-4 h-4 text-blue-400" />}
-          label="Cameras"
-          expandable
-          defaultExpanded
-          badge={
-            <span className="text-[10px] text-zinc-500 font-mono">2</span>
-          }
-        >
-          <TreeNode
-            icon={<Video className="w-3.5 h-3.5 text-cyan-400" />}
-            label="Main Camera"
-            depth={1}
-            badge={
-              <span className="text-[8px] px-1 py-0.5 rounded bg-cyan-500/20 text-cyan-400 font-mono">
-                ACTIVE
-              </span>
-            }
-          />
-          <TreeNode
-            icon={<Camera className="w-3.5 h-3.5 text-gray-400" />}
-            label="Ortho Camera"
-            depth={1}
-            badge={
-              <span className="text-[8px] px-1 py-0.5 rounded bg-gray-500/20 text-gray-400 font-mono">
-                ORTHO
-              </span>
-            }
-          />
-        </TreeNode>
-
-        {decorations.length > 0 && (
-          <TreeNode
-            icon={<Cog className="w-4 h-4 text-amber-400" />}
-            label="Decorations"
+            icon={<Lightbulb className="w-4 h-4 text-yellow-300" />}
+            label="Lights"
             expandable
             defaultExpanded
+            depth={1}
             badge={
-              <span className="text-[10px] text-zinc-500 font-mono">{decorations.length}</span>
+              <span className="text-[10px] text-zinc-500 font-mono">3</span>
             }
           >
-            {decorations.map((decoration) => (
-              <TreeNode
-                key={decoration.id}
-                icon={getDecorationIcon(decoration.type)}
-                label={decoration.label}
-                depth={1}
-                onClick={() => onToggleDecorationVisibility?.(decoration.id)}
-                badge={
-                  <span 
-                    className={cn(
-                      "text-[8px] px-1 py-0.5 rounded font-mono uppercase",
-                      decoration.visible !== false 
-                        ? "bg-green-500/20 text-green-400"
-                        : "bg-zinc-500/20 text-zinc-400"
-                    )}
-                  >
-                    {decoration.visible !== false ? 'ON' : 'OFF'}
-                  </span>
-                }
-              />
-            ))}
+            <TreeNode
+              icon={<Sun className="w-3.5 h-3.5 text-amber-400" />}
+              label="Ambient Light"
+              depth={2}
+              onClick={() => onObjectClick?.('ambient-light', 'light')}
+              badge={
+                <span className="text-[8px] px-1 py-0.5 rounded bg-amber-500/20 text-amber-400 font-mono">
+                  0.1
+                </span>
+              }
+            />
+            <TreeNode
+              icon={<Lightbulb className="w-3.5 h-3.5 text-purple-400" />}
+              label="Point Light 1"
+              depth={2}
+              onClick={() => onObjectClick?.('point-light-1', 'light')}
+              badge={
+                <span className="text-[8px] px-1 py-0.5 rounded bg-purple-500/20 text-purple-400 font-mono">
+                  KEY
+                </span>
+              }
+            />
+            <TreeNode
+              icon={<Lightbulb className="w-3.5 h-3.5 text-pink-400" />}
+              label="Point Light 2"
+              depth={2}
+              onClick={() => onObjectClick?.('point-light-2', 'light')}
+              badge={
+                <span className="text-[8px] px-1 py-0.5 rounded bg-pink-500/20 text-pink-400 font-mono">
+                  FILL
+                </span>
+              }
+            />
           </TreeNode>
-        )}
+
+          {/* Cameras nested under Scene */}
+          <TreeNode
+            icon={<Camera className="w-4 h-4 text-blue-400" />}
+            label="Cameras"
+            expandable
+            defaultExpanded
+            depth={1}
+            badge={
+              <span className="text-[10px] text-zinc-500 font-mono">2</span>
+            }
+          >
+            <TreeNode
+              icon={<Video className="w-3.5 h-3.5 text-cyan-400" />}
+              label="Main Camera"
+              depth={2}
+              onClick={() => onObjectClick?.('main-camera', 'camera')}
+              badge={
+                <span className="text-[8px] px-1 py-0.5 rounded bg-cyan-500/20 text-cyan-400 font-mono">
+                  ACTIVE
+                </span>
+              }
+            />
+            <TreeNode
+              icon={<Camera className="w-3.5 h-3.5 text-gray-400" />}
+              label="Ortho Camera"
+              depth={2}
+              onClick={() => onObjectClick?.('ortho-camera', 'camera')}
+              badge={
+                <span className="text-[8px] px-1 py-0.5 rounded bg-gray-500/20 text-gray-400 font-mono">
+                  ORTHO
+                </span>
+              }
+            />
+          </TreeNode>
+        </TreeNode>
       </div>
     </ScrollArea>
   );

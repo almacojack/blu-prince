@@ -30,7 +30,7 @@ import { ControllerMappingsPanel } from "@/components/ControllerMappingsPanel";
 import { WaterContainer } from "@/components/WaterContainer";
 import { BrassGearAssembly } from "@/components/BrassGear";
 import { WaterControlPanel, createDefaultWaterContainer, type WaterContainerConfig } from "@/components/WaterControlPanel";
-import { SceneTree, SceneDecoration } from "@/components/SceneTree";
+import { SceneTree, SceneFsmInfo, MeshFsmInfo } from "@/components/SceneTree";
 import { ViewportAnglesPanel, ViewportAngle, CameraTarget, calculateCameraPositionForAngle } from "@/components/ViewportAnglesPanel";
 import { CameraControlPanel, CameraSettings, DEFAULT_CAMERA_SETTINGS } from "@/components/CameraControlPanel";
 import { createNewTossFile, TossFile } from "@/lib/toss";
@@ -1280,7 +1280,7 @@ function AssertionsPanel({ cartridge, onAddAssertion, onRemoveAssertion, testSta
                 data-testid="select-assertion-target"
               >
                 <option value="">Select target item</option>
-                {cartridge.items.map(item => (
+                {(cartridge.items || []).map(item => (
                   <option key={item.id} value={item.id}>
                     {item.id.split('_').slice(0, 2).join('_')}
                   </option>
@@ -1295,7 +1295,7 @@ function AssertionsPanel({ cartridge, onAddAssertion, onRemoveAssertion, testSta
                   data-testid="select-expected-state"
                 >
                   <option value="">Select expected state</option>
-                  {Object.keys(cartridge.items.find(i => i.id === newTargetId)?.fsm?.states || {}).map(s => (
+                  {Object.keys((cartridge.items || []).find(i => i.id === newTargetId)?.fsm?.states || {}).map(s => (
                     <option key={s} value={s}>{s}</option>
                   ))}
                 </select>
@@ -1687,7 +1687,7 @@ const runtimeStateMap = new Map<string, string>();
 // Initialize runtime states from initial FSM states
 function initializeRuntimeStates(cartridge: TossCartridge) {
   runtimeStateMap.clear();
-  cartridge.items.forEach(item => {
+  (cartridge.items || []).forEach(item => {
     if (item.fsm) {
       runtimeStateMap.set(item.id, item.fsm.initial);
     }
@@ -1696,7 +1696,7 @@ function initializeRuntimeStates(cartridge: TossCartridge) {
 
 // Transition an item's state based on an event
 function transitionState(itemId: string, event: string, cartridge: TossCartridge): string | null {
-  const item = cartridge.items.find(i => i.id === itemId);
+  const item = (cartridge.items || []).find(i => i.id === itemId);
   if (!item?.fsm) return null;
   
   const currentState = runtimeStateMap.get(itemId) || item.fsm.initial;
@@ -1713,7 +1713,7 @@ function transitionState(itemId: string, event: string, cartridge: TossCartridge
 
 // Get current runtime state for an item
 function getRuntimeState(itemId: string, cartridge: TossCartridge): string {
-  const item = cartridge.items.find(i => i.id === itemId);
+  const item = (cartridge.items || []).find(i => i.id === itemId);
   return runtimeStateMap.get(itemId) || item?.fsm?.initial || "idle";
 }
 
@@ -1744,7 +1744,7 @@ function runAssertions(cartridge: TossCartridge): { passed: boolean; results: Us
         
       case "value_equals":
         if (assertion.target_item_id && assertion.expected_value !== undefined) {
-          const item = cartridge.items.find(i => i.id === assertion.target_item_id);
+          const item = (cartridge.items || []).find(i => i.id === assertion.target_item_id);
           // Check against item props
           passed = item?.props?.value === assertion.expected_value;
         }
@@ -1754,7 +1754,7 @@ function runAssertions(cartridge: TossCartridge): { passed: boolean; results: Us
         // Track collision events in physics simulation
         // For now, check if item has landed (y position near ground zero)
         if (assertion.target_item_id) {
-          const item = cartridge.items.find(i => i.id === assertion.target_item_id);
+          const item = (cartridge.items || []).find(i => i.id === assertion.target_item_id);
           passed = item ? item.transform.position.y <= 1 : false;
         }
         break;
@@ -1861,6 +1861,8 @@ export default function BluPrinceEditor() {
   const [showControllerMappings, setShowControllerMappings] = useState(false);
   const [showLayers, setShowLayers] = useState(false);
   const [hiddenLayers, setHiddenLayers] = useState<Set<string>>(new Set());
+  const [hideOutsideView, setHideOutsideView] = useState(false);
+  const [visibleInViewportIds, setVisibleInViewportIds] = useState<Set<string>>(new Set());
   const [showPreferences, setShowPreferences] = useState(false);
   const [colorIcons, setColorIcons] = useState(true);
   const [activeTool, setActiveTool] = useState<PhysicsTool>('select');
@@ -1924,7 +1926,7 @@ export default function BluPrinceEditor() {
 
   const mode = cartridge._editor?.mode || "DESIGN";
   const gravityEnabled = cartridge._editor?.gravity_enabled ?? true;
-  const selectedItem = cartridge.items.find(i => i.id === selectedId);
+  const selectedItem = (cartridge.items || []).find(i => i.id === selectedId);
   
   // Update camera target when item is selected (if auto-focus is enabled)
   useEffect(() => {
@@ -2005,7 +2007,7 @@ export default function BluPrinceEditor() {
     if (!selectedId) return;
     updateCartridgeWithSync(prev => ({
       ...prev,
-      items: prev.items.map(item => 
+      items: (prev.items || []).map(item => 
         item.id === selectedId ? { ...item, fsm } : item
       )
     }));
@@ -2042,7 +2044,7 @@ export default function BluPrinceEditor() {
     if (!selectedId) return;
     updateCartridgeWithSync(prev => ({
       ...prev,
-      items: prev.items.map(item => 
+      items: (prev.items || []).map(item => 
         item.id === selectedId ? { ...item, controller } : item
       )
     }));
@@ -2164,7 +2166,7 @@ export default function BluPrinceEditor() {
   const handleTransformUpdate = useCallback((id: string, position: { x: number; y: number; z: number }) => {
     setCartridge(prev => ({
       ...prev,
-      items: prev.items.map(item => 
+      items: (prev.items || []).map(item => 
         item.id === id 
           ? { ...item, transform: { ...item.transform, position } }
           : item
@@ -2182,7 +2184,7 @@ export default function BluPrinceEditor() {
     
     updateCartridgeWithSync(prev => ({
       ...prev,
-      items: prev.items.map(item => {
+      items: (prev.items || []).map(item => {
         if (item.id !== selectedId) return item;
         
         const pos = { ...item.transform.position };
@@ -2366,7 +2368,7 @@ export default function BluPrinceEditor() {
 
     updateCartridgeWithSync(prev => ({
       ...prev,
-      items: [...prev.items, newThing]
+      items: [...(prev.items || []), newThing]
     }));
 
     setSelectedId(newThing.id);
@@ -2377,7 +2379,7 @@ export default function BluPrinceEditor() {
       setTimeout(() => {
         updateCartridgeWithSync(prev => ({
           ...prev,
-          items: prev.items.map(item => 
+          items: (prev.items || []).map(item => 
             item.id === itemId 
               ? { ...item, physics: { ...item.physics!, dropping: false } }
               : item
@@ -2411,7 +2413,7 @@ export default function BluPrinceEditor() {
   const deleteItem = useCallback((id: string) => {
     updateCartridgeWithSync(prev => ({
       ...prev,
-      items: prev.items.filter(item => item.id !== id)
+      items: (prev.items || []).filter(item => item.id !== id)
     }));
     if (selectedId === id) {
       setSelectedId(null);
@@ -2761,13 +2763,13 @@ export default function BluPrinceEditor() {
           defaultCollapsed={false}
         >
           <SceneTree
-            items={cartridge.items}
+            items={cartridge.items || []}
             selectedItemId={selectedId}
             onSelectItem={(id) => setSelectedId(id)}
             onRenameItem={(id, newLabel) => {
               setCartridge(prev => ({
                 ...prev,
-                items: prev.items.map(item => 
+                items: (prev.items || []).map(item => 
                   item.id === id ? { ...item, label: newLabel } : item
                 )
               }));
@@ -2775,30 +2777,35 @@ export default function BluPrinceEditor() {
             onDeleteItem={(id) => {
               setCartridge(prev => ({
                 ...prev,
-                items: prev.items.filter(item => item.id !== id)
+                items: (prev.items || []).filter(item => item.id !== id)
               }));
             }}
             onReorderItems={(newOrder) => {
               setCartridge(prev => ({
                 ...prev,
-                items: newOrder.map(id => prev.items.find(item => item.id === id)!).filter(Boolean)
+                items: newOrder.map(id => (prev.items || []).find(item => item.id === id)!).filter(Boolean)
               }));
             }}
-            decorations={[
-              { id: 'brass-gears', label: 'Brass Gear Assembly', type: 'gear', visible: showBrassGears },
-              ...waterContainers.map(c => ({ 
-                id: c.id, 
-                label: `Water ${c.containerType.charAt(0).toUpperCase() + c.containerType.slice(1)}`, 
-                type: 'water' as const, 
-                visible: true 
-              })),
-            ]}
-            onToggleDecorationVisibility={(id) => {
-              if (id === 'brass-gears') {
-                setShowBrassGears(prev => !prev);
-              }
-            }}
             hiddenItemIds={hiddenLayers}
+            sceneFsmInfo={{
+              currentState: "DESIGN",
+              hasStates: true
+            }}
+            onEditSceneFsm={() => {
+              // TODO: Open scene-level FSM editor
+              console.log("Edit scene FSM");
+            }}
+            onEditMeshFsm={(meshId) => {
+              // TODO: Open mesh-level FSM editor
+              console.log("Edit mesh FSM for:", meshId);
+            }}
+            hideOutsideView={hideOutsideView}
+            onHideOutsideViewChange={setHideOutsideView}
+            visibleInViewportIds={visibleInViewportIds}
+            onObjectClick={(objectId, objectType) => {
+              console.log(`Object clicked: ${objectType} ${objectId}`);
+              // Generic handler - can be extended for FSM triggers, context menus, etc.
+            }}
           />
         </DockablePanel>
 
@@ -2937,7 +2944,7 @@ export default function BluPrinceEditor() {
       {/* Layers Panel */}
       {showLayers && (
         <LayersPanel
-          items={cartridge.items}
+          items={cartridge.items || []}
           selectedId={selectedId}
           onSelect={setSelectedId}
           onToggleVisibility={toggleLayerVisibility}
@@ -3019,7 +3026,7 @@ export default function BluPrinceEditor() {
           <Physics gravity={gravityEnabled ? [0, -9.81, 0] : [0, 0, 0]}>
             <GroundZero />
             
-            {cartridge.items
+            {(cartridge.items || [])
               .filter(item => !hiddenLayers.has(item.id))
               .map((item) => (
                 <PhysicsThing
@@ -3242,7 +3249,7 @@ export default function BluPrinceEditor() {
 
       {/* Status Bar */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-4 text-xs font-mono text-muted-foreground">
-        <span>Items: {cartridge.items.length}</span>
+        <span>Items: {(cartridge.items || []).length}</span>
         <span>|</span>
         <span>Mode: {mode}</span>
         <span>|</span>

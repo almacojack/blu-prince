@@ -1,6 +1,17 @@
 /**
- * TOSS v1.0 Schema - ThingOS Scene Specification
+ * TOSS v1.1 Schema - ThingOS Scene Specification
  * This is the FINALIZED contract from ThingOS backend
+ * 
+ * v1.1 Changes:
+ * - Renamed "items" to "meshes" throughout
+ * - Added per-mesh tngli_id for direct state access
+ * - Added statecharts registry for multi-FSM carts
+ * - Added event bus for cross-chart communication
+ * - Added joints (spring, hinge, damper) for physics
+ * - Added hardware profiles for physical products
+ * - Added accessory metadata for mountable carts
+ * - Added per-mesh camera angle storage
+ * - Added state→animation bindings
  */
 
 // 3D Transform for positioning, rotation, scale
@@ -54,8 +65,10 @@ export interface PhysicsProps {
 // FORCE SYSTEM - Environmental forces with hitboxes
 // ============================================
 
-// Types of environmental forces
-export type ForceType = "fire" | "ice" | "water" | "wind" | "magnet" | "gravity" | "electric";
+// Types of environmental forces (v1.1: added magnet_attract, magnet_repel, spring_joint, hinge_joint, damper)
+export type ForceType = 
+  | "fire" | "ice" | "water" | "wind" | "magnet" | "gravity" | "electric"
+  | "magnet_attract" | "magnet_repel" | "spring_joint" | "hinge_joint" | "damper";
 
 // Force emitter - a source that applies forces to objects in its hitbox
 export interface ForceEmitter {
@@ -196,17 +209,37 @@ export interface UserAssertion {
   passed?: boolean;
 }
 
-// Per-item FSM (state machine)
-export interface ItemFSM {
+// Per-mesh FSM (state machine)
+export interface MeshFSM {
   initial: string;
   states: Record<string, Record<string, string>>;  // { "idle": { "on_press": "active" } }
+  context?: Record<string, any>;  // v1.1: Scoped context per FSM
 }
 
-// A single Thing/Item in the scene
-export interface TossItem {
+// v1.1: State→Animation binding - maps FSM states to animation triggers
+export interface StateAnimationBinding {
+  state: string;                    // FSM state name
+  onEnter?: string;                 // Animation to play when entering state
+  onExit?: string;                  // Animation to play when exiting state
+  loop?: boolean;                   // Loop animation while in state
+}
+
+// v1.1: Per-mesh camera settings - remembers viewing angle
+export interface MeshCameraSettings {
+  orbit: { azimuth: number; elevation: number; distance: number };
+  target: { x: number; y: number; z: number };
+  locked?: boolean;                 // Prevent auto-update when viewing
+}
+
+// Alias for backward compatibility
+export type ItemFSM = MeshFSM;
+
+// A single Mesh in the scene (formerly "Item" in v1.0)
+export interface TossMesh {
   id: string;
-  label?: string;          // Human-readable display name
-  component: string;       // e.g., "plain_button", "mesh_glyph"
+  tngli_id?: string;         // v1.1: Optional unique path for direct state access (e.g., "player", "door1")
+  label?: string;            // Human-readable display name
+  component: string;         // e.g., "plain_button", "mesh_glyph"
   props: Record<string, any>;
   
   // Transform (position, rotation, scale)
@@ -225,8 +258,14 @@ export interface TossItem {
   // Controller input
   controller?: ControllerBinding;
   
-  // Per-item state machine
-  fsm?: ItemFSM;
+  // Per-mesh state machine
+  fsm?: MeshFSM;
+  
+  // v1.1: State→Animation bindings
+  stateAnimations?: StateAnimationBinding[];
+  
+  // v1.1: Per-mesh camera settings
+  cameraSettings?: MeshCameraSettings;
   
   // Force sensitivity - how this object reacts to environmental forces
   sensitivity?: SensitivityDeclarations;
@@ -235,9 +274,12 @@ export interface TossItem {
   sideEffects?: SideEffect[];
   
   // Hierarchy
-  parent_id?: string;      // for hierarchical grouping
-  children_ids?: string[]; // child items
+  parent_id?: string;        // for hierarchical grouping
+  children_ids?: string[];   // child meshes
 }
+
+// Alias for backward compatibility
+export type TossItem = TossMesh;
 
 // 3D Asset formats supported
 export type Asset3DFormat = "gltf" | "glb" | "obj" | "stl" | "threejs-json";
@@ -505,11 +547,179 @@ export interface BootConfig {
   };
 }
 
-// The full TOSS v1.0 cartridge
+// ============================================
+// TOSS v1.1: MULTI-STATECHART SYSTEM
+// ============================================
+
+// Statechart role types
+export type StatechartRole = "ui" | "physics" | "network" | "logic" | "scene" | "custom";
+
+// Individual statechart definition (scene-level or mesh-level)
+export interface StatechartDefinition {
+  id: string;
+  role: StatechartRole;
+  description?: string;
+  meshId?: string;                      // If linked to a specific mesh
+  
+  // The FSM definition
+  fsm: {
+    initial: string;
+    states: Record<string, Record<string, string>>;
+    context?: Record<string, any>;
+  };
+  
+  // Event bus subscriptions
+  subscribes?: string[];                // Events this chart listens to
+  publishes?: string[];                 // Events this chart can emit
+  
+  // Animation bindings for this chart
+  stateAnimations?: StateAnimationBinding[];
+}
+
+// Statecharts registry
+export interface StatechartRegistry {
+  [chartId: string]: StatechartDefinition;
+}
+
+// Event bus configuration
+export interface EventBusConfig {
+  channels: string[];                   // Named channels for organization
+  eventTypes?: {
+    [eventName: string]: {
+      payload?: Record<string, any>;    // Expected payload schema
+      source?: string;                  // Which chart(s) can emit
+    };
+  };
+}
+
+// ============================================
+// TOSS v1.1: PHYSICS JOINTS
+// ============================================
+
+export type JointType = "spring" | "hinge" | "fixed" | "slider" | "ball";
+
+export interface JointDefinition {
+  id: string;
+  type: JointType;
+  
+  // Connected bodies
+  bodyA: string;                        // Mesh ID
+  bodyB: string;                        // Mesh ID or "world"
+  
+  // Anchor points (local to each body)
+  anchorA?: { x: number; y: number; z: number };
+  anchorB?: { x: number; y: number; z: number };
+  
+  // Joint-specific properties
+  properties: {
+    // Spring
+    stiffness?: number;
+    damping?: number;
+    restLength?: number;
+    
+    // Hinge
+    axis?: { x: number; y: number; z: number };
+    limits?: { min: number; max: number };
+    motor?: { speed: number; torque: number };
+    
+    // Slider
+    slideAxis?: { x: number; y: number; z: number };
+    slideLimits?: { min: number; max: number };
+  };
+  
+  // Visual
+  visible?: boolean;
+  color?: string;
+}
+
+// ============================================
+// TOSS v1.1: HARDWARE PROFILE
+// ============================================
+
+export interface HardwareProfile {
+  productId: string;
+  
+  manufacturingData?: {
+    stlFiles: string[];                 // Asset IDs
+    bomItems: {
+      partNumber: string;
+      description: string;
+      quantity: number;
+      supplier?: string;
+      unitCost?: number;
+    }[];
+    assemblyNotes?: string;
+    tools?: string[];
+    estimatedTime?: number;             // Minutes
+  };
+  
+  firmwareTarget?: {
+    mcu: "esp32" | "esp32-s3" | "rp2040" | "stm32" | "nrf52";
+    radioStack?: "lora" | "ble" | "wifi" | "zigbee" | "thread";
+    calibration?: Record<string, number>;
+    flashSize?: number;
+    ramSize?: number;
+  };
+  
+  packaging?: {
+    boxDimensions: [number, number, number];
+    weight: number;
+    shippingClass: "letter" | "standard" | "oversized" | "fragile";
+    includesManual?: boolean;
+    includesAccessories?: string[];
+  };
+}
+
+// ============================================
+// TOSS v1.1: ACCESSORY METADATA
+// ============================================
+
+export interface AccessoryMetadata {
+  isAccessory: boolean;
+  
+  provides: {
+    commands?: string[];
+    panels?: string[];
+    assets?: string[];
+    forces?: ForceType[];
+  };
+  
+  compatibleWith?: {
+    cartridgeIds?: string[];
+    categories?: string[];
+    all?: boolean;
+  };
+  
+  priority?: number;                    // PATH priority (0-100, lower = first)
+  
+  pricing?: {
+    type: "free" | "one-time" | "subscription";
+    amount?: number;
+    currency?: string;
+    trialDays?: number;
+  };
+}
+
+// ============================================
+// TOSS v1.1: SCENE FSM (root-level)
+// ============================================
+
+export interface SceneFSM {
+  id: string;
+  initial: string;
+  states: Record<string, Record<string, string>>;
+  context?: Record<string, any>;
+}
+
+// The full TOSS v1.1 cartridge (backward compatible with v1.0)
 export interface TossCartridge {
-  toss_version: "1.0";
+  toss_version: "1.0" | "1.1";
   meta: TossMeta;
-  items: TossItem[];
+  
+  // v1.1: Renamed from "items" to "meshes" (items still works for backward compat)
+  meshes?: TossMesh[];
+  items?: TossItem[];              // Deprecated: use meshes instead
+  
   commerce?: CommerceFields;
   
   // 3D assets and other binary content
@@ -533,15 +743,33 @@ export interface TossCartridge {
   // Preview metadata for 3D library display
   preview?: CartridgePreview;
   
-  // ============================================
-  // COMMAND SYSTEM (NEW)
-  // ============================================
-  
   // Exports - commands and resources this cartridge exposes
   exports?: CartridgeExports;
   
   // Boot configuration - for bootable cartridges
   boot?: BootConfig;
+  
+  // ============================================
+  // v1.1 ADDITIONS
+  // ============================================
+  
+  // Scene-level FSM (controls global state like DESIGN/PLAY/etc.)
+  sceneFsm?: SceneFSM;
+  
+  // Multiple statecharts for complex coordination
+  statecharts?: StatechartRegistry;
+  
+  // Event bus for cross-chart communication
+  eventBus?: EventBusConfig;
+  
+  // Physics joints (spring, hinge, damper)
+  joints?: JointDefinition[];
+  
+  // Hardware profile for physical products
+  hardware?: HardwareProfile;
+  
+  // Accessory metadata for mountable carts
+  accessory?: AccessoryMetadata;
   
   // Editor-only metadata (stripped on export)
   _editor?: {
@@ -549,8 +777,21 @@ export interface TossCartridge {
     camera: { x: number; y: number; z: number; target: { x: number; y: number; z: number } };
     selected_ids: string[];
     gravity_enabled: boolean;
-    activeControllerPresetId?: string;  // Currently active preset
+    activeControllerPresetId?: string;
+    // v1.1: Track which FSM is being edited
+    activeFsmMeshId?: string;          // null = scene FSM, mesh id = mesh FSM
+    fsmEditorOpen?: boolean;
   };
+}
+
+// Helper to get meshes from cartridge (handles both v1.0 and v1.1)
+export function getCartridgeMeshes(cart: TossCartridge): TossMesh[] {
+  return cart.meshes || cart.items || [];
+}
+
+// Helper to set meshes on cartridge (uses v1.1 format)
+export function setCartridgeMeshes(cart: TossCartridge, meshes: TossMesh[]): TossCartridge {
+  return { ...cart, meshes, items: undefined, toss_version: "1.1" };
 }
 
 // Editor modes
@@ -626,16 +867,16 @@ export function createDefaultControllerPreset(): ControllerPreset {
   };
 }
 
-// Create a new empty cartridge
+// Create a new empty cartridge (v1.1)
 export function createNewCartridge(): TossCartridge {
   const defaultPreset = createDefaultControllerPreset();
   return {
-    toss_version: "1.0",
+    toss_version: "1.1",
     meta: {
       title: "Untitled Cartridge",
       version: "0.1.0",
     },
-    items: [],
+    meshes: [],
     assets: {
       models: [],
       databases: [],
@@ -650,24 +891,39 @@ export function createNewCartridge(): TossCartridge {
       assetCount: 0,
       primaryColor: "#7c3aed",
     },
+    // v1.1: Scene-level FSM
+    sceneFsm: {
+      id: "scene",
+      initial: "design",
+      states: {
+        design: { PLAY: "playing", TEST: "testing" },
+        playing: { STOP: "design", PAUSE: "paused" },
+        paused: { RESUME: "playing", STOP: "design" },
+        testing: { STOP: "design" },
+      },
+    },
+    statecharts: {},
+    eventBus: { channels: ["default"] },
+    joints: [],
     _editor: {
       mode: "DESIGN",
       camera: { x: 5, y: 5, z: 10, target: { x: 0, y: 0, z: 0 } },
       selected_ids: [],
       gravity_enabled: true,
       activeControllerPresetId: defaultPreset.id,
+      fsmEditorOpen: false,
     },
   };
 }
 
-// Create a new Thing with physics defaults
-export function createThing(
+// Create a new Mesh with physics defaults (v1.1)
+export function createMesh(
   component: string,
   position: { x: number; y: number; z: number },
   props: Record<string, any> = {}
-): TossItem {
+): TossMesh {
   return {
-    id: `thing_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    id: `mesh_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     component,
     props,
     transform: {
@@ -684,12 +940,117 @@ export function createThing(
     material: { ...DEFAULT_MATERIAL, color: props.color || "#7c3aed" },
     animation: { ...DEFAULT_ANIMATION },
     physics: { ...DEFAULT_PHYSICS },
+    // v1.1: FSM is optional, created on demand via UI
+  };
+}
+
+// Alias for backward compatibility
+export const createThing = createMesh;
+
+// v1.1: Create FSM for a mesh and assign tngli_id
+export function createMeshFsm(
+  mesh: TossMesh,
+  tngli_id?: string
+): TossMesh {
+  const id = tngli_id || mesh.label?.toLowerCase().replace(/\s+/g, '_') || mesh.id;
+  return {
+    ...mesh,
+    tngli_id: id,
     fsm: {
       initial: "idle",
       states: {
         idle: {},
       },
     },
+  };
+}
+
+// v1.1: Create a statechart definition
+export function createStatechart(
+  id: string,
+  role: StatechartRole,
+  meshId?: string
+): StatechartDefinition {
+  return {
+    id,
+    role,
+    meshId,
+    fsm: {
+      initial: "idle",
+      states: {
+        idle: {},
+      },
+    },
+    subscribes: [],
+    publishes: [],
+  };
+}
+
+// v1.1: Create a spring joint between two meshes
+export function createSpringJoint(
+  bodyA: string,
+  bodyB: string,
+  stiffness: number = 100,
+  damping: number = 0.3
+): JointDefinition {
+  return {
+    id: `joint_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    type: "spring",
+    bodyA,
+    bodyB,
+    properties: {
+      stiffness,
+      damping,
+      restLength: 1,
+    },
+    visible: true,
+    color: "#00ff00",
+  };
+}
+
+// v1.1: Create a hinge joint
+export function createHingeJoint(
+  bodyA: string,
+  bodyB: string,
+  axis: { x: number; y: number; z: number } = { x: 0, y: 1, z: 0 },
+  limits?: { min: number; max: number }
+): JointDefinition {
+  return {
+    id: `joint_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    type: "hinge",
+    bodyA,
+    bodyB,
+    properties: {
+      axis,
+      limits,
+    },
+    visible: true,
+    color: "#ffaa00",
+  };
+}
+
+// v1.1: Migrate v1.0 cartridge to v1.1
+export function migrateToV1_1(cart: TossCartridge): TossCartridge {
+  if (cart.toss_version === "1.1") {
+    return cart;
+  }
+  
+  return {
+    ...cart,
+    toss_version: "1.1",
+    meshes: cart.items || [],
+    items: undefined,
+    sceneFsm: {
+      id: "scene",
+      initial: "design",
+      states: {
+        design: { PLAY: "playing" },
+        playing: { STOP: "design" },
+      },
+    },
+    statecharts: {},
+    eventBus: { channels: ["default"] },
+    joints: [],
   };
 }
 

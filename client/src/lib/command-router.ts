@@ -50,7 +50,8 @@ export type CommandRouterEvent =
   | { type: "cartridge_mounted"; cartridge: MountedCartridge }
   | { type: "cartridge_unmounted"; tngli_id: string }
   | { type: "command_executed"; command: string; result: CommandResult }
-  | { type: "path_updated"; path: string[] };
+  | { type: "path_updated"; path: string[] }
+  | { type: "boot_conflict"; existingBoot: MountedCartridge; newCartridge: TossCartridge; newTngliId: string };
 
 export type CommandRouterListener = (event: CommandRouterEvent) => void;
 
@@ -75,7 +76,13 @@ export class CommandRouter {
   // --- Mount/Unmount Cartridges ---
 
   /**
-   * Mount a cartridge, adding its commands to the PATH
+   * Mount a cartridge, adding its commands to the PATH.
+   * 
+   * BOOT CARTRIDGE RULES:
+   * - Only one cartridge can be the boot cartridge at a time
+   * - If mounting with asBoot=true and another boot cart exists,
+   *   emits a "boot_conflict" event for UI confirmation
+   * - Use forceMount() to override without confirmation
    */
   mount(
     cartridge: TossCartridge, 
@@ -83,12 +90,28 @@ export class CommandRouter {
     options?: { 
       namespace?: string; 
       priority?: number; 
-      asBoot?: boolean 
+      asBoot?: boolean;
+      skipConflictCheck?: boolean;  // Force mount without conflict check
     }
-  ): void {
+  ): boolean {
     const namespace = options?.namespace || tngli_id;
     const priority = options?.priority ?? this.mounts.size;
     const isBoot = options?.asBoot ?? false;
+
+    // Boot cartridge conflict detection
+    if (isBoot && this.bootCartridgeId && this.bootCartridgeId !== tngli_id && !options?.skipConflictCheck) {
+      const existingBoot = this.mounts.get(this.bootCartridgeId);
+      if (existingBoot) {
+        // Emit conflict event - UI should show confirmation dialog
+        this.emit({ 
+          type: "boot_conflict", 
+          existingBoot, 
+          newCartridge: cartridge, 
+          newTngliId: tngli_id 
+        });
+        return false; // Mount was blocked pending confirmation
+      }
+    }
 
     const mount: MountedCartridge = {
       cartridge,
@@ -101,6 +124,14 @@ export class CommandRouter {
     this.mounts.set(tngli_id, mount);
 
     if (isBoot) {
+      // Demote previous boot cartridge if exists
+      if (this.bootCartridgeId && this.bootCartridgeId !== tngli_id) {
+        const prevBoot = this.mounts.get(this.bootCartridgeId);
+        if (prevBoot) {
+          prevBoot.isBoot = false;
+        }
+      }
+      
       this.bootCartridgeId = tngli_id;
       // Load boot cartridge aliases
       if (cartridge.boot?.shell?.aliases) {
@@ -112,6 +143,56 @@ export class CommandRouter {
 
     this.emit({ type: "cartridge_mounted", cartridge: mount });
     this.emit({ type: "path_updated", path: this.getPath() });
+    return true; // Mount succeeded
+  }
+
+  /**
+   * Check if changing the boot cartridge would cause a conflict
+   */
+  wouldCauseBootConflict(tngli_id: string): MountedCartridge | null {
+    if (this.bootCartridgeId && this.bootCartridgeId !== tngli_id) {
+      return this.mounts.get(this.bootCartridgeId) || null;
+    }
+    return null;
+  }
+
+  /**
+   * Get the current boot cartridge, if any
+   */
+  getBootCartridge(): MountedCartridge | null {
+    if (!this.bootCartridgeId) return null;
+    return this.mounts.get(this.bootCartridgeId) || null;
+  }
+
+  /**
+   * Change the boot cartridge with confirmation (demotes previous)
+   */
+  changeBootCartridge(newBootId: string): boolean {
+    const mount = this.mounts.get(newBootId);
+    if (!mount) return false;
+
+    // Demote previous boot
+    if (this.bootCartridgeId && this.bootCartridgeId !== newBootId) {
+      const prevBoot = this.mounts.get(this.bootCartridgeId);
+      if (prevBoot) {
+        prevBoot.isBoot = false;
+      }
+    }
+
+    // Promote new boot
+    mount.isBoot = true;
+    this.bootCartridgeId = newBootId;
+
+    // Load new boot's aliases
+    const cartridge = mount.cartridge;
+    if (cartridge.boot?.shell?.aliases) {
+      for (const [alias, target] of Object.entries(cartridge.boot.shell.aliases)) {
+        this.aliases.set(alias, target);
+      }
+    }
+
+    this.emit({ type: "path_updated", path: this.getPath() });
+    return true;
   }
 
   /**
@@ -458,14 +539,6 @@ export class CommandRouter {
   private getSortedMounts(): MountedCartridge[] {
     return Array.from(this.mounts.values())
       .sort((a, b) => a.priority - b.priority);
-  }
-
-  /**
-   * Get the boot cartridge (if any)
-   */
-  getBootCartridge(): MountedCartridge | null {
-    if (!this.bootCartridgeId) return null;
-    return this.mounts.get(this.bootCartridgeId) || null;
   }
 
   /**
