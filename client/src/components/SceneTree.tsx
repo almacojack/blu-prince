@@ -22,6 +22,10 @@ import {
   Triangle,
   Eye,
   EyeOff,
+  FolderOpen,
+  FolderClosed,
+  Group,
+  Ungroup,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -47,10 +51,14 @@ export interface MeshFsmInfo {
 interface SceneTreeProps {
   items: TossItem[];                           // v1.1: These are meshes
   selectedItemId: string | null;
+  selectedItemIds?: Set<string>;               // Multi-select for grouping
   onSelectItem: (id: string) => void;
+  onMultiSelectItem?: (id: string) => void;    // Ctrl+click for multi-select
   onRenameItem?: (id: string, newLabel: string) => void;
   onDeleteItem?: (id: string) => void;
   onReorderItems?: (itemIds: string[]) => void;
+  onGroupItems?: (itemIds: string[]) => void;  // Group selected items
+  onUngroupItem?: (groupId: string) => void;   // Ungroup a group
   hiddenItemIds?: Set<string>;
   // v1.1: FSM-related props
   sceneFsmInfo?: SceneFsmInfo;
@@ -63,6 +71,38 @@ interface SceneTreeProps {
   hideOutsideView?: boolean;
   // Generic object interaction
   onObjectClick?: (objectId: string, objectType: 'mesh' | 'light' | 'camera') => void;
+}
+
+// Build hierarchical tree from flat list using parent_id
+interface TreeNode {
+  item: TossItem;
+  children: TreeNode[];
+  depth: number;
+}
+
+function buildTree(items: TossItem[]): TreeNode[] {
+  const itemMap = new Map<string, TossItem>();
+  const childrenMap = new Map<string, TossItem[]>();
+  
+  // Index all items and their parent relationships
+  for (const item of items) {
+    itemMap.set(item.id, item);
+    const parentId = item.parent_id || '__root__';
+    if (!childrenMap.has(parentId)) {
+      childrenMap.set(parentId, []);
+    }
+    childrenMap.get(parentId)!.push(item);
+  }
+  
+  // Recursively build tree
+  function buildNode(item: TossItem, depth: number): TreeNode {
+    const children = (childrenMap.get(item.id) || []).map(child => buildNode(child, depth + 1));
+    return { item, children, depth };
+  }
+  
+  // Get root items (no parent_id)
+  const rootItems = childrenMap.get('__root__') || [];
+  return rootItems.map(item => buildNode(item, 0));
 }
 
 type DragItemType = "item" | "light" | "camera";
@@ -95,8 +135,12 @@ function getBoundsIcon(bounds?: Bounds) {
   }
 }
 
-function getComponentIcon(component: string, bounds?: Bounds) {
+function getComponentIcon(component: string, bounds?: Bounds, isExpanded?: boolean) {
   switch (component) {
+    case "group":
+      return isExpanded 
+        ? <FolderOpen className="w-4 h-4 text-amber-400" />
+        : <FolderClosed className="w-4 h-4 text-amber-400" />;
     case "mesh_glyph":
       return <FileCode className="w-4 h-4 text-yellow-400" />;
     case "imported_model":
@@ -484,10 +528,14 @@ function FsmBadge({ hasFsm, currentState, onClick, meshId }: { hasFsm: boolean; 
 export function SceneTree({
   items = [],
   selectedItemId,
+  selectedItemIds = new Set(),
   onSelectItem,
+  onMultiSelectItem,
   onRenameItem,
   onDeleteItem,
   onReorderItems,
+  onGroupItems,
+  onUngroupItem,
   hiddenItemIds = new Set(),
   sceneFsmInfo,
   meshFsmInfos,
@@ -502,6 +550,7 @@ export function SceneTree({
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
   const [hideInvisibleItems, setHideInvisibleItems] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   
   // Filter items based on visibility settings
   const visibleItems = items.filter(item => {
@@ -512,6 +561,34 @@ export function SceneTree({
     if (hideOutsideView && visibleInViewportIds && visibleInViewportIds.size > 0 && !visibleInViewportIds.has(item.id)) return false;
     return true;
   });
+  
+  // Build hierarchical tree from parent_id relationships
+  const treeNodes = buildTree(visibleItems);
+  
+  // Toggle group expansion
+  const toggleGroupExpansion = useCallback((groupId: string) => {
+    setExpandedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(groupId)) {
+        next.delete(groupId);
+      } else {
+        next.add(groupId);
+      }
+      return next;
+    });
+  }, []);
+  
+  // Handle grouping selected items
+  const handleGroupSelected = useCallback(() => {
+    if (selectedItemIds.size >= 2 && onGroupItems) {
+      onGroupItems(Array.from(selectedItemIds));
+    }
+  }, [selectedItemIds, onGroupItems]);
+  
+  // Check if selected item is a group for ungroup button
+  const selectedIsGroup = selectedItemId 
+    ? items.find(i => i.id === selectedItemId)?.component === 'group'
+    : false;
 
   const handleItemRename = useCallback(
     (id: string, newName: string) => {
@@ -605,6 +682,42 @@ export function SceneTree({
               </span>
             )}
           </div>
+          
+          {/* Group/Ungroup buttons */}
+          {(onGroupItems || onUngroupItem) && (
+            <div className="flex gap-1">
+              {onGroupItems && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className={cn(
+                    "flex-1 h-7 text-[9px] gap-1",
+                    selectedItemIds.size >= 2
+                      ? "border-amber-500/50 text-amber-400 hover:bg-amber-500/10"
+                      : "border-zinc-700 text-zinc-500 opacity-50 cursor-not-allowed"
+                  )}
+                  onClick={handleGroupSelected}
+                  disabled={selectedItemIds.size < 2}
+                  data-testid="button-group-items"
+                >
+                  <Group className="w-3 h-3" />
+                  Group
+                </Button>
+              )}
+              {onUngroupItem && selectedIsGroup && selectedItemId && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1 h-7 text-[9px] gap-1 border-amber-500/50 text-amber-400 hover:bg-amber-500/10"
+                  onClick={() => onUngroupItem(selectedItemId)}
+                  data-testid="button-ungroup-items"
+                >
+                  <Ungroup className="w-3 h-3" />
+                  Ungroup
+                </Button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* v1.1: Scene FSM at the root level */}
@@ -637,58 +750,83 @@ export function SceneTree({
               </span>
             }
           >
-          {visibleItems.length === 0 ? (
+          {treeNodes.length === 0 ? (
             <div className="px-4 py-3 text-center text-zinc-500 text-[10px]">
               {hideInvisibleItems && items.length > 0 ? 'All items hidden' : 'No objects in scene'}
             </div>
           ) : (
-            visibleItems.map((item, index) => (
-              <DraggableTreeNode
-                key={item.id}
-                icon={getComponentIcon(item.component, item.bounds)}
-                label={item.label || item.id}
-                itemId={item.id}
-                itemType="item"
-                index={index}
-                selected={selectedItemId === item.id}
-                depth={2}
-                isEditing={editingItemId === item.id}
-                onSelect={() => {
-                  onSelectItem(item.id);
-                  onObjectClick?.(item.id, 'mesh');
-                }}
-                onStartEdit={onRenameItem ? () => setEditingItemId(item.id) : undefined}
-                onRename={(newName) => handleItemRename(item.id, newName)}
-                onCancelEdit={() => setEditingItemId(null)}
-                onDelete={onDeleteItem ? () => onDeleteItem(item.id) : undefined}
-                dragState={dragState}
-                dropTargetIndex={dropTargetIndex}
-                onDragStart={handleDragStart}
-                onDragOver={handleDragOver}
-                onDragEnd={handleDragEnd}
-                onDrop={handleItemDrop}
-                badge={
-                  <div className="flex items-center gap-1">
-                    <span 
-                      className="text-[8px] px-1 py-0.5 rounded font-mono uppercase"
-                      style={{
-                        backgroundColor: `${item.material?.color || '#666'}20`,
-                        color: item.material?.color || '#888',
+            treeNodes.map((node, index) => {
+              const renderNode = (node: TreeNode, nodeIndex: number, baseDepth: number): React.ReactNode => {
+                const { item, children, depth } = node;
+                const isGroup = item.component === 'group';
+                const isExpanded = expandedGroups.has(item.id);
+                const isMultiSelected = selectedItemIds.has(item.id);
+                
+                return (
+                  <div key={item.id}>
+                    <DraggableTreeNode
+                      icon={getComponentIcon(item.component, item.bounds, isExpanded)}
+                      label={item.label || item.id}
+                      itemId={item.id}
+                      itemType="item"
+                      index={nodeIndex}
+                      selected={selectedItemId === item.id || isMultiSelected}
+                      depth={baseDepth + depth}
+                      isEditing={editingItemId === item.id}
+                      expandable={isGroup && children.length > 0}
+                      defaultExpanded={isExpanded}
+                      onSelect={() => {
+                        onSelectItem(item.id);
+                        onObjectClick?.(item.id, 'mesh');
+                        if (isGroup) toggleGroupExpansion(item.id);
                       }}
+                      onStartEdit={onRenameItem ? () => setEditingItemId(item.id) : undefined}
+                      onRename={(newName) => handleItemRename(item.id, newName)}
+                      onCancelEdit={() => setEditingItemId(null)}
+                      onDelete={onDeleteItem ? () => onDeleteItem(item.id) : undefined}
+                      dragState={dragState}
+                      dropTargetIndex={dropTargetIndex}
+                      onDragStart={handleDragStart}
+                      onDragOver={handleDragOver}
+                      onDragEnd={handleDragEnd}
+                      onDrop={handleItemDrop}
+                      badge={
+                        <div className="flex items-center gap-1">
+                          {isGroup ? (
+                            <span className="text-[8px] px-1 py-0.5 rounded bg-amber-500/20 text-amber-400 font-mono">
+                              {children.length}
+                            </span>
+                          ) : (
+                            <span 
+                              className="text-[8px] px-1 py-0.5 rounded font-mono uppercase"
+                              style={{
+                                backgroundColor: `${item.material?.color || '#666'}20`,
+                                color: item.material?.color || '#888',
+                              }}
+                            >
+                              {item.bounds?.type || 'mesh'}
+                            </span>
+                          )}
+                          <FsmBadge 
+                            hasFsm={meshFsmInfos?.get(item.id)?.hasStatechart ?? false}
+                            currentState={meshFsmInfos?.get(item.id)?.currentState}
+                            onClick={() => onEditMeshFsm?.(item.id)}
+                            meshId={item.id}
+                          />
+                        </div>
+                      }
                     >
-                      {item.bounds?.type || 'mesh'}
-                    </span>
-                    {/* v1.1: FSM badge for each mesh */}
-                    <FsmBadge 
-                      hasFsm={meshFsmInfos?.get(item.id)?.hasStatechart ?? false}
-                      currentState={meshFsmInfos?.get(item.id)?.currentState}
-                      onClick={() => onEditMeshFsm?.(item.id)}
-                      meshId={item.id}
-                    />
+                      {isGroup && isExpanded && children.length > 0 && (
+                        <div className="ml-2 border-l border-white/10 pl-1">
+                          {children.map((child, childIndex) => renderNode(child, childIndex, baseDepth))}
+                        </div>
+                      )}
+                    </DraggableTreeNode>
                   </div>
-                }
-              />
-            ))
+                );
+              };
+              return renderNode(node, index, 2);
+            })
           )}
           </TreeNode>
 

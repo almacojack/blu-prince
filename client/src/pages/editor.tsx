@@ -29,7 +29,6 @@ import { EnvironmentalForcesPanel, DEFAULT_FORCES, type ForceConfig, type Enviro
 import { ThingCatalog, type CatalogEntry } from "@/components/ThingCatalog";
 import { ControllerMappingsPanel } from "@/components/ControllerMappingsPanel";
 import { WaterContainer } from "@/components/WaterContainer";
-import { BrassGearAssembly } from "@/components/BrassGear";
 import { WaterControlPanel, createDefaultWaterContainer, type WaterContainerConfig } from "@/components/WaterControlPanel";
 import { SceneTree, SceneFsmInfo, MeshFsmInfo } from "@/components/SceneTree";
 import { CameraTarget, calculateCameraPositionForAngle } from "@/components/ViewportAnglesPanel";
@@ -1856,6 +1855,7 @@ export default function BluPrinceEditor() {
   const { toast } = useToast();
   const [cartridge, setCartridge] = useState<TossCartridge>(createNewCartridge());
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [testStatus, setTestStatus] = useState<"pending" | "running" | "pass" | "fail">("pending");
   const [showFSMEditor, setShowFSMEditor] = useState(false);
   const [showController, setShowController] = useState(false);
@@ -1878,7 +1878,6 @@ export default function BluPrinceEditor() {
   const [importProgress, setImportProgress] = useState<{ percent: number; stage: string; message: string } | null>(null);
   const [waterContainers, setWaterContainers] = useState<WaterContainerConfig[]>([]);
   const [activeWaterContainerId, setActiveWaterContainerId] = useState<string | null>(null);
-  const [showBrassGears, setShowBrassGears] = useState(true);
   const [viewportAngle, setViewportAngle] = useState<ViewportAngle>("perspective");
   const [tossFile] = useState<TossFile>(createNewTossFile());
   const [selectedStateId, setSelectedStateId] = useState<string | null>(null);
@@ -2326,6 +2325,85 @@ export default function BluPrinceEditor() {
     }
   };
 
+  // Multi-select handler (Ctrl/Cmd+click)
+  const handleMultiSelect = useCallback((id: string, add: boolean) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (add) {
+        next.add(id);
+      } else {
+        next.delete(id);
+      }
+      return next;
+    });
+    setSelectedId(id);
+  }, []);
+  
+  // Group selected items into a new group
+  const handleGroupItems = useCallback((itemIds: string[]) => {
+    if (itemIds.length < 2) return;
+    const groupId = `group_${Date.now()}`;
+    const items = cartridge.items || [];
+    // Create the group item
+    const groupItem: TossMesh = {
+      id: groupId,
+      label: 'Group',
+      component: 'group',
+      children_ids: itemIds,
+      position: { x: 0, y: 0, z: 0 },
+      bounds: { type: 'box', width: 1, height: 1, depth: 1 },
+      material: { type: 'standard', color: '#FFA500' }
+    };
+    // Update children to reference parent
+    const updatedItems = items.map(item => {
+      if (itemIds.includes(item.id)) {
+        return { ...item, parent_id: groupId };
+      }
+      return item;
+    });
+    updateCartridgeWithSync(prev => ({
+      ...prev,
+      items: [groupItem, ...updatedItems]
+    }));
+    setSelectedId(groupId);
+    setSelectedIds(new Set());
+  }, [cartridge.items, updateCartridgeWithSync]);
+  
+  // Ungroup items from a group
+  const handleUngroupItem = useCallback((groupId: string) => {
+    const items = cartridge.items || [];
+    const group = items.find(i => i.id === groupId);
+    if (!group || group.component !== 'group') return;
+    
+    // Remove parent_id from children by explicitly omitting it
+    const updatedItems = items
+      .filter(i => i.id !== groupId) // Remove the group
+      .map(item => {
+        if (item.parent_id === groupId) {
+          // Create new item without parent_id using explicit properties
+          const cleaned: TossMesh = {
+            id: item.id,
+            label: item.label,
+            component: item.component,
+            position: item.position,
+            bounds: item.bounds,
+            material: item.material,
+          };
+          // Copy optional properties that exist
+          if (item.rotation) cleaned.rotation = item.rotation;
+          if (item.physics) cleaned.physics = item.physics;
+          if (item.mesh_glyph) cleaned.mesh_glyph = item.mesh_glyph;
+          if (item.children_ids?.length) cleaned.children_ids = item.children_ids;
+          // Explicitly NOT copying parent_id
+          return cleaned;
+        }
+        return item;
+      });
+    
+    updateCartridgeWithSync(prev => ({ ...prev, items: updatedItems }));
+    setSelectedId(null);
+  }, [cartridge.items, updateCartridgeWithSync]);
+
   // Shape type to color mapping
   const shapeColors: Record<string, string> = {
     box: "#7c3aed",
@@ -2729,9 +2807,11 @@ export default function BluPrinceEditor() {
                 <SceneTree
                   items={cartridge.items || []}
                   selectedItemId={selectedId}
+                  selectedItemIds={selectedIds}
                   onSelectItem={(id) => setSelectedId(id)}
+                  onMultiSelectItem={handleMultiSelect}
                   onRenameItem={(id, newLabel) => {
-                    setCartridge(prev => ({
+                    updateCartridgeWithSync(prev => ({
                       ...prev,
                       items: (prev.items || []).map(item => 
                         item.id === id ? { ...item, label: newLabel } : item
@@ -2739,17 +2819,19 @@ export default function BluPrinceEditor() {
                     }));
                   }}
                   onDeleteItem={(id) => {
-                    setCartridge(prev => ({
+                    updateCartridgeWithSync(prev => ({
                       ...prev,
                       items: (prev.items || []).filter(item => item.id !== id)
                     }));
                   }}
                   onReorderItems={(newOrder) => {
-                    setCartridge(prev => ({
+                    updateCartridgeWithSync(prev => ({
                       ...prev,
                       items: newOrder.map(id => (prev.items || []).find(item => item.id === id)!).filter(Boolean)
                     }));
                   }}
+                  onGroupItems={handleGroupItems}
+                  onUngroupItem={handleUngroupItem}
                   hiddenItemIds={hiddenLayers}
                   sceneFsmInfo={{
                     currentState: "DESIGN",
@@ -3062,8 +3144,6 @@ export default function BluPrinceEditor() {
             ))}
           </Physics>
           
-          {/* Decorative Brass Gear Assembly */}
-          {showBrassGears && <BrassGearAssembly position={[-6, 2, -4]} />}
           
           {/* Environment for metallic reflections */}
           <Environment preset="city" />
