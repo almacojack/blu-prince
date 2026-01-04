@@ -454,42 +454,48 @@ export function AtariMiniPanel({
 export function Atari5200CartridgeSlot({ 
   children, 
   label,
-  className = "" 
+  className = "",
+  transparent = false
 }: { 
   children: ReactNode; 
   label?: string;
   className?: string;
+  transparent?: boolean;
 }) {
   return (
     <div className={`relative ${className}`}>
       <div 
         className="relative rounded-lg overflow-hidden"
         style={{
-          background: 'linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 50%, #1a1a1a 100%)',
-          boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.8), inset 0 -2px 4px rgba(255,255,255,0.05), 0 4px 16px rgba(0,0,0,0.5)',
+          background: transparent ? 'transparent' : 'linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 50%, #1a1a1a 100%)',
+          boxShadow: transparent ? 'none' : 'inset 0 2px 4px rgba(0,0,0,0.8), inset 0 -2px 4px rgba(255,255,255,0.05), 0 4px 16px rgba(0,0,0,0.5)',
         }}
       >
-        <div 
-          className="absolute inset-0"
-          style={{
-            background: `
-              repeating-linear-gradient(
-                0deg,
-                transparent 0px,
-                transparent 3px,
-                rgba(255,255,255,0.02) 3px,
-                rgba(255,255,255,0.02) 6px
-              )
-            `,
-          }}
-        />
+        {!transparent && (
+          <div 
+            className="absolute inset-0"
+            style={{
+              background: `
+                repeating-linear-gradient(
+                  0deg,
+                  transparent 0px,
+                  transparent 3px,
+                  rgba(255,255,255,0.02) 3px,
+                  rgba(255,255,255,0.02) 6px
+                )
+              `,
+            }}
+          />
+        )}
         
-        <div 
-          className="absolute top-0 left-4 right-4 h-2"
-          style={{
-            background: 'linear-gradient(180deg, rgba(0,0,0,0.6) 0%, transparent 100%)',
-          }}
-        />
+        {!transparent && (
+          <div 
+            className="absolute top-0 left-4 right-4 h-2"
+            style={{
+              background: 'linear-gradient(180deg, rgba(0,0,0,0.6) 0%, transparent 100%)',
+            }}
+          />
+        )}
         
         <div className="relative z-10 p-3">
           {label && (
@@ -503,17 +509,19 @@ export function Atari5200CartridgeSlot({
           {children}
         </div>
         
-        <div className="absolute bottom-0 left-0 right-0 h-1 flex justify-center gap-1">
-          {[...Array(5)].map((_, i) => (
-            <div
-              key={i}
-              className="w-3 h-0.5 rounded-t-sm"
-              style={{
-                background: 'linear-gradient(180deg, rgba(255,255,255,0.1) 0%, transparent 100%)',
-              }}
-            />
-          ))}
-        </div>
+        {!transparent && (
+          <div className="absolute bottom-0 left-0 right-0 h-1 flex justify-center gap-1">
+            {[...Array(5)].map((_, i) => (
+              <div
+                key={i}
+                className="w-3 h-0.5 rounded-t-sm"
+                style={{
+                  background: 'linear-gradient(180deg, rgba(255,255,255,0.1) 0%, transparent 100%)',
+                }}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
