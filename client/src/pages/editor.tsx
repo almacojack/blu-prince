@@ -2317,7 +2317,8 @@ export default function BluPrinceEditor() {
       label: 'Group',
       component: 'group',
       children_ids: itemIds,
-      position: { x: 0, y: 0, z: 0 },
+      props: {},
+      transform: { position: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 }, scale: { x: 1, y: 1, z: 1 } },
       bounds: { type: 'box', width: 1, height: 1, depth: 1 },
       material: { type: 'standard', color: '#FFA500' }
     };
@@ -2352,14 +2353,14 @@ export default function BluPrinceEditor() {
             id: item.id,
             label: item.label,
             component: item.component,
-            position: item.position,
+            props: item.props,
+            transform: item.transform,
             bounds: item.bounds,
             material: item.material,
           };
           // Copy optional properties that exist
-          if (item.rotation) cleaned.rotation = item.rotation;
           if (item.physics) cleaned.physics = item.physics;
-          if (item.mesh_glyph) cleaned.mesh_glyph = item.mesh_glyph;
+          if (item.fsm) cleaned.fsm = item.fsm;
           if (item.children_ids?.length) cleaned.children_ids = item.children_ids;
           // Explicitly NOT copying parent_id
           return cleaned;

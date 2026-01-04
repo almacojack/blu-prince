@@ -12,6 +12,8 @@ export interface LoadedFont {
   family: string;
   data: ArrayBuffer | null;
   cssUrl?: string;
+  /** Direct URL to font file (blob URL for user fonts, or extracted WOFF2 URL for Google fonts) */
+  fontFileUrl?: string;
   loaded: boolean;
 }
 
@@ -84,6 +86,12 @@ class FontLoaderService {
     return `https://fonts.googleapis.com/css2?family=${encodedFamily}:wght@${weights}&display=swap`;
   }
 
+  /**
+   * Loads a Google Font and extracts the actual WOFF2 file URL for 3D text rendering.
+   * 
+   * Google Fonts CSS contains @font-face rules with the actual font file URLs.
+   * We parse those to get direct WOFF2 URLs that can be used by Three.js/Troika.
+   */
   async loadGoogleFont(family: string, variants: string[] = ['400']): Promise<boolean> {
     const key = `google:${family}`;
     
@@ -94,6 +102,7 @@ class FontLoaderService {
     try {
       const url = this.buildGoogleFontUrl(family, variants);
       
+      // First, load the CSS to make the font available in the document
       const existingLink = document.querySelector(`link[href="${url}"]`);
       if (!existingLink) {
         const link = document.createElement('link');
@@ -108,10 +117,34 @@ class FontLoaderService {
         });
       }
 
+      // Now fetch the CSS content to extract the actual WOFF2 URL
+      // We need to make a request with the right User-Agent to get WOFF2
+      let fontFileUrl: string | undefined;
+      try {
+        const cssResponse = await fetch(url, {
+          headers: {
+            // Request WOFF2 format (modern browsers)
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0'
+          }
+        });
+        const cssText = await cssResponse.text();
+        
+        // Extract the WOFF2 URL from the CSS @font-face src
+        // Pattern: url(https://fonts.gstatic.com/...woff2)
+        const woff2Match = cssText.match(/url\((https:\/\/fonts\.gstatic\.com\/[^)]+\.woff2)\)/);
+        if (woff2Match) {
+          fontFileUrl = woff2Match[1];
+        }
+      } catch (e) {
+        // If extraction fails, we still have CSS-based font loading
+        console.warn(`Could not extract font file URL for ${family}:`, e);
+      }
+
       this.loadedFonts.set(key, {
         family,
         data: null,
         cssUrl: url,
+        fontFileUrl,
         loaded: true,
       });
 
@@ -122,6 +155,12 @@ class FontLoaderService {
     }
   }
 
+  /**
+   * Loads a user-uploaded font file (TTF, OTF, WOFF, WOFF2).
+   * 
+   * Creates a blob URL from the font data that can be used by Three.js/Troika
+   * for 3D text rendering. The blob URL is stable for the session lifetime.
+   */
   async loadUserFont(file: File): Promise<FontInfo | null> {
     try {
       const arrayBuffer = await file.arrayBuffer();
@@ -133,17 +172,27 @@ class FontLoaderService {
       await fontFace.load();
       document.fonts.add(fontFace);
 
+      // Create a blob URL for Three.js/Troika text rendering
+      const mimeType = file.name.endsWith('.woff2') ? 'font/woff2' 
+                     : file.name.endsWith('.woff') ? 'font/woff'
+                     : file.name.endsWith('.otf') ? 'font/otf'
+                     : 'font/ttf';
+      const blob = new Blob([arrayBuffer], { type: mimeType });
+      const fontFileUrl = URL.createObjectURL(blob);
+
       const fontInfo: FontInfo = {
         family,
         variants: ['400'],
         category: 'sans-serif',
         source: 'user',
+        url: fontFileUrl,
       };
 
       this.userFonts.push(fontInfo);
       this.loadedFonts.set(`user:${family}`, {
         family,
         data: arrayBuffer,
+        fontFileUrl,
         loaded: true,
       });
 
@@ -178,6 +227,30 @@ class FontLoaderService {
       return this.loadedFonts.get(userKey)!.data;
     }
     return null;
+  }
+
+  /**
+   * Gets a direct URL to the font file for use in Three.js/Troika text rendering.
+   * Returns undefined if no direct URL is available (e.g., system fonts).
+   */
+  getFontFileUrl(family: string): string | undefined {
+    const googleKey = `google:${family}`;
+    const userKey = `user:${family}`;
+    
+    if (this.loadedFonts.has(userKey)) {
+      return this.loadedFonts.get(userKey)!.fontFileUrl;
+    }
+    if (this.loadedFonts.has(googleKey)) {
+      return this.loadedFonts.get(googleKey)!.fontFileUrl;
+    }
+    
+    // Check user fonts list for pre-stored URLs
+    const userFont = this.userFonts.find(f => f.family === family);
+    if (userFont?.url) {
+      return userFont.url;
+    }
+    
+    return undefined;
   }
 
   serializeUserFonts(): Array<{ family: string; data: string }> {

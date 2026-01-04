@@ -32,6 +32,7 @@ export interface Bounds {
 
 // Material/visual properties
 export interface MaterialProps {
+  type?: "standard" | "basic" | "phong" | "physical";  // Material type (defaults to standard)
   color: string;
   emissive?: string;
   emissiveIntensity?: number;

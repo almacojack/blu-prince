@@ -80,6 +80,46 @@ The platform features a performance system that auto-detects device capabilities
 - **OpenSCAD Documentation**: Interactive docs panel with yellow 3D rendered previews for each primitive/operation.
 - **Camera/Light Helpers**: 3D editor shows cameras with frustum visualization, lights with type-specific icons, color-matched labels from scene tree.
 - **Font System**: Load fonts from Google Fonts (no API key needed), user uploads (TTF, OTF, WOFF, WOFF2), and system fonts. Font picker UI with search, categories, and live preview.
+- **Bitmap Font Converter**: Generates MicroPython-compatible bitmap fonts from vector fonts with texture atlas generation and 1-bit packing for memory efficiency.
+- **3D Text Rendering**: Text3D component for rendering text in 3D space with font selection integration.
+- **Assertions Panel**: Draggable test panel with WHEN/THEN interface for defining test conditions. Supports state checks, value comparisons, and visibility tests. Safe read-only evaluation model.
+
+## File Organization
+
+### Source Code Structure
+```
+client/src/
+├── components/           # React UI components
+│   ├── ui/              # Shadcn/ui primitives (buttons, dialogs, etc.)
+│   ├── input/           # Input-specific components
+│   ├── testing/         # Test-related components (AssertionsPanel)
+│   └── *.tsx            # Feature components (FontPicker, SceneTree, etc.)
+├── contexts/            # React context providers
+├── hooks/               # Custom React hooks
+├── i18n/                # Internationalization (locales, config)
+├── lib/                 # Business logic and utilities
+│   ├── input/           # Input system (bindings, conflicts)
+│   ├── openscad/        # OpenSCAD interpreter
+│   ├── toss-examples/   # Sample TOSS cartridge files
+│   └── *.ts             # Core utilities (engine, font-loader, etc.)
+└── pages/               # Route components
+
+shared/
+├── schema.ts            # Drizzle ORM database schema
+├── toss-assets.ts       # Font, image, model asset schemas
+└── models/              # Auth and other shared models
+
+server/
+├── routes.ts            # API endpoint definitions
+└── storage.ts           # Database storage interface
+```
+
+### Key Library Files
+- **lib/font-loader.ts**: Font loading from Google Fonts, user uploads, system fonts
+- **lib/bitmap-font.ts**: Bitmap font conversion for MicroPython with texture atlas generation
+- **lib/engine.ts**: TingOsEngine - FSM runtime execution
+- **lib/toss-v1.1.ts**: Authoritative TOSS schema (v1.1)
+- **lib/openscad/**: OpenSCAD interpreter (lexer, parser, evaluator)
 
 ## External Dependencies
 
