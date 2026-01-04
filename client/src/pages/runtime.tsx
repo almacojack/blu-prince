@@ -4,13 +4,17 @@ import { RoundedBox, Text, Html, Float, PerspectiveCamera, Environment, ContactS
 import * as THREE from "three";
 import { TossFile } from "@/lib/toss";
 import { TingOsEngine, RuntimeState } from "@/lib/engine";
-import { getAllCartridges } from "@/lib/api";
+import { getAllCartridges, saveCartridge } from "@/lib/api";
 import { getCommandRouter, CommandResult } from "@/lib/command-router";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Play, RefreshCw, Zap, Maximize2, Minimize2, Terminal, ChevronUp, ChevronDown, Plus, X, Package } from "lucide-react";
+import { useSearch } from "wouter";
+
+import todoCartridge from "@/lib/toss-examples/todo-app.toss.json";
+import journalCartridge from "@/lib/toss-examples/journal.toss.json";
 import { Link } from "wouter";
 
 // --- 3D COMPONENTS ---
@@ -389,24 +393,47 @@ const CliPanel = ({ isOpen, onToggle }: CliPanelProps) => {
 
 // --- MAIN PAGE COMPONENT ---
 
+const EXAMPLE_CARTRIDGES = [
+  { tngli_id: "todo_app", toss: todoCartridge as unknown as TossFile },
+  { tngli_id: "journal", toss: journalCartridge as unknown as TossFile },
+];
+
 export default function RuntimeSimulator() {
   const [engine, setEngine] = useState<TingOsEngine | null>(null);
   const [engineState, setEngineState] = useState<RuntimeState | null>(null);
   const [cartridges, setCartridges] = useState<any[]>([]);
   const [selectedCartridgeId, setSelectedCartridgeId] = useState<string | null>(null);
-  const [mountedCartridgeIds, setMountedCartridgeIds] = useState<string[]>([]); // Multi-cart loading
+  const [mountedCartridgeIds, setMountedCartridgeIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [fullscreenMode, setFullscreenMode] = useState(true); // Default to fullscreen for better usability
+  const [fullscreenMode, setFullscreenMode] = useState(true);
   const [cliOpen, setCliOpen] = useState(false);
   const router = getCommandRouter();
+  
+  const searchString = useSearch();
+  const urlParams = new URLSearchParams(searchString);
+  const cartFromUrl = urlParams.get("cart");
 
-  // Load available cartridges
   useEffect(() => {
-    async function loadCartridges() {
+    async function seedAndLoadCartridges() {
       try {
+        for (const example of EXAMPLE_CARTRIDGES) {
+          try {
+            await saveCartridge(example.toss);
+          } catch (e) {
+          }
+        }
+
         const data = await getAllCartridges();
         setCartridges(data);
-        if (data.length > 0) {
+        
+        if (cartFromUrl) {
+          const found = data.find((c: any) => c.tngli_id === cartFromUrl);
+          if (found) {
+            setSelectedCartridgeId(cartFromUrl);
+          } else if (data.length > 0) {
+            setSelectedCartridgeId(data[0].tngli_id);
+          }
+        } else if (data.length > 0) {
           setSelectedCartridgeId(data[0].tngli_id);
         }
       } catch (error) {
@@ -415,8 +442,8 @@ export default function RuntimeSimulator() {
         setIsLoading(false);
       }
     }
-    loadCartridges();
-  }, []);
+    seedAndLoadCartridges();
+  }, [cartFromUrl]);
 
   // Mount/unmount cartridges to the CommandRouter
   useEffect(() => {

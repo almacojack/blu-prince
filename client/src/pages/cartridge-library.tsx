@@ -37,7 +37,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useGamepad, GamepadInput } from "@/hooks/use-gamepad";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { TossCartridge, CartridgePreview, createNewCartridge } from "@/lib/toss";
+import { TossCartridge, CartridgePreview, createNewCartridge } from "@/lib/toss-v1";
 import { Link, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";

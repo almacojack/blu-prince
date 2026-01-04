@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
-import type { TossCartridge, TossDatabaseAsset } from '@/lib/toss';
-import { createNewCartridge } from '@/lib/toss';
+import type { TossCartridge, TossDatabaseAsset } from '@/lib/toss-v1';
+import { createNewCartridge } from '@/lib/toss-v1';
 import { initSQLite, mountDatabase, unmountDatabase, getMountedDatabases, exportDatabase, getTables } from '@/lib/sqlite-service';
 
 interface CartridgeContextType {

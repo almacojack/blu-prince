@@ -1,0 +1,156 @@
+{
+  "toss_version": "1.0",
+  "manifest": {
+    "id": "todo-app-001",
+    "tngli_id": "todo_app",
+    "title": "TODO",
+    "author": "TingOS",
+    "version": "1.0.0",
+    "description": "A clean, professional task manager that persists your todos in the cartridge"
+  },
+  "memory": {
+    "todos": {
+      "type": "array",
+      "default": [
+        { "id": "1", "text": "MicroPython: Implement component renderer for Pico W/ESP32 (264KB RAM, 60fps)", "completed": false },
+        { "id": "2", "text": "MicroPython: Document component API with memory constraints and examples", "completed": false },
+        { "id": "3", "text": "Electron: Implement component renderer with native gamepad API", "completed": false },
+        { "id": "4", "text": "Electron: Document desktop-specific features and packaging", "completed": false },
+        { "id": "5", "text": "Capacitor: Implement component renderer for iOS/Android", "completed": false },
+        { "id": "6", "text": "Capacitor: Document mobile touch/Bluetooth controller support", "completed": false },
+        { "id": "7", "text": "TUI: Implement component renderer using Python Textual", "completed": false },
+        { "id": "8", "text": "TUI: Document ASCII art rendering and keyboard input mapping", "completed": false }
+      ],
+      "items": {
+        "id": "string",
+        "text": "string",
+        "completed": "boolean"
+      }
+    },
+    "selectedIndex": {
+      "type": "number",
+      "default": 0
+    },
+    "newTodoText": {
+      "type": "string",
+      "default": ""
+    },
+    "filter": {
+      "type": "string",
+      "default": "all"
+    }
+  },
+  "fsm": {
+    "initial": "viewing",
+    "states": {
+      "viewing": {
+        "description": "Browsing the task list",
+        "on": {
+          "SELECT_NEXT": { "actions": ["selectNext"] },
+          "SELECT_PREV": { "actions": ["selectPrev"] },
+          "TOGGLE_COMPLETE": { "actions": ["toggleComplete"] },
+          "DELETE_TODO": { "actions": ["deleteTodo"] },
+          "START_ADD": "adding",
+          "FILTER_ALL": { "actions": ["setFilterAll"] },
+          "FILTER_ACTIVE": { "actions": ["setFilterActive"] },
+          "FILTER_DONE": { "actions": ["setFilterDone"] }
+        }
+      },
+      "adding": {
+        "description": "Adding a new task",
+        "on": {
+          "UPDATE_TEXT": { "actions": ["updateNewText"] },
+          "CONFIRM_ADD": { "target": "viewing", "actions": ["addTodo", "clearNewText"] },
+          "CANCEL": { "target": "viewing", "actions": ["clearNewText"] }
+        }
+      }
+    }
+  },
+  "actions": {
+    "selectNext": {
+      "type": "context_update",
+      "expression": "Math.min(context.selectedIndex + 1, context.todos.length - 1)"
+    },
+    "selectPrev": {
+      "type": "context_update", 
+      "expression": "Math.max(context.selectedIndex - 1, 0)"
+    },
+    "toggleComplete": {
+      "type": "context_update",
+      "target": "todos[selectedIndex].completed",
+      "expression": "!context.todos[context.selectedIndex].completed"
+    },
+    "deleteTodo": {
+      "type": "context_update",
+      "target": "todos",
+      "expression": "context.todos.filter((_, i) => i !== context.selectedIndex)"
+    },
+    "addTodo": {
+      "type": "context_update",
+      "target": "todos",
+      "mode": "append",
+      "value": { "id": "{{uuid}}", "text": "{{context.newTodoText}}", "completed": false }
+    },
+    "updateNewText": {
+      "type": "context_update",
+      "target": "newTodoText"
+    },
+    "clearNewText": {
+      "type": "context_update",
+      "target": "newTodoText",
+      "value": ""
+    },
+    "setFilterAll": { "type": "context_update", "target": "filter", "value": "all" },
+    "setFilterActive": { "type": "context_update", "target": "filter", "value": "active" },
+    "setFilterDone": { "type": "context_update", "target": "filter", "value": "done" }
+  },
+  "controller_mappings": {
+    "default": {
+      "DPAD_UP": { "event": "SELECT_PREV" },
+      "DPAD_DOWN": { "event": "SELECT_NEXT" },
+      "A": { "event": "TOGGLE_COMPLETE", "label": "Done" },
+      "B": { "event": "DELETE_TODO", "label": "Delete" },
+      "X": { "event": "START_ADD", "label": "Add" },
+      "START": { "event": "CONFIRM_ADD", "label": "Save" }
+    }
+  },
+  "ui": {
+    "theme": "minimal-dark",
+    "layout": "list",
+    "components": [
+      {
+        "type": "header",
+        "text": "TODO",
+        "style": "minimal"
+      },
+      {
+        "type": "filter_tabs",
+        "options": ["all", "active", "done"],
+        "source": "context.filter"
+      },
+      {
+        "type": "list",
+        "id": "todo_list",
+        "source": "context.todos",
+        "selectedIndex": "context.selectedIndex",
+        "itemTemplate": {
+          "checkbox": "{{item.completed}}",
+          "text": "{{item.text}}",
+          "strikethrough": "{{item.completed}}"
+        }
+      },
+      {
+        "type": "input",
+        "id": "new_todo_input",
+        "placeholder": "What needs to be done?",
+        "source": "context.newTodoText",
+        "visibleWhen": "state === 'adding'"
+      },
+      {
+        "type": "stats",
+        "template": "{{todos.filter(t => !t.completed).length}} items left"
+      }
+    ]
+  },
+  "assets": {}
+}

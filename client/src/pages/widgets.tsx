@@ -684,7 +684,85 @@ export default function WidgetsPage() {
           </TabsContent>
         </Tabs>
 
-        <section className="mt-12 p-6 rounded-xl bg-gradient-to-br from-purple-900/20 to-cyan-900/20 border border-purple-500/20">
+        <section className="mt-12 p-6 rounded-xl bg-gradient-to-br from-gray-900/50 to-gray-800/50 border border-gray-700/50">
+          <h3 className="text-lg font-bold text-white mb-4">Platform Support</h3>
+          <p className="text-sm text-gray-400 mb-6">
+            Components run on multiple platforms. Click a platform tag to see what's needed.
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="p-4 rounded-lg bg-green-900/20 border border-green-500/30 text-center">
+              <div className="text-2xl mb-2">🌐</div>
+              <div className="text-sm font-semibold text-white">Web</div>
+              <div className="text-xs text-green-400 mt-1">Svelte 5 + Three.js</div>
+              <span className="inline-block mt-2 px-2 py-0.5 rounded text-xs bg-green-500/20 text-green-400">READY</span>
+            </div>
+            <Link href="/runtime?cart=todo_app" className="block">
+              <div className="p-4 rounded-lg bg-gray-900/50 border border-gray-600/30 text-center hover:border-purple-500/50 hover:bg-purple-900/10 transition-all cursor-pointer group">
+                <div className="text-2xl mb-2">🖥️</div>
+                <div className="text-sm font-semibold text-white">Desktop</div>
+                <div className="text-xs text-gray-500 mt-1">Electron</div>
+                <span className="inline-block mt-2 px-2 py-0.5 rounded text-xs bg-purple-500/20 text-purple-400 group-hover:bg-purple-500/40 transition-colors" data-testid="tag-todo-electron">TODO</span>
+              </div>
+            </Link>
+            <Link href="/runtime?cart=todo_app" className="block">
+              <div className="p-4 rounded-lg bg-gray-900/50 border border-gray-600/30 text-center hover:border-purple-500/50 hover:bg-purple-900/10 transition-all cursor-pointer group">
+                <div className="text-2xl mb-2">📱</div>
+                <div className="text-sm font-semibold text-white">Mobile</div>
+                <div className="text-xs text-gray-500 mt-1">Capacitor</div>
+                <span className="inline-block mt-2 px-2 py-0.5 rounded text-xs bg-purple-500/20 text-purple-400 group-hover:bg-purple-500/40 transition-colors" data-testid="tag-todo-capacitor">TODO</span>
+              </div>
+            </Link>
+            <Link href="/runtime?cart=todo_app" className="block">
+              <div className="p-4 rounded-lg bg-gray-900/50 border border-gray-600/30 text-center hover:border-purple-500/50 hover:bg-purple-900/10 transition-all cursor-pointer group">
+                <div className="text-2xl mb-2">🔌</div>
+                <div className="text-sm font-semibold text-white">MicroPython</div>
+                <div className="text-xs text-gray-500 mt-1">Pico W / ESP32</div>
+                <span className="inline-block mt-2 px-2 py-0.5 rounded text-xs bg-purple-500/20 text-purple-400 group-hover:bg-purple-500/40 transition-colors" data-testid="tag-todo-micropython">TODO</span>
+              </div>
+            </Link>
+            <Link href="/runtime?cart=todo_app" className="block">
+              <div className="p-4 rounded-lg bg-gray-900/50 border border-gray-600/30 text-center hover:border-purple-500/50 hover:bg-purple-900/10 transition-all cursor-pointer group">
+                <div className="text-2xl mb-2">⌨️</div>
+                <div className="text-sm font-semibold text-white">Terminal</div>
+                <div className="text-xs text-gray-500 mt-1">Python Textual TUI</div>
+                <span className="inline-block mt-2 px-2 py-0.5 rounded text-xs bg-purple-500/20 text-purple-400 group-hover:bg-purple-500/40 transition-colors" data-testid="tag-todo-tui">TODO</span>
+              </div>
+            </Link>
+          </div>
+        </section>
+
+        <section className="mt-8 p-6 rounded-xl bg-gradient-to-br from-cyan-900/20 to-blue-900/20 border border-cyan-500/20">
+          <h3 className="text-lg font-bold text-white mb-4">Example Cartridges</h3>
+          <p className="text-sm text-gray-400 mb-6">
+            Try these sample cartridges in the simulator to see how apps persist data.
+          </p>
+          <div className="grid md:grid-cols-2 gap-4">
+            <Link href="/runtime?cart=todo_app" className="block">
+              <div className="p-4 rounded-lg bg-black/30 border border-cyan-500/20 hover:border-cyan-400/50 transition-all cursor-pointer group">
+                <div className="flex items-center gap-3">
+                  <div className="text-3xl">✅</div>
+                  <div>
+                    <div className="font-semibold text-white group-hover:text-cyan-400 transition-colors">TODO App</div>
+                    <div className="text-xs text-gray-500">Task manager with persistent storage</div>
+                  </div>
+                </div>
+              </div>
+            </Link>
+            <Link href="/runtime?cart=journal" className="block">
+              <div className="p-4 rounded-lg bg-black/30 border border-cyan-500/20 hover:border-cyan-400/50 transition-all cursor-pointer group">
+                <div className="flex items-center gap-3">
+                  <div className="text-3xl">📔</div>
+                  <div>
+                    <div className="font-semibold text-white group-hover:text-cyan-400 transition-colors">Journal</div>
+                    <div className="text-xs text-gray-500">Date-based entries with mood tracking</div>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          </div>
+        </section>
+
+        <section className="mt-8 p-6 rounded-xl bg-gradient-to-br from-purple-900/20 to-cyan-900/20 border border-purple-500/20">
           <h3 className="text-lg font-bold text-white mb-4">Using Widgets in TOSS Cartridges</h3>
           <div className="grid md:grid-cols-2 gap-6">
             <div>

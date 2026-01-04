@@ -1,0 +1,192 @@
+{
+  "toss_version": "1.0",
+  "manifest": {
+    "id": "journal-001",
+    "tngli_id": "journal",
+    "title": "Journal",
+    "author": "TingOS",
+    "version": "1.0.0",
+    "description": "A minimal, distraction-free journal for daily reflections"
+  },
+  "memory": {
+    "entries": {
+      "type": "array",
+      "default": [
+        { "id": "1", "date": "2026-01-04", "content": "Started building my first TingOS cartridge today. The FSM approach makes state management surprisingly clear.", "mood": "inspired" },
+        { "id": "2", "date": "2026-01-03", "content": "Discovered the widget showcase - those nixie tube displays are gorgeous.", "mood": "curious" }
+      ],
+      "items": {
+        "id": "string",
+        "date": "string",
+        "content": "string",
+        "mood": "string"
+      }
+    },
+    "selectedIndex": {
+      "type": "number",
+      "default": 0
+    },
+    "editingContent": {
+      "type": "string",
+      "default": ""
+    },
+    "selectedMood": {
+      "type": "string",
+      "default": "neutral"
+    }
+  },
+  "fsm": {
+    "initial": "reading",
+    "states": {
+      "reading": {
+        "description": "Browsing journal entries",
+        "on": {
+          "NEXT_ENTRY": { "actions": ["nextEntry"] },
+          "PREV_ENTRY": { "actions": ["prevEntry"] },
+          "NEW_ENTRY": { "target": "writing", "actions": ["startNewEntry"] },
+          "EDIT_ENTRY": { "target": "editing", "actions": ["loadEntryForEdit"] },
+          "DELETE_ENTRY": { "actions": ["deleteEntry"] }
+        }
+      },
+      "writing": {
+        "description": "Composing a new journal entry",
+        "on": {
+          "UPDATE_CONTENT": { "actions": ["updateContent"] },
+          "SET_MOOD": { "actions": ["setMood"] },
+          "SAVE": { "target": "reading", "actions": ["saveNewEntry", "clearDraft"] },
+          "DISCARD": { "target": "reading", "actions": ["clearDraft"] }
+        }
+      },
+      "editing": {
+        "description": "Editing an existing entry",
+        "on": {
+          "UPDATE_CONTENT": { "actions": ["updateContent"] },
+          "SET_MOOD": { "actions": ["setMood"] },
+          "SAVE": { "target": "reading", "actions": ["updateEntry", "clearDraft"] },
+          "DISCARD": { "target": "reading", "actions": ["clearDraft"] }
+        }
+      }
+    }
+  },
+  "actions": {
+    "nextEntry": {
+      "type": "context_update",
+      "expression": "Math.min(context.selectedIndex + 1, context.entries.length - 1)"
+    },
+    "prevEntry": {
+      "type": "context_update",
+      "expression": "Math.max(context.selectedIndex - 1, 0)"
+    },
+    "startNewEntry": {
+      "type": "context_update",
+      "target": "editingContent",
+      "value": ""
+    },
+    "loadEntryForEdit": {
+      "type": "context_update",
+      "target": "editingContent",
+      "expression": "context.entries[context.selectedIndex].content"
+    },
+    "updateContent": {
+      "type": "context_update",
+      "target": "editingContent"
+    },
+    "setMood": {
+      "type": "context_update",
+      "target": "selectedMood"
+    },
+    "saveNewEntry": {
+      "type": "context_update",
+      "target": "entries",
+      "mode": "prepend",
+      "value": {
+        "id": "{{uuid}}",
+        "date": "{{today}}",
+        "content": "{{context.editingContent}}",
+        "mood": "{{context.selectedMood}}"
+      }
+    },
+    "updateEntry": {
+      "type": "context_update",
+      "target": "entries[selectedIndex]",
+      "expression": "{ ...context.entries[context.selectedIndex], content: context.editingContent, mood: context.selectedMood }"
+    },
+    "deleteEntry": {
+      "type": "context_update",
+      "target": "entries",
+      "expression": "context.entries.filter((_, i) => i !== context.selectedIndex)"
+    },
+    "clearDraft": {
+      "type": "context_update",
+      "target": "editingContent",
+      "value": ""
+    }
+  },
+  "controller_mappings": {
+    "default": {
+      "DPAD_UP": { "event": "PREV_ENTRY" },
+      "DPAD_DOWN": { "event": "NEXT_ENTRY" },
+      "A": { "event": "EDIT_ENTRY", "label": "Edit" },
+      "B": { "event": "DISCARD", "label": "Back" },
+      "X": { "event": "NEW_ENTRY", "label": "New" },
+      "Y": { "event": "DELETE_ENTRY", "label": "Delete" },
+      "START": { "event": "SAVE", "label": "Save" },
+      "LB": { "event": "SET_MOOD", "params": { "mood": "prev" } },
+      "RB": { "event": "SET_MOOD", "params": { "mood": "next" } }
+    }
+  },
+  "ui": {
+    "theme": "paper-minimal",
+    "layout": "reader",
+    "moods": [
+      { "id": "inspired", "emoji": "✨", "color": "#f59e0b" },
+      { "id": "happy", "emoji": "😊", "color": "#22c55e" },
+      { "id": "neutral", "emoji": "😐", "color": "#6b7280" },
+      { "id": "tired", "emoji": "😴", "color": "#8b5cf6" },
+      { "id": "frustrated", "emoji": "😤", "color": "#ef4444" },
+      { "id": "curious", "emoji": "🤔", "color": "#3b82f6" }
+    ],
+    "components": [
+      {
+        "type": "header",
+        "text": "Journal",
+        "style": "elegant",
+        "showDate": true
+      },
+      {
+        "type": "entry_navigator",
+        "position": "top",
+        "showDates": true,
+        "source": "context.entries"
+      },
+      {
+        "type": "entry_card",
+        "id": "current_entry",
+        "source": "context.entries[context.selectedIndex]",
+        "style": "paper",
+        "showMoodBadge": true,
+        "showDate": true
+      },
+      {
+        "type": "textarea",
+        "id": "entry_editor",
+        "source": "context.editingContent",
+        "placeholder": "What's on your mind today?",
+        "visibleWhen": "state === 'writing' || state === 'editing'",
+        "style": "minimal",
+        "autoFocus": true
+      },
+      {
+        "type": "mood_picker",
+        "id": "mood_selector",
+        "source": "context.selectedMood",
+        "visibleWhen": "state === 'writing' || state === 'editing'"
+      },
+      {
+        "type": "stats",
+        "template": "{{entries.length}} entries"
+      }
+    ]
+  },
+  "assets": {}
+}
