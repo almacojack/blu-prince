@@ -30,7 +30,7 @@ import { ControllerMappingsPanel } from "@/components/ControllerMappingsPanel";
 import { WaterContainer } from "@/components/WaterContainer";
 import { BrassGearAssembly } from "@/components/BrassGear";
 import { WaterControlPanel, createDefaultWaterContainer, type WaterContainerConfig } from "@/components/WaterControlPanel";
-import { SceneTree } from "@/components/SceneTree";
+import { SceneTree, SceneDecoration } from "@/components/SceneTree";
 import { ViewportAnglesPanel, ViewportAngle, CameraTarget, calculateCameraPositionForAngle } from "@/components/ViewportAnglesPanel";
 import { CameraControlPanel, CameraSettings, DEFAULT_CAMERA_SETTINGS } from "@/components/CameraControlPanel";
 import { createNewTossFile, TossFile } from "@/lib/toss";
@@ -1875,6 +1875,7 @@ export default function BluPrinceEditor() {
   const [importProgress, setImportProgress] = useState<{ percent: number; stage: string; message: string } | null>(null);
   const [waterContainers, setWaterContainers] = useState<WaterContainerConfig[]>([]);
   const [activeWaterContainerId, setActiveWaterContainerId] = useState<string | null>(null);
+  const [showBrassGears, setShowBrassGears] = useState(true);
   const [viewportAngle, setViewportAngle] = useState<ViewportAngle>("perspective");
   const [tossFile] = useState<TossFile>(createNewTossFile());
   const [selectedStateId, setSelectedStateId] = useState<string | null>(null);
@@ -2783,6 +2784,20 @@ export default function BluPrinceEditor() {
                 items: newOrder.map(id => prev.items.find(item => item.id === id)!).filter(Boolean)
               }));
             }}
+            decorations={[
+              { id: 'brass-gears', label: 'Brass Gear Assembly', type: 'gear', visible: showBrassGears },
+              ...waterContainers.map(c => ({ 
+                id: c.id, 
+                label: c.containerType === 'beaker' ? 'Beaker' : c.containerType === 'flask' ? 'Flask' : 'Cylinder', 
+                type: 'water' as const, 
+                visible: true 
+              })),
+            ]}
+            onToggleDecorationVisibility={(id) => {
+              if (id === 'brass-gears') {
+                setShowBrassGears(prev => !prev);
+              }
+            }}
           />
         </DockablePanel>
 
@@ -3055,7 +3070,7 @@ export default function BluPrinceEditor() {
           </Physics>
           
           {/* Decorative Brass Gear Assembly */}
-          <BrassGearAssembly position={[-6, 2, -4]} />
+          {showBrassGears && <BrassGearAssembly position={[-6, 2, -4]} />}
           
           {/* Environment for metallic reflections */}
           <Environment preset="city" />

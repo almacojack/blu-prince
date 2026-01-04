@@ -20,12 +20,22 @@ import {
   Hexagon,
   Cylinder,
   Triangle,
+  Cog,
+  Droplets,
+  Sparkles,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { TossItem, Bounds } from "@/lib/toss-v1";
+
+export interface SceneDecoration {
+  id: string;
+  label: string;
+  type: 'gear' | 'water' | 'effect' | 'environment';
+  visible?: boolean;
+}
 
 interface SceneTreeProps {
   items: TossItem[];
@@ -34,6 +44,8 @@ interface SceneTreeProps {
   onRenameItem?: (id: string, newLabel: string) => void;
   onDeleteItem?: (id: string) => void;
   onReorderItems?: (itemIds: string[]) => void;
+  decorations?: SceneDecoration[];
+  onToggleDecorationVisibility?: (id: string) => void;
 }
 
 type DragItemType = "item" | "light" | "camera";
@@ -425,6 +437,21 @@ function TreeNode({
   );
 }
 
+function getDecorationIcon(type: SceneDecoration['type']) {
+  switch (type) {
+    case 'gear':
+      return <Cog className="w-4 h-4 text-amber-400" />;
+    case 'water':
+      return <Droplets className="w-4 h-4 text-blue-400" />;
+    case 'effect':
+      return <Sparkles className="w-4 h-4 text-purple-400" />;
+    case 'environment':
+      return <Sun className="w-4 h-4 text-orange-400" />;
+    default:
+      return <Box className="w-4 h-4 text-zinc-400" />;
+  }
+}
+
 export function SceneTree({
   items = [],
   selectedItemId,
@@ -432,6 +459,8 @@ export function SceneTree({
   onRenameItem,
   onDeleteItem,
   onReorderItems,
+  decorations = [],
+  onToggleDecorationVisibility,
 }: SceneTreeProps) {
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [dragState, setDragState] = useState<DragState | null>(null);
@@ -605,6 +634,40 @@ export function SceneTree({
             }
           />
         </TreeNode>
+
+        {decorations.length > 0 && (
+          <TreeNode
+            icon={<Cog className="w-4 h-4 text-amber-400" />}
+            label="Decorations"
+            expandable
+            defaultExpanded
+            badge={
+              <span className="text-[10px] text-zinc-500 font-mono">{decorations.length}</span>
+            }
+          >
+            {decorations.map((decoration) => (
+              <TreeNode
+                key={decoration.id}
+                icon={getDecorationIcon(decoration.type)}
+                label={decoration.label}
+                depth={1}
+                onClick={() => onToggleDecorationVisibility?.(decoration.id)}
+                badge={
+                  <span 
+                    className={cn(
+                      "text-[8px] px-1 py-0.5 rounded font-mono uppercase",
+                      decoration.visible !== false 
+                        ? "bg-green-500/20 text-green-400"
+                        : "bg-zinc-500/20 text-zinc-400"
+                    )}
+                  >
+                    {decoration.visible !== false ? 'ON' : 'OFF'}
+                  </span>
+                }
+              />
+            ))}
+          </TreeNode>
+        )}
       </div>
     </ScrollArea>
   );
