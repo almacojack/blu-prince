@@ -233,21 +233,131 @@
 
 ---
 
+### 💎 Blossom Squared: Glass Pendant Configurator
+
+**Domain:** blossom2.com
+
+**Concept:** Customer uploads image → visualizes on square glass pendant → selects chain/cord color → orders. Replaces wife's stagnant website with a living cartridge.
+
+**Rating:** ⭐⭐⭐⭐⭐ (Immediate revenue. Real business. Proof of platform for commerce.)
+
+**How it works:**
+1. Customer uploads image via File API (web) or camera capture (mobile)
+2. Image cropped/positioned on square glass pendant preview
+3. Select chain type: ball chain (silver/gold/black) or silk cord (12 colors)
+4. 3D preview rotates to show pendant from angles
+5. Add to cart → checkout → order queued
+
+**Technical: Image Upload in Cartridges**
+- **Web:** File API → canvas resize → base64 or blob URL
+- **Handheld/MicroPython:** Camera capture → save to flash → reference in cart state
+- **Storage:** Images saved to cart's local state (IndexedDB on web, flash on device)
+- **Sync:** When online, uploads sync to Cloud Sync accessory for backup
+
+**Cartridge lineup:**
+| Cartridge | Price | Type |
+|-----------|-------|------|
+| **Blossom Squared** | Free | Base | Upload, preview, order |
+| **Premium Frames** | $2.99 | Add-on | Decorative pendant frames |
+| **Gift Wrap** | $1.99 | Add-on | Gift messaging, wrap options |
+
+**Rank vs others:** High priority. Real revenue from day one. Wife's business = built-in customer.
+
+---
+
+### 📶 TingOS Platform: Offline/Online Queue System
+
+**Concept:** TingOS must be offline-first. Queue requests when offline, replay when online. StatusState object for reactive display.
+
+**Rating:** PLATFORM CRITICAL (Not a cartridge. Core capability.)
+
+**StatusState Object:**
+```typescript
+interface StatusState {
+  network: {
+    online: boolean;
+    type: 'wifi' | 'cellular' | 'ethernet' | 'lora' | 'offline';
+    signal: number; // 0-100
+  };
+  controllers: ControllerInfo[]; // Gamepads connected
+  radio: {
+    lora: { connected: boolean; peers: number; lastHeard: Date };
+  };
+  sync: {
+    pendingOperations: number;
+    lastSync: Date;
+    syncing: boolean;
+  };
+}
+```
+
+**SyncOrchestrator Service:**
+- Append-only Outbox for pending operations
+- Retry with exponential backoff
+- Deterministic replay on reconnect
+- Developer hooks for conflict resolution
+
+**Reactive Display:** Any widget can subscribe to StatusState changes. Show:
+- WiFi icon (connected/disconnected)
+- Controller icons (count + type)
+- LoRa radio status
+- Pending sync count badge
+
+---
+
+### 📻 LoRa Communicator
+
+**Concept:** Offline radio communication using HopeRF RFM96W modules. Text messaging, location sharing, sensor data—all without internet.
+
+**Rating:** ⭐⭐⭐⭐⭐ (Unique. No one else does this. Mass-produce with spool of modules.)
+
+**Hardware:**
+- HopeRF RFM96W (915 MHz for US, 868 MHz for EU)
+- ESP32 or RP2040 host
+- Simple PCB design for mass production
+
+**How it works:**
+1. Pair devices via LoRa handshake
+2. Send/receive text messages (store-and-forward when peer offline)
+3. Share GPS coordinates (integrates with Lost: GPS)
+4. Mesh capability for multi-hop range extension
+
+**Cartridge lineup:**
+| Cartridge | Price | Type |
+|-----------|-------|------|
+| **LoRa Communicator** | Free | Base | Basic messaging, pairing |
+| **LoRa Mesh** | $4.99 | Add-on | Multi-hop, relay mode |
+| **LoRa Tracker** | $4.99 | Add-on | Location sharing, breadcrumbs |
+| **LoRa Sensors** | $4.99 | Add-on | Temp, humidity, pressure forwarding |
+
+**Radio Abstraction Module:**
+- Desktop sim uses mocked WebSocket transport
+- MicroPython uses actual RFM96W driver
+- Same cart code runs on both
+
+**Upsell:** Sell pre-built LoRa Communicator hardware units via TingOS store
+
+**Rank vs others:** Top 5. Unique differentiator. Shows "not a toy" positioning.
+
+---
+
 ## COMPLETE RANKED LAUNCH PRIORITY
 
 | Priority | Cartridge/Stack | Why |
 |----------|-----------------|-----|
 | 1 | **Journal Core + Add-ons** | Universal upsell. Mounts on everything. 12 add-on revenue streams. |
-| 2 | **Cloud Sync** | $3/mo on everything. Recurring. Sticky. |
+| 2 | **Cloud Sync + Offline Queue** | $3/mo on everything. Platform critical. Enables offline-first. |
 | 3 | **Lost: GPS Tools** | Real utility. Outdoor market pays. PostGIS flex. |
-| 4 | **Kanban Flow** | Developer audience. Anti-JIRA positioning. |
-| 5 | **Demolition Bot** | Viral potential. Streamer bait. Shareable. |
-| 6 | **Time Capsule + l8r.co** | Daily habit. Productivity gateway. |
-| 7 | **Market Sentinel (coins.rip)** | High ARPU. Crypto traders pay for edge. |
-| 8 | **Midnight Auction** | Social/theatrical. Auction drama. |
-| 9 | **Control Tower** | "Seeing is believing" demo. Infrastructure story. |
-| 10 | **blu-jeans** | Niche but unique. Hardware maker audience. |
-| 11 | **Product Configurator** | Enterprise play. Save for Phase 2. |
+| 4 | **Blossom Squared** | Immediate revenue. Wife's real business. Commerce proof. |
+| 5 | **Kanban Flow** | Developer audience. Anti-JIRA positioning. |
+| 6 | **Demolition Bot** | Viral potential. Streamer bait. Shareable. |
+| 7 | **LoRa Communicator** | Unique differentiator. Hardware sales. "Not a toy." |
+| 8 | **Time Capsule + l8r.co** | Daily habit. Productivity gateway. |
+| 9 | **Market Sentinel (coins.rip)** | High ARPU. Crypto traders pay for edge. |
+| 10 | **Midnight Auction** | Social/theatrical. Auction drama. |
+| 11 | **Control Tower** | "Seeing is believing" demo. Infrastructure story. |
+| 12 | **blu-jeans** | Niche but unique. Hardware maker audience. |
+| 13 | **Product Configurator** | Enterprise play. Save for Phase 2. |
 
 ---
 
@@ -265,9 +375,90 @@
 | Auction tools | $4,000 |
 | Infrastructure/Control Tower | $2,000 |
 | blu-jeans (niche) | $2,000 |
-| **TOTAL** | **$47,000** |
+| **Blossom Squared** | **$3,000** |
+| **LoRa Hardware Sales** | **$4,000** |
+| **TOTAL** | **$54,000** |
 
 ---
 
-*Document Version: 1.0*
+## ANSWERS TO TECHNICAL QUESTIONS
+
+### How do uploads work in a cartridge?
+
+**Web Browser:**
+```javascript
+// File API → canvas resize → store in cart state
+const file = await fileInput.files[0];
+const reader = new FileReader();
+reader.onload = (e) => {
+  // Resize to max 1024px
+  const img = new Image();
+  img.onload = () => {
+    const canvas = resizeToMax(img, 1024);
+    const base64 = canvas.toDataURL('image/jpeg', 0.8);
+    // Save to cart state
+    cart.state.pendantImage = base64;
+  };
+  img.src = e.target.result;
+};
+```
+
+**MicroPython:**
+```python
+# Camera capture → save to flash → reference in state
+import camera
+frame = camera.capture()
+with open('/flash/pendant.jpg', 'wb') as f:
+    f.write(frame)
+cart.state['pendantImage'] = '/flash/pendant.jpg'
+```
+
+### Does it save offline?
+
+**Yes.** Storage layers:
+- **Web:** IndexedDB via localForage
+- **MicroPython:** Flash filesystem
+- **Both:** Cart state persists automatically
+
+### Offline queue + online sync?
+
+**Yes. The SyncOrchestrator:**
+1. All network operations go through Outbox
+2. If offline → queue in Outbox (IndexedDB or flash)
+3. When online detected → replay Outbox in order
+4. Retry with backoff on failures
+5. StatusState emits events for UI updates
+
+```typescript
+// Example usage
+await syncOrchestrator.enqueue({
+  type: 'order',
+  payload: { image: base64, chain: 'gold', size: '1inch' }
+});
+// Queued if offline, sent if online
+```
+
+### StatusState for reactive display?
+
+**Yes.** Global reactive object all widgets can subscribe to:
+
+```typescript
+statusState.subscribe('network', (network) => {
+  wifiIcon.visible = network.online;
+  wifiIcon.signal = network.signal;
+});
+
+statusState.subscribe('controllers', (controllers) => {
+  controllerBadge.count = controllers.length;
+});
+
+statusState.subscribe('sync', (sync) => {
+  pendingBadge.count = sync.pendingOperations;
+});
+```
+
+---
+
+*Document Version: 1.1*
 *Last Updated: January 2026*
+*Added: Blossom Squared, Offline Queue, LoRa Communicator, StatusState spec*
