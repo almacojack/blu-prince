@@ -32,8 +32,8 @@ import { WaterContainer } from "@/components/WaterContainer";
 import { BrassGearAssembly } from "@/components/BrassGear";
 import { WaterControlPanel, createDefaultWaterContainer, type WaterContainerConfig } from "@/components/WaterControlPanel";
 import { SceneTree, SceneFsmInfo, MeshFsmInfo } from "@/components/SceneTree";
-import { ViewportAnglesPanel, ViewportAngle, CameraTarget, calculateCameraPositionForAngle } from "@/components/ViewportAnglesPanel";
-import { CameraControlPanel, CameraSettings, DEFAULT_CAMERA_SETTINGS } from "@/components/CameraControlPanel";
+import { CameraTarget, calculateCameraPositionForAngle } from "@/components/ViewportAnglesPanel";
+import { CameraControlPanel, CameraSettings, DEFAULT_CAMERA_SETTINGS, type ViewportAngle } from "@/components/CameraControlPanel";
 import { createNewTossFile, TossFile } from "@/lib/toss";
 import {
   createGestureState, startGesture, updateGesture, endGesture,
@@ -2900,6 +2900,8 @@ export default function BluPrinceEditor() {
                   onResetView={handleResetView}
                   onFocusSelected={handleFocusSelected}
                   hasSelection={!!selectedItem}
+                  viewportAngle={viewportAngle}
+                  onAngleChange={setViewportAngle}
                 />
               )
             },
@@ -3117,15 +3119,6 @@ export default function BluPrinceEditor() {
         </div>
       </div>
 
-      {/* Viewport Angles Panel - Top Right */}
-      <div className="absolute top-16 right-4 z-40 flex flex-col gap-2">
-        <ViewportAnglesPanel
-          currentAngle={viewportAngle}
-          onAngleChange={setViewportAngle}
-          selectedTarget={cameraTarget}
-          cameraDistance={cameraSettings.distance}
-        />
-      </div>
 
       {/* Remote Cursors */}
       {collaborationEnabled && collab.isConnected && (

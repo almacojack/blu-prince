@@ -11,13 +11,22 @@ import {
   Maximize,
   Grid3X3,
   Crosshair,
+  ArrowUp,
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+  Box,
+  Circle,
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+
+export type ViewportAngle = "front" | "back" | "left" | "right" | "top" | "bottom" | "perspective";
 
 export interface CameraSettings {
   distance: number;
@@ -37,8 +46,17 @@ interface CameraControlPanelProps {
   onResetView: () => void;
   onFocusSelected: () => void;
   hasSelection: boolean;
+  viewportAngle?: ViewportAngle;
+  onAngleChange?: (angle: ViewportAngle) => void;
   className?: string;
 }
+
+const ANGLE_BUTTONS: { angle: ViewportAngle; label: string; shortcut: string }[] = [
+  { angle: "perspective", label: "3D", shortcut: "5" },
+  { angle: "front", label: "Front", shortcut: "1" },
+  { angle: "right", label: "Right", shortcut: "3" },
+  { angle: "top", label: "Top", shortcut: "7" },
+];
 
 export const DEFAULT_CAMERA_SETTINGS: CameraSettings = {
   distance: 5,
@@ -58,6 +76,8 @@ export function CameraControlPanel({
   onResetView,
   onFocusSelected,
   hasSelection,
+  viewportAngle = "perspective",
+  onAngleChange,
   className,
 }: CameraControlPanelProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -81,6 +101,38 @@ export function CameraControlPanel({
           {settings.orthographic ? "ORTHO" : "PERSP"}
         </Badge>
       </div>
+
+      {onAngleChange && (
+        <div className="space-y-1">
+          <Label className="text-[10px] text-zinc-400">Viewport Angle</Label>
+          <TooltipProvider delayDuration={200}>
+            <div className="grid grid-cols-4 gap-1">
+              {ANGLE_BUTTONS.map(({ angle, label, shortcut }) => (
+                <Tooltip key={angle}>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => onAngleChange(angle)}
+                      className={cn(
+                        "h-7 px-2 rounded text-[9px] font-medium transition-all",
+                        "border border-white/10 hover:border-cyan-500/50",
+                        viewportAngle === angle
+                          ? "bg-cyan-500/20 text-cyan-400 border-cyan-500/50"
+                          : "bg-black/30 text-zinc-400 hover:text-white"
+                      )}
+                      data-testid={`button-angle-${angle}`}
+                    >
+                      {label}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-[10px]">
+                    {label} view (Numpad {shortcut})
+                  </TooltipContent>
+                </Tooltip>
+              ))}
+            </div>
+          </TooltipProvider>
+        </div>
+      )}
 
       <div className="space-y-2">
         <div className="flex items-center justify-between">
