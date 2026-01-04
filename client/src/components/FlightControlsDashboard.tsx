@@ -417,10 +417,8 @@ export function FlightControlsDashboard({
                       <span className="absolute top-0.5 left-1 text-[7px] font-bold opacity-60">A</span>
                       <ChevronLeft className="w-5 h-5" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-9 w-9 rounded-lg border-2 border-gray-700 text-gray-500 bg-gray-900/50"
+                    <button
+                      className="h-9 w-9 flex items-center justify-center rounded-full hover:bg-gray-700/30 transition-colors"
                       onClick={() => {
                         setLockedKeys(new Set());
                         setActiveKeys(new Set());
@@ -429,8 +427,8 @@ export function FlightControlsDashboard({
                       title="Stop all movement (ESC)"
                       data-testid="button-fly-stop"
                     >
-                      <RotateCcw className="w-3 h-3" />
-                    </Button>
+                      <div className="w-2 h-2 rounded-full bg-red-500/60 hover:bg-red-400" />
+                    </button>
                     <Button
                       variant="ghost"
                       size="icon"

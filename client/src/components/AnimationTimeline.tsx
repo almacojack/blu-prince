@@ -100,7 +100,24 @@ function formatTime(seconds: number): string {
   return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}:${frames.toString().padStart(2, "0")}`;
 }
 
-function TimeRuler({ duration, zoom, scrollOffset }: { duration: number; zoom: number; scrollOffset: number }) {
+function TimeRuler({ 
+  duration, 
+  zoom, 
+  scrollOffset,
+  onScrub,
+  onScrubStart,
+  onScrubEnd,
+}: { 
+  duration: number; 
+  zoom: number; 
+  scrollOffset: number;
+  onScrub?: (time: number) => void;
+  onScrubStart?: () => void;
+  onScrubEnd?: () => void;
+}) {
+  const rulerRef = useRef<HTMLDivElement>(null);
+  const [isScrubbing, setIsScrubbing] = useState(false);
+  
   const marks = useMemo(() => {
     const result: { time: number; label: string; major: boolean }[] = [];
     const interval = zoom > 2 ? 0.5 : zoom > 1 ? 1 : 2;
@@ -114,10 +131,54 @@ function TimeRuler({ duration, zoom, scrollOffset }: { duration: number; zoom: n
     return result;
   }, [duration, zoom]);
 
+  const calculateTimeFromX = useCallback((clientX: number) => {
+    if (!rulerRef.current) return 0;
+    const rect = rulerRef.current.getBoundingClientRect();
+    const x = clientX - rect.left + scrollOffset;
+    return Math.max(0, Math.min(duration, x / (60 * zoom)));
+  }, [scrollOffset, zoom, duration]);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsScrubbing(true);
+    onScrubStart?.();
+    const time = calculateTimeFromX(e.clientX);
+    onScrub?.(time);
+  }, [calculateTimeFromX, onScrub, onScrubStart]);
+
+  useEffect(() => {
+    if (!isScrubbing) return;
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      const time = calculateTimeFromX(e.clientX);
+      onScrub?.(time);
+    };
+    
+    const handleMouseUp = () => {
+      setIsScrubbing(false);
+      onScrubEnd?.();
+    };
+    
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isScrubbing, calculateTimeFromX, onScrub, onScrubEnd]);
+
   return (
-    <div className="relative h-6 bg-gradient-to-b from-zinc-800 to-zinc-900 border-b border-zinc-700 overflow-hidden">
+    <div 
+      ref={rulerRef}
+      className={cn(
+        "relative h-6 bg-gradient-to-b from-zinc-800 to-zinc-900 border-b border-zinc-700 overflow-hidden cursor-ew-resize select-none",
+        isScrubbing && "bg-cyan-900/20"
+      )}
+      onMouseDown={handleMouseDown}
+      data-testid="timeline-ruler"
+    >
       <div
-        className="absolute inset-0 flex"
+        className="absolute inset-0 flex pointer-events-none"
         style={{ transform: `translateX(-${scrollOffset}px)` }}
       >
         {marks.map((mark) => (
@@ -394,6 +455,16 @@ function TransportControls({
       <div className="font-mono text-xs text-zinc-500">
         {formatTime(duration)}
       </div>
+      
+      <div className="w-px h-6 bg-zinc-700 mx-1" />
+      
+      {/* Prominent Frame Counter */}
+      <div className="flex items-center gap-1 bg-gradient-to-r from-cyan-900/50 to-purple-900/50 px-2 py-1 rounded border border-cyan-500/30">
+        <span className="text-[9px] text-zinc-400 uppercase tracking-wide">Frame</span>
+        <span className="font-mono text-lg font-bold text-cyan-300 min-w-[50px] text-center tabular-nums" data-testid="text-current-frame">
+          {Math.floor(currentTime * 30)}
+        </span>
+      </div>
     </div>
   );
 }
@@ -457,7 +528,11 @@ export function AnimationTimeline({
   const [scrollOffset, setScrollOffset] = useState(0);
   const [selectedKeyframeId, setSelectedKeyframeId] = useState<string | null>(null);
   const [loop, setLoop] = useState(false);
+  const [isScrubbing, setIsScrubbing] = useState(false);
   const timelineRef = useRef<HTMLDivElement>(null);
+  
+  // Calculate frame number (30fps)
+  const currentFrame = Math.floor(currentTime * 30);
 
   const handleTimelineClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
@@ -618,7 +693,14 @@ export function AnimationTimeline({
         <div className="flex">
           <div className="w-40 shrink-0 bg-zinc-900/80" />
           <div className="flex-1">
-            <TimeRuler duration={duration} zoom={zoom} scrollOffset={scrollOffset} />
+            <TimeRuler 
+              duration={duration} 
+              zoom={zoom} 
+              scrollOffset={scrollOffset}
+              onScrub={onTimeChange}
+              onScrubStart={() => setIsScrubbing(true)}
+              onScrubEnd={() => setIsScrubbing(false)}
+            />
           </div>
         </div>
 
@@ -648,13 +730,25 @@ export function AnimationTimeline({
         <AnimatePresence>
           {playheadPosition > 0 && (
             <motion.div
-              className="absolute top-0 bottom-0 w-px bg-red-500 pointer-events-none z-20"
+              className={cn(
+                "absolute top-0 bottom-0 w-px z-20 pointer-events-none",
+                isScrubbing ? "bg-cyan-400" : "bg-red-500"
+              )}
               style={{ left: playheadPosition }}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-red-500 rotate-45" />
+              <div className={cn(
+                "absolute -top-1 left-1/2 -translate-x-1/2 w-3 h-3 rotate-45",
+                isScrubbing ? "bg-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.8)]" : "bg-red-500"
+              )} />
+              {/* Frame indicator tooltip during scrub */}
+              {isScrubbing && (
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-cyan-900/90 border border-cyan-500 px-2 py-0.5 rounded text-[10px] font-mono text-cyan-300 whitespace-nowrap shadow-lg">
+                  F{currentFrame}
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
