@@ -19,6 +19,8 @@ import { VirtualHandheld } from "@/components/VirtualHandheld";
 import { GamepadInput } from "@/hooks/use-gamepad";
 import { useSearch } from "wouter";
 import { SimulatorPreview } from "@/components/SimulatorPreview";
+import { CartridgeBrowser, CartridgeEntry } from "@/components/CartridgeBrowser";
+import { Library } from "lucide-react";
 
 import todoCartridge from "@/lib/toss-examples/todo-app.toss.json";
 import journalCartridge from "@/lib/toss-examples/journal.toss.json";
@@ -846,6 +848,7 @@ export default function RuntimeSimulator() {
   const [showSplash, setShowSplash] = useState(false);
   const [splashCartridge, setSplashCartridge] = useState<any>(null);
   const [showController, setShowController] = useState(false);
+  const [showCartridgeBrowser, setShowCartridgeBrowser] = useState(false);
   const router = getCommandRouter();
   
   const searchString = useSearch();
@@ -1060,6 +1063,28 @@ export default function RuntimeSimulator() {
         />
       )}
 
+      {/* Cartridge Browser (Cover Flow) */}
+      {showCartridgeBrowser && (
+        <CartridgeBrowser
+          cartridges={cartridges.map((cart): CartridgeEntry => ({
+            id: cart.tngli_id,
+            title: cart.title || "Untitled",
+            author: cart.toss_file?.manifest?.meta?.author || "Unknown",
+            description: cart.toss_file?.manifest?.meta?.description,
+            color: cart.toss_file?.manifest?.meta?.color || "#1a1a2e",
+            labelColor: cart.toss_file?.manifest?.meta?.labelColor || "#f8f8f8",
+          }))}
+          onSelect={(entry) => {
+            console.log("Selected cartridge details:", entry);
+          }}
+          onLoad={(entry) => {
+            setSelectedCartridgeId(entry.id);
+            setShowCartridgeBrowser(false);
+          }}
+          onClose={() => setShowCartridgeBrowser(false)}
+        />
+      )}
+
       {/* Top Controls */}
       <div className="absolute top-4 left-4 right-4 z-50 flex gap-4 items-center justify-between">
         <div className="flex gap-4 items-center">
@@ -1070,18 +1095,30 @@ export default function RuntimeSimulator() {
           </Link>
           
           {!isLoading && cartridges.length > 0 && (
-            <Select value={selectedCartridgeId || undefined} onValueChange={setSelectedCartridgeId}>
-              <SelectTrigger className="w-[250px] bg-black/50 border-white/20 text-white">
-                <SelectValue placeholder="Select Cartridge" />
-              </SelectTrigger>
-              <SelectContent>
-                {cartridges.map((cart) => (
-                  <SelectItem key={cart.tngli_id} value={cart.tngli_id}>
-                    {cart.title} v{cart.version}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <>
+              <Select value={selectedCartridgeId || undefined} onValueChange={setSelectedCartridgeId}>
+                <SelectTrigger className="w-[250px] bg-black/50 border-white/20 text-white">
+                  <SelectValue placeholder="Select Cartridge" />
+                </SelectTrigger>
+                <SelectContent>
+                  {cartridges.map((cart) => (
+                    <SelectItem key={cart.tngli_id} value={cart.tngli_id}>
+                      {cart.title} v{cart.version}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <Button
+                variant="ghost"
+                onClick={() => setShowCartridgeBrowser(true)}
+                className="text-white gap-2 bg-black/50 border border-white/20 hover:bg-white/10"
+                data-testid="button-open-cart-browser"
+              >
+                <Library className="w-4 h-4" />
+                Browse
+              </Button>
+            </>
           )}
         </div>
 
