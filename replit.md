@@ -14,6 +14,11 @@ Preferred communication style: Simple, everyday language.
 - **80s Atari kid vibe** - Immersive 3D backdrop like watching TV from a kid's perspective in the 80s
 - **Dual Theme System** - Cyberpunk Neon (default) and Victorian Brass themes available via theme switcher
 
+### Visual Roadmap
+- **Boot Effect Presets** - Customizable splash screens: Atari rainbow, CRT scanlines, Victorian brass gears, cyberpunk glitch, user color palettes
+- **Cart Browser (Cover Flow)** - 3D cartridge shelf browser with realistic Atari 5200-style plastic cartridges
+- **Plastic Fidelity** - Cartridge rendering with grooves, ridges, embossed labels, matte/glossy zones, beveled edges, dust ports
+
 ## System Architecture
 
 ### Frontend Architecture
