@@ -1158,12 +1158,13 @@ export default function RuntimeSimulator() {
         onSendEvent={handleTestEvent}
       />
 
-      {/* Event Console - Draggable & Dockable */}
+      {/* Event Console - Draggable & Dockable (starts at bottom-left near footer) */}
       {eventConsoleOpen && (
         <DraggablePanel
           title="Event Console"
           icon={<Zap className="w-4 h-4 text-purple-400" />}
-          defaultPosition={{ x: 16, y: 64 }}
+          defaultPosition={{ x: 16, y: 400 }}
+          defaultDock="bottom-left"
           minWidth={420}
           onClose={() => setEventConsoleOpen(false)}
           storageKey="event-console"
@@ -1181,14 +1182,14 @@ export default function RuntimeSimulator() {
         </DraggablePanel>
       )}
       
-      {/* Event Console Toggle Button (when closed) */}
+      {/* Event Console Toggle Button (when closed) - positioned at bottom-left footer area */}
       {!eventConsoleOpen && (
-        <div className="absolute top-16 left-4 z-10">
+        <div className="absolute bottom-4 left-4 z-10">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setEventConsoleOpen(true)}
-            className="h-8 px-3 gap-2 bg-purple-900/30 border border-purple-500/30 text-purple-300 hover:bg-purple-900/50"
+            className="h-8 px-3 gap-2 bg-purple-900/30 border border-purple-500/30 text-purple-300 hover:bg-purple-900/50 hover:scale-105 transition-transform"
             data-testid="button-expand-event-console"
           >
             <Zap className="w-4 h-4" />

@@ -83,6 +83,9 @@ The platform features a performance system that auto-detects device capabilities
 - **Bitmap Font Converter**: Generates MicroPython-compatible bitmap fonts from vector fonts with texture atlas generation and 1-bit packing for memory efficiency.
 - **3D Text Rendering**: Text3D component for rendering text in 3D space with font selection integration.
 - **Assertions Panel**: Draggable test panel with WHEN/THEN interface for defining test conditions. Supports state checks, value comparisons, and visibility tests. Safe read-only evaluation model.
+- **Animation Patterns (12 Principles)**: TOSS v1.1 spec extension for Disney's 12 Principles of Animation. Includes TossAnimationPattern, TossKeyframe, AnimationPatternsRegistry. One-click presets with customizable parameters, easing functions, and state→animation bindings.
+- **Draggable/Dockable Panels**: DraggablePanel component with corner docking, pin/unpin, minimize, and localStorage persistence.
+- **Event Console**: Draggable panel for triggering FSM events with search and results log.
 
 ## File Organization
 
@@ -118,7 +121,8 @@ server/
 - **lib/font-loader.ts**: Font loading from Google Fonts, user uploads, system fonts
 - **lib/bitmap-font.ts**: Bitmap font conversion for MicroPython with texture atlas generation
 - **lib/engine.ts**: TingOsEngine - FSM runtime execution
-- **lib/toss-v1.1.ts**: Authoritative TOSS schema (v1.1)
+- **lib/toss-v1.1.ts**: Authoritative TOSS schema (v1.1) with animation patterns
+- **lib/animation-patterns.ts**: 12 Principles of Animation implementation with keyframe interpolation
 - **lib/openscad/**: OpenSCAD interpreter (lexer, parser, evaluator)
 
 ## External Dependencies
@@ -137,7 +141,24 @@ server/
 ### TOSS Schema Versions
 - **toss.ts**: FSM-oriented schema.
 - **toss-v1.ts**: 3D runtime schema.
-- **toss-v1.1.ts**: Authoritative specification from TingOS backend, including multi-statechart, physics joints, `SpacetimeAnchor`, and hardware profiles.
+- **toss-v1.1.ts**: Authoritative specification from TingOS backend, including multi-statechart, physics joints, `SpacetimeAnchor`, hardware profiles, and **Animation Patterns** (12 Principles of Animation with keyframes, easing, and parameters).
+
+### Local Development with Docker
+```bash
+# Start PostgreSQL
+docker-compose up -d
+
+# Copy env and install
+cp .env.local.example .env
+npm install
+npm run db:push
+
+# Seed demo cartridges
+npx tsx scripts/seed-demo-cartridges.ts
+
+# Run the app
+npm run dev
+```
 
 ### Key NPM Packages
 - **@react-three/fiber, @react-three/drei, @react-three/rapier**: For 3D rendering and physics.

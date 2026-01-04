@@ -444,18 +444,6 @@ export interface TossTimer {
   
   // For relative timing
   starts_on?: string;           // FSM event that starts this timer
-  GNU nano 7.2                                                     foo *                                                            
-// Component categories from spec
-export const COMPONENT_CATEGORIES = [
-  "layout",    // flow_stack, dock_pane, split_view, carousel_rail
-  "media",     // image_frame, video_tile, audio_pad
-  "text",      // rich_text, marquee_ticker, badge_pill
-  "input",     // slider_rail, dial_knob, stepper_input, toggle_chip, date_picker, numeric_field
-  "action",    // plain_button, icon_button, action_group
-  "commerce",  // product_card, price_tag, inventory_meter
-  "creative",  // particle_burst, mesh_glyph
-] as const;
-
   stops_on?: string | string[]; // FSM event(s) that stop this timer
   
   // Behavior
@@ -679,6 +667,137 @@ export interface EventBusConfig {
 }
 
 // ============================================
+// TOSS v1.1: ANIMATION PATTERNS (12 Principles)
+// ============================================
+
+/** 
+ * Easing function types - how motion accelerates/decelerates 
+ * Based on standard web animation easing with animation-specific additions
+ */
+export type TossEasingType = 
+  | "linear"
+  | "ease-in"
+  | "ease-out"
+  | "ease-in-out"
+  | "bounce"
+  | "elastic"
+  | "back"
+  | "anticipate";
+
+/**
+ * The 12 Principles of Animation (Disney)
+ * Each pattern embodies one or more of these timeless techniques
+ */
+export type AnimationPrinciple =
+  | "squash_stretch"      // 1. Weight and flexibility
+  | "anticipation"        // 2. Preparation for action
+  | "staging"             // 3. Directing attention
+  | "straight_ahead"      // 4. Organic, spontaneous motion
+  | "follow_through"      // 5. Overlapping action, drag
+  | "slow_in_out"         // 6. Ease in/out of movement
+  | "arcs"                // 7. Natural curved paths
+  | "secondary_action"    // 8. Supporting movements
+  | "timing"              // 9. Speed and rhythm
+  | "exaggeration"        // 10. Push beyond reality
+  | "solid_drawing"       // 11. 3D form and weight
+  | "appeal";             // 12. Charisma and personality
+
+/**
+ * A single keyframe in an animation pattern
+ */
+export interface TossKeyframe {
+  /** Time in seconds from animation start */
+  time: number;
+  
+  /** Position offset from mesh origin [x, y, z] */
+  position?: [number, number, number];
+  
+  /** Rotation in degrees [x, y, z] */
+  rotation?: [number, number, number];
+  
+  /** Scale multiplier [x, y, z] */
+  scale?: [number, number, number];
+  
+  /** Opacity 0-1 */
+  opacity?: number;
+  
+  /** Easing function to next keyframe */
+  easing?: TossEasingType;
+}
+
+/**
+ * User-adjustable parameter for an animation pattern
+ */
+export interface TossAnimationParameter {
+  id: string;
+  name: string;
+  type: "number" | "boolean" | "select";
+  default: number | boolean | string;
+  min?: number;
+  max?: number;
+  step?: number;
+  options?: string[];
+  description?: string;
+}
+
+/**
+ * A reusable animation pattern that can be applied to any mesh
+ * Based on the 12 Principles of Animation
+ */
+export interface TossAnimationPattern {
+  /** Unique identifier within the cartridge */
+  id: string;
+  
+  /** Display name */
+  name: string;
+  
+  /** Which of the 12 principles this embodies */
+  principle: AnimationPrinciple;
+  
+  /** Human-readable description */
+  description: string;
+  
+  /** Icon name (lucide icon recommended) */
+  icon?: string;
+  
+  /** Category color for UI (hex) */
+  color?: string;
+  
+  /** Total duration in seconds */
+  duration: number;
+  
+  /** Whether animation loops */
+  loop: boolean;
+  
+  /** Keyframes defining the motion */
+  keyframes: TossKeyframe[];
+  
+  /** Adjustable parameters with defaults */
+  parameters?: TossAnimationParameter[];
+  
+  /** Tags for filtering */
+  tags?: string[];
+}
+
+/**
+ * Animation Patterns Registry - stores all patterns for a cartridge
+ */
+export interface AnimationPatternsRegistry {
+  /** Patterns indexed by ID */
+  patterns: Record<string, TossAnimationPattern>;
+  
+  /** Default pattern to apply to new meshes */
+  defaultPatternId?: string;
+  
+  /** Categories for organization */
+  categories?: {
+    id: string;
+    name: string;
+    patternIds: string[];
+  }[];
+}
+
+// ============================================
 // TOSS v1.1: PHYSICS JOINTS
 // ============================================
 
@@ -856,6 +975,9 @@ export interface TossCartridge {
   
   // Accessory metadata for mountable carts
   accessory?: AccessoryMetadata;
+  
+  // Animation patterns (12 Principles of Animation)
+  animationPatterns?: AnimationPatternsRegistry;
   
   // Editor-only metadata (stripped on export)
   _editor?: {
