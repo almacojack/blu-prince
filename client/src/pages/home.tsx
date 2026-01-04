@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { ArrowRight, Gamepad2, Users, Briefcase, Terminal, Layers, Hexagon, Code, Cpu, Flame, Snowflake, Droplets, Wind, Zap, Box, Play } from "lucide-react";
+import { ArrowRight, Gamepad2, Users, Briefcase, Terminal, Layers, Hexagon, Code, Cpu, Flame, Snowflake, Droplets, Wind, Zap, Box, Play, Magnet, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -62,8 +62,8 @@ export default function Home() {
       <div className="absolute bottom-0 right-0 w-full h-[500px] bg-secondary/10 blur-[120px] rounded-full translate-y-1/2 pointer-events-none" />
 
       {/* Hero Section */}
-      <section className="relative z-10 container mx-auto px-6 pt-12 pb-12">
-        <div className="grid lg:grid-cols-2 gap-8 items-center">
+      <section className="relative z-10 container mx-auto px-6 pt-8 pb-12">
+        <div className="grid lg:grid-cols-[1fr_1.3fr] gap-8 items-center">
           <motion.div 
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -140,65 +140,127 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Core Pillars */}
-      <section className="relative z-10 py-12 container mx-auto px-6">
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold mb-2">Powerful Simulation Modeling</h2>
-          <p className="text-muted-foreground">Forces, physics, and declarative side effects</p>
+      {/* Core Pillars - Comic Book Style Forces */}
+      <section className="relative z-10 py-16 container mx-auto px-6 overflow-hidden">
+        {/* Chaotic background energy */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-red-500/20 blur-[80px] animate-pulse" />
+          <div className="absolute top-1/2 right-1/4 w-40 h-40 bg-blue-500/20 blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
+          <div className="absolute bottom-1/4 left-1/3 w-36 h-36 bg-green-500/15 blur-[90px] animate-pulse" style={{ animationDelay: '2s' }} />
+          <div className="absolute top-1/3 right-1/3 w-28 h-28 bg-purple-500/20 blur-[70px] animate-pulse" style={{ animationDelay: '0.5s' }} />
         </div>
-        <div className="grid md:grid-cols-4 gap-6">
-          <div className="p-5 rounded-2xl bg-gradient-to-b from-red-500/10 to-transparent border border-red-500/20 hover:border-red-500/40 transition-colors">
-            <Flame className="w-8 h-8 text-red-400 mb-4" />
-            <h3 className="text-lg font-bold mb-2">Fire Forces</h3>
-            <p className="text-sm text-muted-foreground">
-              Temperature-sensitive objects melt, burn, or trigger side effects on contact.
-            </p>
-          </div>
-          <div className="p-5 rounded-2xl bg-gradient-to-b from-blue-500/10 to-transparent border border-blue-500/20 hover:border-blue-500/40 transition-colors">
-            <Snowflake className="w-8 h-8 text-blue-400 mb-4" />
-            <h3 className="text-lg font-bold mb-2">Ice Forces</h3>
-            <p className="text-sm text-muted-foreground">
-              Freeze points trigger state changes. Objects can shatter or become brittle.
-            </p>
-          </div>
-          <div className="p-5 rounded-2xl bg-gradient-to-b from-cyan-500/10 to-transparent border border-cyan-500/20 hover:border-cyan-500/40 transition-colors">
-            <Droplets className="w-8 h-8 text-cyan-400 mb-4" />
-            <h3 className="text-lg font-bold mb-2">Water Forces</h3>
-            <p className="text-sm text-muted-foreground">
-              Buoyancy simulation - objects sink, float, or achieve neutral density.
-            </p>
-          </div>
-          <div className="p-5 rounded-2xl bg-gradient-to-b from-green-500/10 to-transparent border border-green-500/20 hover:border-green-500/40 transition-colors">
-            <Wind className="w-8 h-8 text-green-400 mb-4" />
-            <h3 className="text-lg font-bold mb-2">Wind Forces</h3>
-            <p className="text-sm text-muted-foreground">
-              Aerodynamic drag and lift coefficients. Push, pull, and flutter effects.
-            </p>
-          </div>
+
+        <div className="relative text-center mb-10">
+          <h2 className="text-3xl md:text-4xl font-bold mb-3 bg-gradient-to-r from-white via-white to-white/60 bg-clip-text text-transparent">
+            Chaotic Physics Playground
+          </h2>
+          <p className="text-muted-foreground text-lg">Forces, springs, magnets — everything bounces, stretches, and explodes</p>
         </div>
-        
-        <div className="grid md:grid-cols-3 gap-6 mt-8">
-          <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
-            <Box className="w-8 h-8 text-[#daa520] mb-4" />
+
+        {/* Primary Forces - 6 columns with chaotic styling */}
+        <div className="relative grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+          {/* Fire */}
+          <motion.div 
+            whileHover={{ scale: 1.05, rotate: -2 }}
+            className="group p-4 rounded-2xl bg-gradient-to-br from-red-600/30 via-orange-500/20 to-yellow-500/10 border-2 border-red-500/40 hover:border-red-400 transition-all shadow-lg hover:shadow-red-500/30"
+          >
+            <div className="relative">
+              <Flame className="w-10 h-10 text-red-400 mb-3 group-hover:animate-bounce" />
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-400 rounded-full animate-ping opacity-75" />
+            </div>
+            <h3 className="text-base font-bold mb-1 text-red-300">FIRE</h3>
+            <p className="text-xs text-red-200/60">Melt. Burn. Ignite.</p>
+          </motion.div>
+
+          {/* Ice */}
+          <motion.div 
+            whileHover={{ scale: 1.05, rotate: 2 }}
+            className="group p-4 rounded-2xl bg-gradient-to-br from-blue-600/30 via-cyan-500/20 to-white/10 border-2 border-blue-500/40 hover:border-blue-400 transition-all shadow-lg hover:shadow-blue-500/30"
+          >
+            <div className="relative">
+              <Snowflake className="w-10 h-10 text-blue-400 mb-3 group-hover:animate-spin" style={{ animationDuration: '3s' }} />
+            </div>
+            <h3 className="text-base font-bold mb-1 text-blue-300">ICE</h3>
+            <p className="text-xs text-blue-200/60">Freeze. Shatter. Crack.</p>
+          </motion.div>
+
+          {/* Water */}
+          <motion.div 
+            whileHover={{ scale: 1.05, rotate: -1 }}
+            className="group p-4 rounded-2xl bg-gradient-to-br from-cyan-600/30 via-teal-500/20 to-emerald-500/10 border-2 border-cyan-500/40 hover:border-cyan-400 transition-all shadow-lg hover:shadow-cyan-500/30"
+          >
+            <Droplets className="w-10 h-10 text-cyan-400 mb-3 group-hover:translate-y-1 transition-transform" />
+            <h3 className="text-base font-bold mb-1 text-cyan-300">WATER</h3>
+            <p className="text-xs text-cyan-200/60">Sink. Float. Splash.</p>
+          </motion.div>
+
+          {/* Wind */}
+          <motion.div 
+            whileHover={{ scale: 1.05, rotate: 1.5 }}
+            className="group p-4 rounded-2xl bg-gradient-to-br from-green-600/30 via-emerald-500/20 to-teal-500/10 border-2 border-green-500/40 hover:border-green-400 transition-all shadow-lg hover:shadow-green-500/30"
+          >
+            <Wind className="w-10 h-10 text-green-400 mb-3 group-hover:translate-x-2 transition-transform" />
+            <h3 className="text-base font-bold mb-1 text-green-300">WIND</h3>
+            <p className="text-xs text-green-200/60">Push. Pull. Flutter.</p>
+          </motion.div>
+
+          {/* Magnet */}
+          <motion.div 
+            whileHover={{ scale: 1.05, rotate: -2.5 }}
+            className="group p-4 rounded-2xl bg-gradient-to-br from-purple-600/30 via-fuchsia-500/20 to-pink-500/10 border-2 border-purple-500/40 hover:border-purple-400 transition-all shadow-lg hover:shadow-purple-500/30"
+          >
+            <div className="relative">
+              <Magnet className="w-10 h-10 text-purple-400 mb-3 group-hover:scale-110 transition-transform" />
+              <div className="absolute top-0 left-6 w-2 h-2 bg-fuchsia-400 rounded-full animate-pulse" />
+              <div className="absolute top-2 left-8 w-1.5 h-1.5 bg-pink-400 rounded-full animate-pulse" style={{ animationDelay: '0.3s' }} />
+            </div>
+            <h3 className="text-base font-bold mb-1 text-purple-300">MAGNET</h3>
+            <p className="text-xs text-purple-200/60">Attract. Repel. Orbit.</p>
+          </motion.div>
+
+          {/* Spring */}
+          <motion.div 
+            whileHover={{ scale: 1.05, rotate: 2.5 }}
+            className="group p-4 rounded-2xl bg-gradient-to-br from-yellow-600/30 via-amber-500/20 to-orange-500/10 border-2 border-yellow-500/40 hover:border-yellow-400 transition-all shadow-lg hover:shadow-yellow-500/30"
+          >
+            <Link2 className="w-10 h-10 text-yellow-400 mb-3 group-hover:animate-bounce" />
+            <h3 className="text-base font-bold mb-1 text-yellow-300">SPRING</h3>
+            <p className="text-xs text-yellow-200/60">Stretch. Bounce. Snap.</p>
+          </motion.div>
+        </div>
+
+        {/* Secondary Features - 3 columns */}
+        <div className="grid md:grid-cols-3 gap-5">
+          <motion.div 
+            whileHover={{ y: -3 }}
+            className="p-5 rounded-2xl bg-gradient-to-br from-amber-500/10 to-transparent border border-amber-500/30 hover:border-amber-400/50 transition-all"
+          >
+            <Box className="w-8 h-8 text-amber-400 mb-3" />
             <h3 className="text-lg font-bold mb-2">Hitbox Collisions</h3>
             <p className="text-sm text-muted-foreground">
-              Force emitters have hitboxes. Objects detect overlap and fire events to targets.
+              Force emitters with hitboxes. Overlap detection fires events to targets.
             </p>
-          </div>
-          <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
-            <Zap className="w-8 h-8 text-yellow-400 mb-4" />
-            <h3 className="text-lg font-bold mb-2">Side Effects</h3>
+          </motion.div>
+          <motion.div 
+            whileHover={{ y: -3 }}
+            className="p-5 rounded-2xl bg-gradient-to-br from-yellow-500/10 to-transparent border border-yellow-500/30 hover:border-yellow-400/50 transition-all"
+          >
+            <Zap className="w-8 h-8 text-yellow-400 mb-3" />
+            <h3 className="text-lg font-bold mb-2">Declarative Side Effects</h3>
             <p className="text-sm text-muted-foreground">
-              Declarative callbacks: onMelt, onFreeze, onSubmerge. Source + target + force = action.
+              onMelt, onFreeze, onSubmerge — source + target + force = action.
             </p>
-          </div>
-          <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-colors">
-            <Gamepad2 className="w-8 h-8 text-violet-400 mb-4" />
+          </motion.div>
+          <motion.div 
+            whileHover={{ y: -3 }}
+            className="p-5 rounded-2xl bg-gradient-to-br from-violet-500/10 to-transparent border border-violet-500/30 hover:border-violet-400/50 transition-all"
+          >
+            <Gamepad2 className="w-8 h-8 text-violet-400 mb-3" />
             <h3 className="text-lg font-bold mb-2">Controller First</h3>
             <p className="text-sm text-muted-foreground">
-              Zero-config gamepad detection. Haptic feedback, visual bindings, cross-platform.
+              Zero-config gamepad detection. Haptic feedback, cross-platform bindings.
             </p>
-          </div>
+          </motion.div>
         </div>
       </section>
 

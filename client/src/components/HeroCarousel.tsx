@@ -235,7 +235,7 @@ export function HeroCarousel() {
       {/* Soft glow behind carousel */}
       <div className="absolute -inset-4 bg-gradient-to-r from-cyan-500/10 via-purple-500/10 to-orange-500/10 blur-3xl rounded-[3rem] pointer-events-none" />
       
-      <div className="relative aspect-[16/10] w-full overflow-hidden rounded-[2rem] shadow-2xl shadow-black/50">
+      <div className="relative aspect-[16/9] w-full min-h-[320px] md:min-h-[420px] lg:min-h-[480px] overflow-hidden rounded-[2rem] shadow-2xl shadow-black/50">
         {/* Soft vignette overlay */}
         <div className="absolute inset-0 pointer-events-none z-10 rounded-[2rem]" style={{
           boxShadow: 'inset 0 0 60px 20px rgba(0,0,0,0.4)'
