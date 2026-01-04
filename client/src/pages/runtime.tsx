@@ -21,6 +21,7 @@ import { useSearch } from "wouter";
 import { SimulatorPreview } from "@/components/SimulatorPreview";
 import { CartridgeBrowser, CartridgeEntry } from "@/components/CartridgeBrowser";
 import { Library } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 import todoCartridge from "@/lib/toss-examples/todo-app.toss.json";
 import journalCartridge from "@/lib/toss-examples/journal.toss.json";
@@ -1166,8 +1167,28 @@ export default function RuntimeSimulator() {
           </div>
         )}
 
-        {/* Fullscreen Toggle */}
+        {/* Right Controls Group */}
         <div className="flex items-center gap-2 bg-black/50 px-3 py-1.5 rounded-lg border border-white/10">
+          {/* Events Button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setEventConsoleOpen(!eventConsoleOpen)}
+            className={cn(
+              "h-8 px-3 gap-2",
+              eventConsoleOpen 
+                ? "bg-purple-600 text-white hover:bg-purple-700" 
+                : "text-purple-300 hover:bg-purple-900/50"
+            )}
+            data-testid="button-toggle-event-console"
+          >
+            <Zap className="w-4 h-4" />
+            Events
+          </Button>
+
+          <div className="w-px h-6 bg-white/10" />
+
+          {/* Fullscreen Toggle */}
           <Button
             variant="ghost"
             size="sm"
@@ -1219,22 +1240,7 @@ export default function RuntimeSimulator() {
         </DraggablePanel>
       )}
       
-      {/* Event Console Toggle Button (when closed) - positioned at bottom-left footer area */}
-      {!eventConsoleOpen && (
-        <div className="absolute bottom-4 left-4 z-10">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setEventConsoleOpen(true)}
-            className="h-8 px-3 gap-2 bg-purple-900/30 border border-purple-500/30 text-purple-300 hover:bg-purple-900/50 hover:scale-105 transition-transform"
-            data-testid="button-expand-event-console"
-          >
-            <Zap className="w-4 h-4" />
-            Events
-          </Button>
-        </div>
-      )}
-
+      
       {/* Fullscreen Mode - Tabbed simulator with Preview/State/Timeline */}
       {fullscreenMode ? (
         <div className="absolute inset-0 top-14 flex flex-col">

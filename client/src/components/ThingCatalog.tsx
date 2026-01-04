@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useTheme } from '@/contexts/ThemeContext';
 import { cn } from '@/lib/utils';
 
@@ -315,6 +316,7 @@ export function ThingCatalog({
   });
 
   return (
+    <TooltipProvider>
     <div className={cn("flex flex-col h-full min-h-0 overflow-hidden", className)}>
       <div className={cn(
         "p-4 border-b shrink-0",
@@ -361,19 +363,24 @@ export function ThingCatalog({
         </div>
 
         <div className="flex items-center gap-2 mt-3">
-          <Button
-            size="sm"
-            variant={showStarredOnly ? "default" : "ghost"}
-            onClick={() => setShowStarredOnly(!showStarredOnly)}
-            className={cn(
-              "h-7 text-xs gap-1",
-              showStarredOnly && (isVictorian ? "bg-amber-700 hover:bg-amber-600" : "bg-yellow-600 hover:bg-yellow-500")
-            )}
-            data-testid="btn-starred-filter"
-          >
-            <Star className="w-3 h-3" />
-            Starred
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="sm"
+                variant={showStarredOnly ? "default" : "ghost"}
+                onClick={() => setShowStarredOnly(!showStarredOnly)}
+                className={cn(
+                  "h-7 text-xs gap-1",
+                  showStarredOnly && (isVictorian ? "bg-amber-700 hover:bg-amber-600" : "bg-yellow-600 hover:bg-yellow-500")
+                )}
+                data-testid="btn-starred-filter"
+              >
+                <Star className="w-3 h-3" />
+                Starred
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Show only starred items</TooltipContent>
+          </Tooltip>
           
           <div className="flex-1" />
           
@@ -381,32 +388,42 @@ export function ThingCatalog({
             "flex items-center gap-1 p-0.5 rounded-lg",
             isVictorian ? "bg-amber-950/50" : "bg-slate-900/50"
           )}>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setViewMode('grid')}
-              className={cn(
-                "h-7 w-7 p-0",
-                viewMode === 'grid' && (isVictorian ? "bg-amber-800/50" : "bg-white/10")
-              )}
-              data-testid="btn-view-grid"
-              aria-label="Grid view"
-            >
-              <Grid className="w-4 h-4" />
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setViewMode('list')}
-              className={cn(
-                "h-7 w-7 p-0",
-                viewMode === 'list' && (isVictorian ? "bg-amber-800/50" : "bg-white/10")
-              )}
-              data-testid="btn-view-list"
-              aria-label="List view"
-            >
-              <List className="w-4 h-4" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setViewMode('grid')}
+                  className={cn(
+                    "h-7 w-7 p-0",
+                    viewMode === 'grid' && (isVictorian ? "bg-amber-800/50" : "bg-white/10")
+                  )}
+                  data-testid="btn-view-grid"
+                  aria-label="Grid view"
+                >
+                  <Grid className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Grid view</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setViewMode('list')}
+                  className={cn(
+                    "h-7 w-7 p-0",
+                    viewMode === 'list' && (isVictorian ? "bg-amber-800/50" : "bg-white/10")
+                  )}
+                  data-testid="btn-view-list"
+                  aria-label="List view"
+                >
+                  <List className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>List view</TooltipContent>
+            </Tooltip>
           </div>
         </div>
 
@@ -475,5 +492,6 @@ export function ThingCatalog({
         </div>
       </ScrollArea>
     </div>
+    </TooltipProvider>
   );
 }
