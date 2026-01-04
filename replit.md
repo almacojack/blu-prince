@@ -31,6 +31,9 @@ Preferred communication style: Simple, everyday language.
 - **Dual Theme System** - Cyberpunk Neon (default) and Victorian Brass themes available via theme switcher
 
 ### Recent Changes (January 2026)
+- **Performance System** - Auto-detect device capabilities (CPU cores, memory, GPU tier) and adjust settings. Low-power devices get reduced animations, no 3D backgrounds. Manual toggle in localStorage.
+- **Conditional 3D Backgrounds** - 3D background only renders on homepage. Editor routes (/editor, /blu-prince, /statechart) get full viewport with no nav padding.
+- **Fullscreen Editor Layouts** - Editor pages now span full viewport height/width without nav bar interference.
 - **Input Mapping System** - Comprehensive keyboard/mouse/gamepad binding system with conflict detection engine, EmulationStation-style controller setup wizard, and settings page at `/input-settings`
 - **Context Menu Manager** - Schema-driven nested context menus with right-click-to-pan toggle, configurable delay when both features are enabled
 - **i18n Support** - Full internationalization with English and Russian languages via react-i18next, language picker in widget showcase

@@ -1,4 +1,4 @@
-import { useState, Suspense, lazy, useEffect } from "react";
+import { useState, Suspense, lazy, useEffect, ReactNode } from "react";
 import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -92,9 +92,17 @@ function GlobalFlightControls() {
   );
 }
 
+// Routes that should take full viewport (no nav padding, no background)
+const FULLSCREEN_ROUTES = ['/editor', '/blu-prince', '/statechart'];
+
 function ConditionalBackground() {
   const [location] = useLocation();
   const { settings } = usePerformance();
+  
+  // No background for fullscreen editor routes
+  if (FULLSCREEN_ROUTES.some(route => location.startsWith(route))) {
+    return null;
+  }
   
   // Only show 3D background on homepage and if enabled in settings
   const isHomepage = location === '/';
@@ -111,6 +119,48 @@ function ConditionalBackground() {
   );
 }
 
+function ConditionalNav({ onCommandPaletteOpen, onFullscreenToggle, isFullscreen }: {
+  onCommandPaletteOpen: () => void;
+  onFullscreenToggle: () => void;
+  isFullscreen: boolean;
+}) {
+  const [location] = useLocation();
+  
+  // Hide nav on fullscreen editor routes
+  if (FULLSCREEN_ROUTES.some(route => location.startsWith(route))) {
+    return null;
+  }
+  
+  return (
+    <NeonPathNav 
+      onCommandPaletteOpen={onCommandPaletteOpen}
+      onFullscreenToggle={onFullscreenToggle}
+      isFullscreen={isFullscreen}
+    />
+  );
+}
+
+function ContentWrapper({ children }: { children: ReactNode }) {
+  const [location] = useLocation();
+  
+  // Fullscreen routes get no padding, direct render
+  if (FULLSCREEN_ROUTES.some(route => location.startsWith(route))) {
+    return (
+      <div className="relative z-10">
+        {children}
+      </div>
+    );
+  }
+  
+  // Normal routes get nav padding
+  return (
+    <div className="relative z-10 pt-16">
+      <div className="scanline" />
+      {children}
+    </div>
+  );
+}
+
 function AppContent() {
   const { isFullscreen, toggleFullscreen } = useFullscreen();
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
@@ -124,16 +174,15 @@ function AppContent() {
     <div className="min-h-screen text-foreground antialiased selection:bg-primary/20 relative">
       <ConditionalBackground />
       
-      <NeonPathNav 
+      <ConditionalNav 
         onCommandPaletteOpen={() => setCommandPaletteOpen(true)}
         onFullscreenToggle={toggleFullscreen}
         isFullscreen={isFullscreen}
       />
       
-      <div className="relative z-10 pt-16">
-        <div className="scanline" />
+      <ContentWrapper>
         <Router />
-      </div>
+      </ContentWrapper>
       
       <Toaster />
       <TutorialOverlay />
