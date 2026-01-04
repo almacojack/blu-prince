@@ -73,6 +73,13 @@ Preferred communication style: Simple, everyday language.
 - **TossMesh.asset_id** - New field linking imported 3D models to their source asset for proper scene rendering
 - **Separated Editor Trees** - editor.tsx uses SceneTree for 3D meshes; blu-prince.tsx uses inline FSM states list for state machines
 - **VS Code Dual Sidebars** - EditorShell component with collapsible left (navigation) and right (properties) sidebars
+- **Property Panel** - Integrated properties editor with Vector3 inputs for position/rotation/scale, material controls, physics controls, and snap/align buttons
+- **Frame of Reference System** - Visual alignment containers (sphere/cube) for object organization. Align, distribute, stack objects within bounds. Respects grouping hierarchy
+- **Reference Images** - Place reference images in 3D space with mirrored back face display for design guidance
+- **Preferences Cartridge** - User preferences stored as a special cartridge type! Portable keybindings, environment presets, and controller profiles. First-time prompt creates "Preferences 1" cartridge. Only one active at a time
+- **Input Profile Modes** - Named profiles per editor mode (Design/Sculpt/Paint/Animate/Test/Present). Switch modes to load different keyboard shortcuts and controller mappings. Supports macro keypads and artist controllers
+- **Environment Presets** - Named environment setups (Studio/Outdoor/Night/Cyberpunk/Miniature) with lighting, background, camera, and frame settings. Save and switch between multiple setups
+- **Save States System** - Game save states with auto-save, quick-save, and 10 manual slots. Captures FSM state, memory context, and mesh transforms. Per-cartridge localStorage persistence
 
 ## System Architecture
 
