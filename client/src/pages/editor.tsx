@@ -23,6 +23,7 @@ import {
   Palette, Move, RotateCw, Maximize2, Database, Wrench, Users, Share2, Copy, FolderOpen, Droplets, Atom, BookOpen
 } from "lucide-react";
 import { DockablePanel } from "@/components/DockablePanel";
+import { VSCodeSidebar } from "@/components/VSCodeSidebar";
 import { ToolsPanel, type PhysicsTool } from "@/components/ToolsPanel";
 import { EnvironmentalForcesPanel, DEFAULT_FORCES, type ForceConfig, type EnvironmentalForce } from "@/components/EnvironmentalForcesPanel";
 import { ThingCatalog, type CatalogEntry } from "@/components/ThingCatalog";
@@ -2684,261 +2685,267 @@ export default function BluPrinceEditor() {
         </DialogContent>
       </Dialog>
 
-      {/* Left Docked Panels */}
-      <div className="absolute left-0 top-14 z-40 flex items-start">
-        {/* Solids Panel */}
-        <DockablePanel
-          id="solids"
-          title="Solids"
-          icon={<Box className="w-4 h-4" />}
-          defaultDocked={true}
+      {/* VS Code-style Left Sidebar - Creation & Navigation */}
+      <div className="absolute left-0 top-14 bottom-0 z-40">
+        <VSCodeSidebar
+          defaultActivePanel="solids"
           defaultCollapsed={false}
-        >
-          <ComponentPalette 
-            onAddComponent={addComponent} 
-            onToggleLayers={() => setShowLayers(!showLayers)}
-            showLayers={showLayers}
-            colorIcons={colorIcons}
-          />
-        </DockablePanel>
-
-        {/* Tools Panel */}
-        <DockablePanel
-          id="tools"
-          title="Tools"
-          icon={<Wrench className="w-4 h-4" />}
-          defaultDocked={true}
-          defaultCollapsed={false}
-        >
-          <ToolsPanel
-            activeTool={activeTool}
-            onToolChange={setActiveTool}
-            toolPower={toolPower}
-            onToolPowerChange={setToolPower}
-            magnetPolarity={magnetPolarity}
-            onMagnetPolarityChange={setMagnetPolarity}
-          />
-        </DockablePanel>
-
-        {/* Forces Panel */}
-        <DockablePanel
-          id="forces"
-          title="Forces"
-          icon={<Atom className="w-4 h-4" />}
-          defaultDocked={true}
-          defaultCollapsed={true}
-        >
-          <EnvironmentalForcesPanel
-            forces={environmentalForces}
-            onForceToggle={handleForceToggle}
-            onForceIntensityChange={handleForceIntensityChange}
-          />
-        </DockablePanel>
-
-        {/* Water Panel */}
-        <DockablePanel
-          id="water"
-          title="Water"
-          icon={<Droplets className="w-4 h-4" />}
-          defaultDocked={true}
-          defaultCollapsed={true}
-        >
-          <WaterControlPanel
-            containers={waterContainers}
-            onAddContainer={handleAddWaterContainer}
-            onRemoveContainer={handleRemoveWaterContainer}
-            onUpdateContainer={handleUpdateWaterContainer}
-            windIntensity={windIntensity}
-            activeContainerId={activeWaterContainerId}
-            onSelectContainer={setActiveWaterContainerId}
-          />
-        </DockablePanel>
-
-        {/* Outliner Panel - Scene Hierarchy */}
-        <DockablePanel
-          id="outliner"
-          title="Outliner"
-          icon={<Layers className="w-4 h-4" />}
-          defaultDocked={true}
-          defaultCollapsed={false}
-        >
-          <SceneTree
-            items={cartridge.items || []}
-            selectedItemId={selectedId}
-            onSelectItem={(id) => setSelectedId(id)}
-            onRenameItem={(id, newLabel) => {
-              setCartridge(prev => ({
-                ...prev,
-                items: (prev.items || []).map(item => 
-                  item.id === id ? { ...item, label: newLabel } : item
-                )
-              }));
-            }}
-            onDeleteItem={(id) => {
-              setCartridge(prev => ({
-                ...prev,
-                items: (prev.items || []).filter(item => item.id !== id)
-              }));
-            }}
-            onReorderItems={(newOrder) => {
-              setCartridge(prev => ({
-                ...prev,
-                items: newOrder.map(id => (prev.items || []).find(item => item.id === id)!).filter(Boolean)
-              }));
-            }}
-            hiddenItemIds={hiddenLayers}
-            sceneFsmInfo={{
-              currentState: "DESIGN",
-              hasStates: true
-            }}
-            onEditSceneFsm={() => {
-              // TODO: Open scene-level FSM editor
-              console.log("Edit scene FSM");
-            }}
-            onEditMeshFsm={(meshId) => {
-              // TODO: Open mesh-level FSM editor
-              console.log("Edit mesh FSM for:", meshId);
-            }}
-            hideOutsideView={hideOutsideView}
-            onHideOutsideViewChange={setHideOutsideView}
-            visibleInViewportIds={visibleInViewportIds}
-            onObjectClick={(objectId, objectType) => {
-              console.log(`Object clicked: ${objectType} ${objectId}`);
-              // Generic handler - can be extended for FSM triggers, context menus, etc.
-            }}
-          />
-        </DockablePanel>
-
-        {/* Camera Control Panel */}
-        <DockablePanel
-          id="camera"
-          title="Camera"
-          icon={<Eye className="w-4 h-4" />}
-          defaultDocked={true}
-          defaultCollapsed={false}
-        >
-          <CameraControlPanel
-            settings={cameraSettings}
-            onSettingsChange={(updates) => setCameraSettings(prev => ({ ...prev, ...updates }))}
-            onResetView={handleResetView}
-            onFocusSelected={handleFocusSelected}
-            hasSelection={!!selectedItem}
-          />
-        </DockablePanel>
-
-        {/* Files Panel */}
-        <DockablePanel
-          id="files"
-          title="Files"
-          icon={<FolderOpen className="w-4 h-4" />}
-          defaultDocked={true}
-          defaultCollapsed={true}
-        >
-          <div className="p-2 space-y-3">
-            <div className="text-[10px] uppercase text-muted-foreground font-bold">3D Assets</div>
-            
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".gltf,.glb,.obj,.stl,.json"
-              onChange={handleImport3DAsset}
-              className="hidden"
-              data-testid="input-3d-asset-file"
-            />
-            
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="w-full text-xs justify-start border-dashed border-white/20 hover:border-cyan-500/50 hover:bg-cyan-500/10 hover:text-cyan-400"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={!!importProgress}
-              data-testid="button-import-3d-asset"
-            >
-              <Upload className="w-3 h-3 mr-2" /> 
-              {importProgress ? importProgress.message : "Import 3D Model"}
-            </Button>
-            
-            {importProgress && (
-              <div className="mb-2">
-                <div className="h-1 bg-white/10 rounded overflow-hidden">
-                  <div 
-                    className="h-full bg-cyan-500 transition-all"
-                    style={{ width: `${importProgress.percent}%` }}
+          side="left"
+          panels={[
+            {
+              id: "solids",
+              title: "Solids",
+              icon: <Box className="w-5 h-5" />,
+              content: (
+                <ComponentPalette 
+                  onAddComponent={addComponent} 
+                  onToggleLayers={() => setShowLayers(!showLayers)}
+                  showLayers={showLayers}
+                  colorIcons={colorIcons}
+                />
+              )
+            },
+            {
+              id: "tools",
+              title: "Tools",
+              icon: <Wrench className="w-5 h-5" />,
+              content: (
+                <ToolsPanel
+                  activeTool={activeTool}
+                  onToolChange={setActiveTool}
+                  toolPower={toolPower}
+                  onToolPowerChange={setToolPower}
+                  magnetPolarity={magnetPolarity}
+                  onMagnetPolarityChange={setMagnetPolarity}
+                />
+              )
+            },
+            {
+              id: "outliner",
+              title: "Outliner",
+              icon: <Layers className="w-5 h-5" />,
+              badge: (cartridge.items || []).length || undefined,
+              content: (
+                <SceneTree
+                  items={cartridge.items || []}
+                  selectedItemId={selectedId}
+                  onSelectItem={(id) => setSelectedId(id)}
+                  onRenameItem={(id, newLabel) => {
+                    setCartridge(prev => ({
+                      ...prev,
+                      items: (prev.items || []).map(item => 
+                        item.id === id ? { ...item, label: newLabel } : item
+                      )
+                    }));
+                  }}
+                  onDeleteItem={(id) => {
+                    setCartridge(prev => ({
+                      ...prev,
+                      items: (prev.items || []).filter(item => item.id !== id)
+                    }));
+                  }}
+                  onReorderItems={(newOrder) => {
+                    setCartridge(prev => ({
+                      ...prev,
+                      items: newOrder.map(id => (prev.items || []).find(item => item.id === id)!).filter(Boolean)
+                    }));
+                  }}
+                  hiddenItemIds={hiddenLayers}
+                  sceneFsmInfo={{
+                    currentState: "DESIGN",
+                    hasStates: true
+                  }}
+                  onEditSceneFsm={() => {
+                    console.log("Edit scene FSM");
+                  }}
+                  onEditMeshFsm={(meshId) => {
+                    console.log("Edit mesh FSM for:", meshId);
+                  }}
+                  hideOutsideView={hideOutsideView}
+                  onHideOutsideViewChange={setHideOutsideView}
+                  visibleInViewportIds={visibleInViewportIds}
+                  onObjectClick={(objectId, objectType) => {
+                    console.log(`Object clicked: ${objectType} ${objectId}`);
+                  }}
+                />
+              )
+            },
+            {
+              id: "files",
+              title: "Files",
+              icon: <FolderOpen className="w-5 h-5" />,
+              content: (
+                <div className="p-2 space-y-3">
+                  <div className="text-[10px] uppercase text-muted-foreground font-bold">3D Assets</div>
+                  
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".gltf,.glb,.obj,.stl,.json"
+                    onChange={handleImport3DAsset}
+                    className="hidden"
+                    data-testid="input-3d-asset-file"
                   />
-                </div>
-                <span className="text-[9px] text-muted-foreground mt-1 block">{importProgress.stage}</span>
-              </div>
-            )}
-            
-            <ScrollArea className="h-[200px]">
-              <div className="space-y-1">
-                {(!cartridge.assets?.models || cartridge.assets.models.length === 0) ? (
-                  <div className="text-center py-4 text-muted-foreground">
-                    <Box className="w-6 h-6 mx-auto mb-2 opacity-30" />
-                    <p className="text-[10px]">No 3D assets</p>
-                    <p className="text-[9px] opacity-60">glTF, GLB, OBJ, STL</p>
-                  </div>
-                ) : (
-                  cartridge.assets.models.map((asset) => (
-                    <div
-                      key={asset.id}
-                      className={`group relative p-2 rounded border transition-colors cursor-pointer ${
-                        selectedAssetId === asset.id 
-                          ? 'border-cyan-500/50 bg-cyan-500/10' 
-                          : 'border-white/10 bg-white/5 hover:border-white/20'
-                      }`}
-                      onClick={() => setSelectedAssetId(asset.id)}
-                      data-testid={`asset-${asset.id}`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <Box className="w-4 h-4 text-muted-foreground" />
-                        <div className="flex-1 min-w-0">
-                          <div className="text-[10px] font-mono text-white truncate">
-                            {asset.metadata.name}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Badge variant="outline" className="text-[8px] h-3 px-1 border-purple-500/50 text-purple-400">
-                              {asset.metadata.format.toUpperCase()}
-                            </Badge>
-                            <span className="text-[8px] text-muted-foreground">
-                              {(asset.metadata.fileSize / 1024).toFixed(0)}KB
-                            </span>
-                          </div>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-5 w-5 opacity-0 group-hover:opacity-100 hover:bg-red-500/20 hover:text-red-400"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteAsset(asset.id);
-                          }}
-                          data-testid={`delete-asset-${asset.id}`}
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full text-xs justify-start border-dashed border-white/20 hover:border-cyan-500/50 hover:bg-cyan-500/10 hover:text-cyan-400"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={!!importProgress}
+                    data-testid="button-import-3d-asset"
+                  >
+                    <Upload className="w-3 h-3 mr-2" /> 
+                    {importProgress ? importProgress.message : "Import 3D Model"}
+                  </Button>
+                  
+                  {importProgress && (
+                    <div className="mb-2">
+                      <div className="h-1 bg-white/10 rounded overflow-hidden">
+                        <div 
+                          className="h-full bg-cyan-500 transition-all"
+                          style={{ width: `${importProgress.percent}%` }}
+                        />
                       </div>
+                      <span className="text-[9px] text-muted-foreground mt-1 block">{importProgress.stage}</span>
                     </div>
-                  ))
-                )}
-              </div>
-            </ScrollArea>
-          </div>
-        </DockablePanel>
+                  )}
+                  
+                  <ScrollArea className="h-[200px]">
+                    <div className="space-y-1">
+                      {(!cartridge.assets?.models || cartridge.assets.models.length === 0) ? (
+                        <div className="text-center py-4 text-muted-foreground">
+                          <Box className="w-6 h-6 mx-auto mb-2 opacity-30" />
+                          <p className="text-[10px]">No 3D assets</p>
+                          <p className="text-[9px] opacity-60">glTF, GLB, OBJ, STL</p>
+                        </div>
+                      ) : (
+                        cartridge.assets.models.map((asset) => (
+                          <div
+                            key={asset.id}
+                            className={`group relative p-2 rounded border transition-colors cursor-pointer ${
+                              selectedAssetId === asset.id 
+                                ? 'border-cyan-500/50 bg-cyan-500/10' 
+                                : 'border-white/10 bg-white/5 hover:border-white/20'
+                            }`}
+                            onClick={() => setSelectedAssetId(asset.id)}
+                            data-testid={`asset-${asset.id}`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <Box className="w-4 h-4 text-muted-foreground" />
+                              <div className="flex-1 min-w-0">
+                                <div className="text-[10px] font-mono text-white truncate">
+                                  {asset.metadata.name}
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Badge variant="outline" className="text-[8px] h-3 px-1 border-purple-500/50 text-purple-400">
+                                    {asset.metadata.format.toUpperCase()}
+                                  </Badge>
+                                  <span className="text-[8px] text-muted-foreground">
+                                    {(asset.metadata.fileSize / 1024).toFixed(0)}KB
+                                  </span>
+                                </div>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-5 w-5 opacity-0 group-hover:opacity-100 hover:bg-red-500/20 hover:text-red-400"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteAsset(asset.id);
+                                }}
+                                data-testid={`delete-asset-${asset.id}`}
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </ScrollArea>
+                </div>
+              )
+            },
+            {
+              id: "catalog",
+              title: "Catalog",
+              icon: <BookOpen className="w-5 h-5" />,
+              content: (
+                <ThingCatalog 
+                  onSelectEntry={(entry) => console.log('Selected:', entry)}
+                  className="max-h-[calc(100vh-200px)]"
+                />
+              )
+            }
+          ]}
+        />
+      </div>
 
-        {/* Thing Catalog Panel */}
-        <DockablePanel
-          id="catalog"
-          title="Catalog"
-          icon={<BookOpen className="w-4 h-4" />}
-          defaultDocked={true}
-          defaultCollapsed={true}
-        >
-          <ThingCatalog 
-            onSelectEntry={(entry) => console.log('Selected:', entry)}
-            className="max-h-[calc(100vh-200px)]"
-          />
-        </DockablePanel>
+      {/* VS Code-style Right Sidebar - Properties & Environment */}
+      <div className="absolute right-0 top-14 bottom-0 z-40">
+        <VSCodeSidebar
+          defaultActivePanel="camera"
+          defaultCollapsed={false}
+          side="right"
+          panels={[
+            {
+              id: "camera",
+              title: "Camera",
+              icon: <Eye className="w-5 h-5" />,
+              content: (
+                <CameraControlPanel
+                  settings={cameraSettings}
+                  onSettingsChange={(updates) => setCameraSettings(prev => ({ ...prev, ...updates }))}
+                  onResetView={handleResetView}
+                  onFocusSelected={handleFocusSelected}
+                  hasSelection={!!selectedItem}
+                />
+              )
+            },
+            {
+              id: "forces",
+              title: "Forces",
+              icon: <Atom className="w-5 h-5" />,
+              content: (
+                <EnvironmentalForcesPanel
+                  forces={environmentalForces}
+                  onForceToggle={handleForceToggle}
+                  onForceIntensityChange={handleForceIntensityChange}
+                />
+              )
+            },
+            {
+              id: "water",
+              title: "Water",
+              icon: <Droplets className="w-5 h-5" />,
+              content: (
+                <WaterControlPanel
+                  containers={waterContainers}
+                  onAddContainer={handleAddWaterContainer}
+                  onRemoveContainer={handleRemoveWaterContainer}
+                  onUpdateContainer={handleUpdateWaterContainer}
+                  windIntensity={windIntensity}
+                  activeContainerId={activeWaterContainerId}
+                  onSelectContainer={setActiveWaterContainerId}
+                />
+              )
+            },
+            {
+              id: "gamepad",
+              title: "Gamepad",
+              icon: <Gamepad2 className="w-5 h-5" />,
+              content: (
+                <ControllerMappingsPanel
+                  presets={cartridge.controllerPresets || [createDefaultControllerPreset()]}
+                  activePresetId={cartridge._editor?.activeControllerPresetId}
+                  onPresetsChange={updateControllerPresets}
+                  onActivePresetChange={setActiveControllerPreset}
+                />
+              )
+            }
+          ]}
+        />
       </div>
 
       {/* Layers Panel */}
@@ -2972,30 +2979,6 @@ export default function BluPrinceEditor() {
         />
       )}
 
-      {/* Controller Mappings Panel */}
-      {showControllerMappings && (
-        <div className="fixed right-4 top-20 bottom-4 w-80 z-40">
-          <div className="h-full rounded-xl border border-zinc-700 overflow-hidden shadow-2xl">
-            <div className="flex items-center justify-between p-3 bg-zinc-800 border-b border-zinc-700">
-              <span className="text-sm font-medium text-white">Controller Mappings</span>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6"
-                onClick={() => setShowControllerMappings(false)}
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-            <ControllerMappingsPanel
-              presets={cartridge.controllerPresets || [createDefaultControllerPreset()]}
-              activePresetId={cartridge._editor?.activeControllerPresetId}
-              onPresetsChange={updateControllerPresets}
-              onActivePresetChange={setActiveControllerPreset}
-            />
-          </div>
-        </div>
-      )}
 
       {/* Assertions Panel - shown in TEST mode */}
       {mode === "TEST" && (
