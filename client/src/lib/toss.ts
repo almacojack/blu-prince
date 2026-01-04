@@ -1,5 +1,5 @@
 /**
- * TOSS (ThingOs State Schema) - FILE FORMAT SPECIFICATION
+ * TOSS (TingOs State Schema) - FILE FORMAT SPECIFICATION
  * 
  * CRITICAL ARCHITECTURE NOTE:
  * TOSS files are self-contained, portable, execution-ready payloads.

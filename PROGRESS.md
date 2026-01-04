@@ -7,7 +7,7 @@
 
 ## Executive Summary
 
-TingOs is a universal gaming engine platform built around the concept of "cartridges" - portable state machines called TOSS files (ThingOs State Schema). The platform enables artists and creators to build interactive experiences, games, and simulations with a visual, no-code approach.
+TingOs is a universal gaming engine platform built around the concept of "cartridges" - portable state machines called TOSS files (TingOs State Schema). The platform enables artists and creators to build interactive experiences, games, and simulations with a visual, no-code approach.
 
 The killer feature is **game controller support as first-class objects** with zero-config detection and cross-platform parity.
 
@@ -19,7 +19,7 @@ The killer feature is **game controller support as first-class objects** with ze
 
 **Location:** `client/src/lib/toss-v1.ts`, `shared/schema.ts`
 
-The TOSS (ThingOs State Schema) format is the core data structure powering all cartridges:
+The TOSS (TingOs State Schema) format is the core data structure powering all cartridges:
 
 ```typescript
 interface TOSSFile {

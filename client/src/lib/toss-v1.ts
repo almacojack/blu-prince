@@ -1,6 +1,6 @@
 /**
- * TOSS v1.1 Schema - ThingOS Scene Specification
- * This is the FINALIZED contract from ThingOS backend
+ * TOSS v1.1 Schema - TingOs Scene Specification
+ * This is the FINALIZED contract from TingOs backend
  * 
  * v1.1 Changes:
  * - Renamed "items" to "meshes" throughout

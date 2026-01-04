@@ -32,7 +32,7 @@ This document isn't another pitch. It's a map of the territory we've already cro
 
 ### The Domain Portfolio (Secured, Strategic)
 
-- **thingos.org** - The core platform
+- **tingos.org** - The core platform
 - **tng.li** - Short links for distribution (like bit.ly for cartridges)
 - **blu-prince.com** - The design tool brand
 - **unwanted.ad** - Auction vertical

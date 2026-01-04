@@ -2,9 +2,9 @@
 
 ## Overview
 
-TingOs is a virtual machine execution environment for TOSS files (ThingOs State Schema) - conceptually similar to game cartridges. The platform serves as both a state machine runtime and a cartridge ecosystem with multiple domain-specific frontends:
+TingOs is a virtual machine execution environment for TOSS files (TingOs State Schema) - conceptually similar to game cartridges. The platform serves as both a state machine runtime and a cartridge ecosystem with multiple domain-specific frontends:
 
-- **thingos.org/tng.li** - The core platform providing user auth, state tracking, and cartridge hosting
+- **tingos.org/tng.li** - The core platform providing user auth, state tracking, and cartridge hosting
 - **blu-prince.com** - Professional no-code visual design tool for creating TOSS cartridges
 - **unwanted.ad** - Auction site for "misfit toys" using TOSS cartridges per listing
 - **artsy.sale** - Art dealer auction platform
@@ -129,8 +129,8 @@ The cartridge format contains:
 - Database URL configured via `DATABASE_URL` environment variable
 
 ### Third-Party APIs
-- **ThingOS Platform API** (documented in attached assets):
-  - Base: `https://thingos.org/platform/v1`
+- **TingOs Platform API** (documented in attached assets):
+  - Base: `https://tingos.org/platform/v1`
   - Auth via `X-API-Key` header
   - Scopes: `read:users`, `read:locations`, `read:cartridges`
 

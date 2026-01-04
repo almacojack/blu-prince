@@ -16,7 +16,7 @@ TingOS represents a paradigm shift in how interactive experiences are built, dis
 
 ### Cartridge Protocol: Docker Meets Game Boy
 
-Our TOSS (ThingOs State Schema) format isn't just a file spec—it's a portable execution container that brings Docker-like composability to interactive experiences.
+Our TOSS (TingOs State Schema) format isn't just a file spec—it's a portable execution container that brings Docker-like composability to interactive experiences.
 
 **Key Technical Differentiators:**
 
@@ -232,9 +232,9 @@ The train is leaving the station.
 
 ---
 
-*Contact: [partnerships@thingos.org](mailto:partnerships@thingos.org)*
+*Contact: [partnerships@tingos.org](mailto:partnerships@tingos.org)*
 
-*Platform: [thingos.org](https://thingos.org) | [tng.li](https://tng.li)*
+*Platform: [tingos.org](https://tingos.org) | [tng.li](https://tng.li)*
 
 *Design Tools: [blu-prince.com](https://blu-prince.com)*
 

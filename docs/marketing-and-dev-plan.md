@@ -64,7 +64,7 @@
 │                                                              │
 │  ─────────────────────────────────────────────────────────   │
 │                                                              │
-│           thingos.org  |  tng.li  |  blu-prince.com          │
+│           tingos.org  |  tng.li  |  blu-prince.com          │
 │                                                              │
 │             "NOT A TOY. A PLATFORM."                         │
 │                                                              │
@@ -96,7 +96,7 @@ TingOS brings that magic back—for everything.
 
 **Tagline:** NOT A TOY. A PLATFORM.
 
-**URLs:** thingos.org | tng.li | blu-prince.com
+**URLs:** tingos.org | tng.li | blu-prince.com
 
 ---
 
@@ -120,7 +120,7 @@ Create tools. All in one universal engine.
 Run them on web, handhelds, even offline with radio. 
 Your ideas. Everywhere.
 
-thingos.org. Not a toy. A platform.
+tingos.org. Not a toy. A platform.
 
 [SFX: 8-bit victory fanfare]
 ```
@@ -170,7 +170,7 @@ Load Demolition Bot and watch AI destroy everything you've built.
 
 [SFX: Explosion, laughter]
 
-thingos.org. Build. Break. Repeat.
+tingos.org. Build. Break. Repeat.
 ```
 
 ---
