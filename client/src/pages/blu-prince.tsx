@@ -1408,13 +1408,43 @@ export default function BluPrince() {
                           e.stopPropagation();
                           const remainingCount = Object.keys(file.logic.states).length - 1;
                           if (remainingCount < 1) {
-                            toast({ title: "Cannot delete", description: "Must have at least one state", variant: "destructive" });
+                            toast({ title: "Cannot delete", description: "State machine must have at least one state", variant: "destructive" });
                             return;
                           }
+                          
                           const newStates = { ...file.logic.states };
                           delete newStates[stateId];
-                          setFile(prev => ({ ...prev, logic: { ...prev.logic, states: newStates } }));
+                          
+                          // Clean up transitions pointing to deleted state
+                          Object.values(newStates).forEach(s => {
+                            (s as any).transitions = ((s as any).transitions ?? []).filter((t: any) => t.target !== stateId);
+                          });
+                          
+                          // Reassign initial state if deleted
+                          const remainingIds = Object.keys(newStates);
+                          let newInitial = file.logic.initial;
+                          if (file.logic.initial === stateId) {
+                            const initialState = remainingIds.find(sid => (newStates[sid] as any)?.type === 'initial');
+                            newInitial = initialState || remainingIds[0];
+                          }
+                          
+                          // Update editor nodes
+                          const updatedFile: TossFile = {
+                            ...file,
+                            logic: { 
+                              ...file.logic, 
+                              initial: newInitial,
+                              states: newStates 
+                            },
+                            _editor: {
+                              ...file._editor!,
+                              nodes: (file._editor?.nodes || []).filter(n => n.id !== stateId)
+                            }
+                          };
+                          setFile(updatedFile);
                           if (selectedNodeId === stateId) setSelectedNodeId(null);
+                          
+                          toast({ title: "State deleted", description: `Removed "${stateId}" from the state machine` });
                         }}
                         data-testid={`button-delete-state-${stateId}`}
                       >

@@ -68,6 +68,11 @@ Preferred communication style: Simple, everyday language.
 - **Physics Forces Expansion** - magnet_attract, magnet_repel, spring_joint, hinge_joint, damper for interactive product configurators
 - **Hardware Cartridge Profiles** - Manufacturing data (STL, BOM, assembly notes), firmware targets (ESP32, RP2040), packaging specs
 - **Marketing & Dev Plan** - Magazine ads, radio spots, 3-week build sequence with dependency graph
+- **GROUP Feature** - Hierarchical mesh grouping in SceneTree using parent_id/children_ids. Group/Ungroup buttons with multi-select (Ctrl+click). Folder icons for groups with expand/collapse
+- **SceneTree Auto-Import** - Imported 3D assets now automatically create mesh items in SceneTree with asset_id reference linking
+- **TossMesh.asset_id** - New field linking imported 3D models to their source asset for proper scene rendering
+- **Separated Editor Trees** - editor.tsx uses SceneTree for 3D meshes; blu-prince.tsx uses inline FSM states list for state machines
+- **VS Code Dual Sidebars** - EditorShell component with collapsible left (navigation) and right (properties) sidebars
 
 ## System Architecture
 
